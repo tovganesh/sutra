@@ -48,7 +48,7 @@ Traditional enterprise ERPs (like SAP S/4HANA) cost millions of dollars in licen
 
 ## 🚀 Quick Start with Docker
 
-Launch the entire Sutra Enterprise Operating System (PostgreSQL 16 with pgvector, MinIO, Redis, Sutra API, and Sutra Web Console) in one command:
+Launch the entire Sutra Enterprise Operating System (PostgreSQL 16 with pgvector, MinIO, Valkey, Sutra API, and Sutra Web Console) in one command:
 
 ```bash
 # 1. Clone repository

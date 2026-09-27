@@ -12,7 +12,7 @@ This guide is designed for CIOs, Enterprise Architects, and ERP Administrators p
 | **MM-PUR** (Purchasing) | Sutra Supply Chain | Export Vendor Master (`XK03`) and Material Master (`MM03`). Store attachments & specs in MinIO. |
 | **SD** (Sales & Distribution) | Sutra Commerce | Export Customer Master (`XD03`) and Sales Pricing Conditions (`VK11`). |
 | **Z-Tables & Custom ABAP** | Sutra No-Code Studio | Define custom entities in Sutra Studio using JSONB without compiling code or creating manual DDL tables. |
-| **SAP BAPI / IDocs** | REST & gRPC APIs | Replace RFCs and IDocs with modern OpenAPI / JSON endpoints and Redis-backed event triggers. |
+| **SAP BAPI / IDocs** | REST & gRPC APIs | Replace RFCs and IDocs with modern OpenAPI / JSON endpoints and Valkey-backed event triggers. |
 
 ---
 

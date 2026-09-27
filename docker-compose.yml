@@ -48,16 +48,16 @@ services:
       - sutra-network
 
   # =================================================================
-  # Cache & Event Queue: Redis
+  # In-Memory Cache & Event Queue: Valkey (Linux Foundation Open Source)
   # =================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: sutra-redis
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: sutra-valkey
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     networks:
       - sutra-network
 
@@ -75,7 +75,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_started
     ports:
       - "${PORT:-4000}:4000"
@@ -83,7 +83,7 @@ services:
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: postgresql://${DB_USER:-sutra_admin}:${DB_PASSWORD:-sutra_secure_pass}@postgres:5432/${DB_NAME:-sutra_db}
-      REDIS_URL: redis://redis:6379
+      VALKEY_URL: valkey://valkey:6379
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_USE_SSL: "false"
@@ -130,7 +130,7 @@ services:
 volumes:
   postgres_data:
   minio_data:
-  redis_data:
+  valkey_data:
   ollama_data:
 
 networks:

@@ -1,9 +1,20 @@
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# Copy root manifest and workspace dependencies
+COPY package.json tsconfig.json ./
+COPY apps/web/ ./apps/web/
+
+# Install dependencies and build Vue 3 Single Page Application
+RUN npm install
+RUN npm run build --workspace=@sutra/web
+
 FROM nginx:alpine
 
-# Copy web console static assets
-COPY apps/web/public/ /usr/share/nginx/html/
+# Copy built production assets to Nginx html directory
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
-# Expose standard HTTP port
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

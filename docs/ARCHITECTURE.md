@@ -51,7 +51,7 @@ graph TD
         GenAI --> VectorStore[(pgvector Embeddings)]
         
         Gateway --> MinIO[(MinIO S3 Object Storage)]
-        Gateway --> Redis[(Redis Queue / PubSub / Cache)]
+        Gateway --> Valkey[(Valkey In-Memory Queue / PubSub / Cache)]
         GenAI --> LocalLLM[Local Ollama / vLLM]
         GenAI --> CloudLLM[Cloud LLM: OpenAI / Gemini]
     end

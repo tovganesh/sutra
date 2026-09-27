@@ -6,7 +6,7 @@ Sutra is built with a **Security-First** mindset for enterprise mission-critical
 
 If you discover a security vulnerability in Sutra, please do **NOT** open a public issue. Instead, report it privately to the maintainers:
 
-* Email: `security@sutra-os.org` (or via GitHub Security Advisories)
+* Email: `[EMAIL_ADDRESS]` (or via GitHub Security Advisories)
 
 We will respond promptly within 48 hours to assess the vulnerability and coordinate a patch release.
 
