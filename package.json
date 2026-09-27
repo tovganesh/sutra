@@ -1,0 +1,27 @@
+{
+  "name": "sutra",
+  "version": "0.1.0",
+  "description": "Sutra - The Open Enterprise Operating System (Open-Source SAP Alternative)",
+  "author": "Ganesh (tovganesh) & Sutra Contributors",
+  "license": "Apache-2.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspaces --parallel",
+    "dev:api": "npm run dev --workspace=@sutra/api",
+    "dev:web": "npm run dev --workspace=@sutra/web",
+    "start": "npm run start --workspace=@sutra/api",
+    "lint": "eslint \"**/*.ts*\"",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3"
+  }
+}

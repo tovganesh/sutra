@@ -1,0 +1,23 @@
+{
+  "name": "@sutra/core",
+  "version": "0.1.0",
+  "description": "Sutra Core Platform - Security, RBAC, Multi-tenancy, Audit & MinIO Storage",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "minio": "^8.0.4",
+    "pg": "^8.13.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/pg": "^8.11.11",
+    "typescript": "^5.7.3"
+  }
+}

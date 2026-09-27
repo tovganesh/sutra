@@ -1,0 +1,16 @@
+{
+  "name": "@sutra/ai-agent",
+  "version": "0.1.0",
+  "description": "Sutra Gen AI Engine - Local LLMs (Ollama/vLLM) & Cloud LLMs (OpenAI/Gemini) with Text-to-ERP & IDP",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3"
+  }
+}

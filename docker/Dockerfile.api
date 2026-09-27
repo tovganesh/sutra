@@ -1,0 +1,26 @@
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# Copy root manifest and workspace manifests
+COPY package.json tsconfig.json ./
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+
+# Install dependencies and build
+RUN npm install
+RUN npm run build --workspace=@sutra/core
+RUN npm run build --workspace=@sutra/compliance-india
+RUN npm run build --workspace=@sutra/no-code
+RUN npm run build --workspace=@sutra/analytics
+RUN npm run build --workspace=@sutra/ai-agent
+RUN npm run build --workspace=@sutra/api
+
+FROM node:24-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=builder /app /app
+
+EXPOSE 4000
+CMD ["npm", "run", "start", "--workspace=@sutra/api"]

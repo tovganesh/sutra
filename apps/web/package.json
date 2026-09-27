@@ -1,0 +1,12 @@
+{
+  "name": "@sutra/web",
+  "version": "0.1.0",
+  "description": "Sutra Web Console & No-Code Studio Interface",
+  "scripts": {
+    "dev": "serve -p 3000 public",
+    "start": "serve -p 3000 public"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
