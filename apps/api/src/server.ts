@@ -7,12 +7,18 @@ import {
   SamlAuthProvider,
   createAuthMiddleware,
   requirePermission,
+  GeneralLedgerEngine,
+  ValkeyQueueService,
 } from '@sutra/core';
 import {
   GSTINValidator,
   IndianTaxEngine,
   EInvoiceService,
   TDSEngine,
+  GSTR1Generator,
+  GSTR3BEngine,
+  EWayBillGenerator,
+  IndianPayrollEngine,
 } from '@sutra/compliance-india';
 import {
   EntitySchemaDefinition,
@@ -385,6 +391,110 @@ app.post('/api/v1/compliance/tds/calculate', (req: Request, res: Response) => {
 
   res.json(result);
 });
+
+app.post('/api/v1/compliance/gstr1/generate', (req: Request, res: Response) => {
+  const { supplierGstin, period, invoices } = req.body;
+  if (!supplierGstin || !invoices || !Array.isArray(invoices)) {
+    return res.status(400).json({ error: 'supplierGstin and invoices array are required' });
+  }
+
+  const payload = GSTR1Generator.generate(
+    supplierGstin,
+    period || '092026',
+    invoices
+  );
+  res.json(payload);
+});
+
+app.post('/api/v1/compliance/gstr3b/summary', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.gstin || !input.outwardTaxableSupplies || !input.itcAvailable) {
+    return res.status(400).json({ error: 'Missing mandatory GSTR-3B return parameters' });
+  }
+
+  const summary = GSTR3BEngine.computeSummary({
+    gstin: input.gstin,
+    returnPeriod: input.returnPeriod || '092026',
+    outwardTaxableSupplies: input.outwardTaxableSupplies,
+    outwardZeroRatedSupplies: input.outwardZeroRatedSupplies,
+    inwardSuppliesReverseCharge: input.inwardSuppliesReverseCharge,
+    itcAvailable: input.itcAvailable,
+    itcReversed: input.itcReversed,
+  });
+
+  res.json(summary);
+});
+
+app.post('/api/v1/compliance/ewaybill/generate', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.docNo || !input.fromGstin || !input.toGstin || !input.totalValue) {
+    return res.status(400).json({ error: 'Missing mandatory E-Way bill parameters' });
+  }
+
+  const payload = EWayBillGenerator.generatePayload(input);
+  const validityDays = EWayBillGenerator.calculateValidityDays(input.approximateDistanceKm || 150);
+
+  res.json({
+    ewbNumber: `EWB${Date.now()}`,
+    generatedAt: new Date().toISOString(),
+    validUntilDays: validityDays,
+    payload,
+  });
+});
+
+app.post('/api/v1/compliance/payroll/calculate', (req: Request, res: Response) => {
+  const { basicSalary, dearnessAllowance, hra, specialAllowance, stateCode, gender, monthNumber, optHigherPF } = req.body;
+  if (basicSalary === undefined || !stateCode) {
+    return res.status(400).json({ error: 'basicSalary and stateCode are required' });
+  }
+
+  const breakdown = IndianPayrollEngine.calculate({
+    basicSalary: Number(basicSalary),
+    dearnessAllowance: Number(dearnessAllowance || 0),
+    hra: Number(hra || 0),
+    specialAllowance: Number(specialAllowance || 0),
+    stateCode,
+    gender: gender || 'M',
+    monthNumber: Number(monthNumber || 1),
+    optHigherPF: Boolean(optHigherPF),
+  });
+
+  res.json(breakdown);
+});
+
+// =================================================================
+// 3. General Ledger & Double-Entry Posting Engine (SAP FI/CO)
+// =================================================================
+app.post('/api/v1/ledger/post', (req: Request, res: Response) => {
+  const { tenantId, entryNumber, postingDate, reference, narration, lines } = req.body;
+
+  if (!entryNumber || !lines || !Array.isArray(lines)) {
+    return res.status(400).json({ error: 'entryNumber and lines array are required' });
+  }
+
+  const result = GeneralLedgerEngine.postJournalEntry({
+    tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+    entryNumber,
+    postingDate: postingDate || new Date().toISOString().split('T')[0],
+    reference,
+    narration,
+    lines,
+  });
+
+  if (!result.success) {
+    return res.status(422).json({
+      error: 'DoubleEntryValidationError',
+      reason: result.rejectionReason,
+      result,
+    });
+  }
+
+  res.status(201).json({
+    message: 'Journal entry successfully posted to General Ledger',
+    result,
+  });
+});
+
 
 // =================================================================
 // 3. No-Code Dynamic Entity Modeler & Studio Records
