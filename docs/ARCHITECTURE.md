@@ -106,3 +106,25 @@ graph TD
 * **Order-to-Cash (SD)**: Customer master with real-time credit limit enforcement, Available-to-Promise (ATP) stock checks, Outbound Delivery with Post Goods Issue (PGI Mvt 601), automated Cost of Goods Sold (COGS) accounting, and billing invoices linked to Indian E-Invoice IRN & E-Way bills.
 * **Procure-to-Pay (P2P)**: Purchase Order workflow, dock Goods Receipt Notes (GRN Mvt 101), 3-Way Matching audit (PO vs GRN vs Vendor Invoice) with price/quantity tolerance gates, Indian Section 194Q TDS withholding, and MSME Section 43B(h) 45-day payment tracking.
 * **Subledger Aging & Working Capital**: Real-time accounts receivable and accounts payable aging buckets (0-30, 31-60, 61-90, 90+ days), DSO and DPO metrics, and net working capital exposure forecasting.
+
+#### 3.7 Production Planning & Manufacturing (PP)
+* **Bill of Materials (BOM)**: Multi-level hierarchical component explosion with unit consumption formulas and scrap factor percentages.
+* **Work Centers & Routings**: Capacity scheduling (hours/day), hourly direct labor and machine absorption cost rates, and sequential operation routings.
+* **Production Orders**: Component availability checks, planned standard costing, work-in-progress (WIP) issuance (Movement Type 261), and batch confirmation to finished goods inventory (Movement Type 131) with balanced GL journal postings.
+
+#### 3.8 Fixed Asset Accounting (FI-AA)
+* **Asset Register**: Capital asset master data tracking acquisition cost, capitalization date, asset classes, and cost centers.
+* **Statutory Depreciation**: Indian Companies Act 2013 Schedule II useful life mandates with salvage value capped at 5%. Straight Line Method (SLM) monthly depreciation run.
+* **Automated Accounting**: Automated posting to Depreciation Expense (`530100 Dr`) and Accumulated Depreciation (`140900 Cr`) contra-asset accounts.
+
+#### 3.9 Quality Management & Batch Traceability (QM)
+* **Inspection Lots**: Automated lot trigger on Goods Receipt (01) and Production Confirmation (04) with quantitative (tolerances, min/max) and qualitative characteristics.
+* **Usage Decisions (UD)**: Release to Unrestricted Stock (Movement Type 321), Reject to Blocked Stock (Movement Type 350), or Scrap (Movement Type 551).
+* **Certificate of Analysis (CoA)**: Tamper-evident CoA generation with SHA-256 cryptographic verification hashes and QA authority sign-off.
+* **End-to-End Batch Genealogy**: Bidirectional forward and backward traceability (Supplier Batch -> Production Order -> Finished Goods Lot -> Customer Invoices) for automotive and pharmaceutical quality recalls.
+
+#### 3.10 Controlling & Management Accounting (CO)
+* **Cost Center Accounting (CO-CCA)**: Multi-level cost center hierarchy, expense tracking, and profit center segment reporting.
+* **Secondary Cost Assessment Cycles**: Periodic overhead allocation distributing shared services (IT, Facilities, Maintenance) across production work centers via allocation weights and balanced secondary cost element journals (GL `610000`).
+* **Variance Analysis**: Automated budget vs actual cost variance calculation, classifying performance as Favorable, Unfavorable, or On Track.
+

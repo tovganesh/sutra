@@ -15,6 +15,8 @@ import {
   SubledgerEngine,
   ManufacturingEngine,
   FixedAssetEngine,
+  QualityEngine,
+  ControllingEngine,
 } from '@sutra/core';
 import {
   GSTINValidator,
@@ -160,6 +162,8 @@ const procureToPayEngine = new ProcureToPayEngine(inventoryEngine);
 const subledgerEngine = new SubledgerEngine();
 const manufacturingEngine = new ManufacturingEngine(inventoryEngine);
 const fixedAssetEngine = new FixedAssetEngine();
+const qualityEngine = new QualityEngine(inventoryEngine);
+const controllingEngine = new ControllingEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -793,6 +797,158 @@ app.post('/api/v1/assets/depreciation-run', (req: Request, res: Response) => {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Depreciation run failed';
     res.status(422).json({ error: 'DepreciationRunError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.11 Quality Management & Batch Traceability (SAP QM)
+// =================================================================
+app.get('/api/v1/quality/lots', (req: Request, res: Response) => {
+  res.json(qualityEngine.getAllInspectionLots());
+});
+
+app.get('/api/v1/quality/lots/:lotId', (req: Request, res: Response) => {
+  const lotId = String(req.params.lotId);
+  const lot = qualityEngine.getInspectionLot(lotId);
+  if (!lot) return res.status(404).json({ error: 'InspectionLotNotFound' });
+  res.json(lot);
+});
+
+app.post('/api/v1/quality/lots', (req: Request, res: Response) => {
+  const { origin, materialSku, batchNumber, quantity, baseUom, plantId, referenceDocument } = req.body;
+  if (!materialSku || !batchNumber || !quantity) {
+    return res.status(400).json({ error: 'materialSku, batchNumber, and quantity are required' });
+  }
+
+  try {
+    const lot = qualityEngine.createInspectionLot({
+      origin: origin || '01_GOODS_RECEIPT',
+      materialSku,
+      batchNumber,
+      quantity: Number(quantity),
+      baseUom: baseUom || 'EA',
+      plantId: plantId || 'PLANT-1000',
+      referenceDocument: referenceDocument || `REF-${Date.now().toString(36).toUpperCase()}`,
+    });
+    res.status(201).json(lot);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to create inspection lot';
+    res.status(400).json({ error: 'InspectionLotCreationError', message: msg });
+  }
+});
+
+app.post('/api/v1/quality/lots/:lotId/results', (req: Request, res: Response) => {
+  const lotId = String(req.params.lotId);
+  const { results } = req.body;
+  if (!results || !Array.isArray(results)) {
+    return res.status(400).json({ error: 'results array is required' });
+  }
+
+  try {
+    const updated = qualityEngine.recordResults(lotId, results);
+    res.json(updated);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to record inspection results';
+    res.status(422).json({ error: 'ResultsRecordingError', message: msg });
+  }
+});
+
+app.post('/api/v1/quality/lots/:lotId/usage-decision', (req: Request, res: Response) => {
+  const lotId = String(req.params.lotId);
+  const { decision, decidedBy, notes } = req.body;
+  if (!decision || !decidedBy) {
+    return res.status(400).json({ error: 'decision and decidedBy are required' });
+  }
+
+  try {
+    const udResult = qualityEngine.recordUsageDecision({
+      lotId,
+      decision,
+      decidedBy,
+      notes,
+    });
+    res.json(udResult);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Usage decision recording failed';
+    res.status(422).json({ error: 'UsageDecisionError', message: msg });
+  }
+});
+
+app.post('/api/v1/quality/lots/:lotId/certificate-of-analysis', (req: Request, res: Response) => {
+  const lotId = String(req.params.lotId);
+  const { qaManager } = req.body;
+  if (!qaManager) {
+    return res.status(400).json({ error: 'qaManager is required' });
+  }
+
+  try {
+    const coa = qualityEngine.generateCertificateOfAnalysis(lotId, qaManager);
+    res.json(coa);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'CoA generation failed';
+    res.status(422).json({ error: 'CertificateGenerationError', message: msg });
+  }
+});
+
+app.get('/api/v1/quality/batches', (req: Request, res: Response) => {
+  res.json(qualityEngine.getAllBatches());
+});
+
+app.get('/api/v1/quality/batches/:batchNumber/trace', (req: Request, res: Response) => {
+  const batchNumber = String(req.params.batchNumber);
+  try {
+    const trace = qualityEngine.traceBatchGenealogy(batchNumber);
+    res.json(trace);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Batch trace failed';
+    res.status(404).json({ error: 'BatchTraceError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.12 Controlling & Management Accounting (SAP CO)
+// =================================================================
+app.get('/api/v1/controlling/cost-centers', (req: Request, res: Response) => {
+  res.json(controllingEngine.getAllCostCenters());
+});
+
+app.get('/api/v1/controlling/profit-centers', (req: Request, res: Response) => {
+  res.json(controllingEngine.getAllProfitCenters());
+});
+
+app.get('/api/v1/controlling/allocation-rules', (req: Request, res: Response) => {
+  res.json(controllingEngine.getAllAllocationRules());
+});
+
+app.post('/api/v1/controlling/assessment-cycles/run', (req: Request, res: Response) => {
+  const { ruleId, period, amountToAllocate, tenantId } = req.body;
+  if (!ruleId || !period) {
+    return res.status(400).json({ error: 'ruleId and period are required' });
+  }
+
+  try {
+    const result = controllingEngine.executeCostAllocationCycle({
+      ruleId,
+      period,
+      amountToAllocate: amountToAllocate ? Number(amountToAllocate) : undefined,
+      tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+    });
+    res.status(201).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Cost allocation cycle failed';
+    res.status(422).json({ error: 'CostAllocationError', message: msg });
+  }
+});
+
+app.get('/api/v1/controlling/cost-centers/:code/variance', (req: Request, res: Response) => {
+  const code = String(req.params.code);
+  const period = (req.query.period as string) || new Date().toISOString().slice(0, 7);
+  try {
+    const variance = controllingEngine.analyzeVariance(code, period);
+    res.json(variance);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Variance analysis failed';
+    res.status(404).json({ error: 'VarianceAnalysisError', message: msg });
   }
 });
 // =================================================================

@@ -9,6 +9,8 @@ import {
   LocalJwtAuthProvider,
   ManufacturingEngine,
   FixedAssetEngine,
+  QualityEngine,
+  ControllingEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -358,4 +360,142 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       assert.ok(result.glJournalNumber);
     });
   });
+
+  describe('Quality Management & Batch Traceability Engine (SAP QM)', () => {
+    test('creates inspection lot on goods receipt, records conforming results, and issues CoA', () => {
+      const qm = new QualityEngine();
+
+      // 1. Create Lot on GR
+      const lot = qm.createInspectionLot({
+        origin: '01_GOODS_RECEIPT',
+        materialSku: 'ROH-STEEL-001',
+        batchNumber: 'BATCH-2026-ST-999',
+        quantity: 2500,
+        baseUom: 'KG',
+        plantId: 'PLANT-1000',
+        referenceDocument: 'PO-2026-0891',
+      });
+
+      assert.equal(lot.status, 'CREATED');
+      assert.equal(lot.characteristics.length, 3);
+
+      // 2. Record Conforming Results
+      const updatedLot = qm.recordResults(lot.lotId, [
+        { charId: 'QC-STEEL-THICK', numericValue: 1.21, inspector: 'QC_OFFICER_PATIL' },
+        { charId: 'QC-STEEL-TENSILE', numericValue: 345, inspector: 'QC_OFFICER_PATIL' },
+        { charId: 'QC-STEEL-SURFACE', textValue: 'DEFECT_FREE', inspector: 'QC_OFFICER_PATIL' },
+      ]);
+
+      assert.equal(updatedLot.status, 'RESULTS_RECORDED');
+      assert.equal(updatedLot.results.every((r) => r.conforms), true);
+
+      // 3. Usage Decision: Accept to Unrestricted (321)
+      const { usageDecision } = qm.recordUsageDecision({
+        lotId: lot.lotId,
+        decision: 'ACCEPTED',
+        decidedBy: 'QA_HEAD_DESHMUKH',
+        notes: 'Cold-rolled steel passed ASTM & IS 513 standards.',
+      });
+
+      assert.equal(usageDecision.decision, 'ACCEPTED');
+      assert.equal(usageDecision.movementType, '321');
+
+      // 4. Generate Certificate of Analysis (CoA)
+      const coa = qm.generateCertificateOfAnalysis(lot.lotId, 'QA_HEAD_DESHMUKH');
+      assert.equal(coa.overallConclusion, 'PASSED_FOR_RELEASE');
+      assert.ok(coa.digitalSignatureHash.length === 64);
+    });
+
+    test('rejects inspection lot and blocks batch when characteristics exceed tolerance limits', () => {
+      const qm = new QualityEngine();
+
+      const lot = qm.createInspectionLot({
+        origin: '01_GOODS_RECEIPT',
+        materialSku: 'ROH-STEEL-001',
+        batchNumber: 'BATCH-2026-ST-DEFECT',
+        quantity: 1000,
+        baseUom: 'KG',
+        plantId: 'PLANT-1000',
+        referenceDocument: 'PO-2026-0899',
+      });
+
+      // Thickness 1.45mm exceeds upper limit 1.25mm
+      const updatedLot = qm.recordResults(lot.lotId, [
+        { charId: 'QC-STEEL-THICK', numericValue: 1.45, inspector: 'QC_OFFICER_PATIL' },
+        { charId: 'QC-STEEL-TENSILE', numericValue: 280, inspector: 'QC_OFFICER_PATIL' }, // below 310 MPa
+        { charId: 'QC-STEEL-SURFACE', textValue: 'SURFACE_CORROSION_FOUND', inspector: 'QC_OFFICER_PATIL' },
+      ]);
+
+      const thickResult = updatedLot.results.find((r) => r.charId === 'QC-STEEL-THICK');
+      assert.equal(thickResult.conforms, false);
+
+      // Post Usage Decision: Reject to Blocked Stock (350)
+      const { usageDecision } = qm.recordUsageDecision({
+        lotId: lot.lotId,
+        decision: 'REJECTED',
+        decidedBy: 'QA_HEAD_DESHMUKH',
+        notes: 'Rejected due to sheet thickness deviation and low tensile strength.',
+      });
+
+      assert.equal(usageDecision.decision, 'REJECTED');
+      assert.equal(usageDecision.movementType, '350');
+    });
+
+    test('traces bidirectional batch genealogy from raw material to finished goods and customer delivery', () => {
+      const qm = new QualityEngine();
+
+      // Trace upstream raw batch -> downstream vehicle
+      const downstreamTrace = qm.traceBatchGenealogy('BATCH-2026-ST-088');
+      assert.ok(downstreamTrace.downstreamFinishedBatches.some((b) => b.batchNumber === 'BATCH-2026-EV-001'));
+
+      // Trace finished vehicle -> upstream supplier batch and customer sales order
+      const upstreamTrace = qm.traceBatchGenealogy('BATCH-2026-EV-001');
+      assert.ok(upstreamTrace.upstreamRawBatches.some((b) => b.batchNumber === 'BATCH-2026-ST-088'));
+      assert.ok(upstreamTrace.affectedCustomers.some((c) => c.salesOrderNumber === 'SO-2026-0042'));
+    });
+  });
+
+  describe('Controlling & Management Accounting Engine (SAP CO)', () => {
+    test('executes periodic overhead cost assessment cycle and posts balanced secondary cost allocation', () => {
+      const co = new ControllingEngine();
+
+      const result = co.executeCostAllocationCycle({
+        ruleId: 'ALLOC-RULE-IT-01',
+        period: '2026-09',
+        amountToAllocate: 1000000, // 10 Lakhs INR IT overhead
+      });
+
+      assert.equal(result.totalAmountAllocated, 1000000);
+      assert.equal(result.allocations.length, 3);
+
+      // Allocations: 40% Body Shop (4L), 45% Final Assembly (4.5L), 15% Logistics (1.5L)
+      const bodyAlloc = result.allocations.find((a) => a.receiverCostCenter === 'CC-MFG-BODY');
+      const assyAlloc = result.allocations.find((a) => a.receiverCostCenter === 'CC-MFG-ASSY');
+      const logAlloc = result.allocations.find((a) => a.receiverCostCenter === 'CC-LOGISTICS');
+
+      assert.equal(bodyAlloc.allocatedAmount, 400000);
+      assert.equal(assyAlloc.allocatedAmount, 450000);
+      assert.equal(logAlloc.allocatedAmount, 150000);
+
+      // Verify balanced double entry: sum(debit) === sum(credit)
+      const totalDebit = result.journalLines.reduce((s, l) => s + l.debit, 0);
+      const totalCredit = result.journalLines.reduce((s, l) => s + l.credit, 0);
+      assert.equal(totalDebit, 1000000);
+      assert.equal(totalCredit, 1000000);
+    });
+
+    test('performs budget vs actual variance analysis identifying favorable and unfavorable variances', () => {
+      const co = new ControllingEngine();
+
+      // CC-SHARED-IT annual budget is 180L -> monthly planned budget is 15L
+      // actualIncurred is 120L (exceeds 15L monthly budget -> UNFAVORABLE variance)
+      const variance = co.analyzeVariance('CC-SHARED-IT', '2026-09');
+
+      assert.equal(variance.costCenter, 'CC-SHARED-IT');
+      assert.equal(variance.plannedBudget, 1500000);
+      assert.equal(variance.varianceType, 'UNFAVORABLE');
+      assert.ok(variance.varianceAmount < 0);
+    });
+  });
 });
+

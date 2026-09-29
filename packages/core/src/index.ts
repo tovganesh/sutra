@@ -18,3 +18,7 @@ export * from './procurement/procure-to-pay.js';
 export * from './manufacturing/bom-types.js';
 export * from './manufacturing/manufacturing-engine.js';
 export * from './assets/fixed-asset-engine.js';
+export * from './quality/quality-types.js';
+export * from './quality/quality-engine.js';
+export * from './controlling/controlling-types.js';
+export * from './controlling/controlling-engine.js';
