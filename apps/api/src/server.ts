@@ -19,6 +19,8 @@ import {
   ControllingEngine,
   MaintenanceEngine,
   TreasuryEngine,
+  HcmEngine,
+  ProjectSystemsEngine,
   HttpStatus,
 } from '@sutra/core';
 import {
@@ -169,6 +171,8 @@ const qualityEngine = new QualityEngine(inventoryEngine);
 const controllingEngine = new ControllingEngine();
 const maintenanceEngine = new MaintenanceEngine(inventoryEngine);
 const treasuryEngine = new TreasuryEngine();
+const hcmEngine = new HcmEngine();
+const projectSystemsEngine = new ProjectSystemsEngine(fixedAssetEngine);
 
 // =================================================================
 // 1. Health & Platform Status
@@ -198,6 +202,8 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
       controllingEngine: 'ONLINE (CO)',
       plantMaintenance: 'ONLINE (PM/EAM)',
       treasuryEngine: 'ONLINE (TRM/FI-BL)',
+      humanCapitalManagement: 'ONLINE (HCM)',
+      projectSystems: 'ONLINE (PS)',
       noCodeStudio: 'READY',
       analyticsEngine: 'ONLINE',
       genAICore: {
@@ -1221,6 +1227,244 @@ app.get('/api/v1/trm/bank-accounts/:accountId/cash-forecast', (req: Request, res
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Cash forecast failed';
     res.status(HttpStatus.NOT_FOUND).json({ error: 'CashForecastError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.15 Human Capital Management & Core HR (SAP HCM)
+// =================================================================
+app.get('/api/v1/hcm/employees', (req: Request, res: Response) => {
+  const department = req.query.department ? String(req.query.department) : undefined;
+  res.json(hcmEngine.listEmployees(department));
+});
+
+app.post('/api/v1/hcm/employees', (req: Request, res: Response) => {
+  const { employeeId, fullName, department, designation, costCenter, salaryStructure } = req.body;
+  if (!employeeId || !fullName || !department || !designation || !costCenter || !salaryStructure) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory employee master fields' });
+  }
+  const emp = hcmEngine.registerEmployee({
+    ...req.body,
+    employmentType: req.body.employmentType || 'FULL_TIME',
+    status: req.body.status || 'ACTIVE',
+    dateOfJoining: req.body.dateOfJoining || new Date().toISOString().split('T')[0],
+  });
+  res.status(HttpStatus.CREATED).json(emp);
+});
+
+app.get('/api/v1/hcm/employees/:id', (req: Request, res: Response) => {
+  const emp = hcmEngine.getEmployee(String(req.params.id));
+  if (!emp) {
+    return res.status(HttpStatus.NOT_FOUND).json({ error: `Employee ${req.params.id} not found` });
+  }
+  res.json(emp);
+});
+
+app.post('/api/v1/hcm/attendance', (req: Request, res: Response) => {
+  const { employeeId, month, totalWorkingDays } = req.body;
+  if (!employeeId || !month || totalWorkingDays === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'employeeId, month, and totalWorkingDays are required' });
+  }
+  const rec = hcmEngine.recordAttendance({
+    employeeId,
+    month,
+    totalWorkingDays: Number(totalWorkingDays),
+    presentDays: req.body.presentDays !== undefined ? Number(req.body.presentDays) : Number(totalWorkingDays),
+    paidLeaveDays: req.body.paidLeaveDays !== undefined ? Number(req.body.paidLeaveDays) : 0,
+    lossOfPayDays: req.body.lossOfPayDays !== undefined ? Number(req.body.lossOfPayDays) : 0,
+  });
+  res.status(HttpStatus.CREATED).json(rec);
+});
+
+app.get('/api/v1/hcm/employees/:id/salary-preview', (req: Request, res: Response) => {
+  const employeeId = String(req.params.id);
+  const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
+  try {
+    const slip = hcmEngine.calculateEmployeeSalary(employeeId, month);
+    res.json(slip);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Salary calculation failed';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'SalaryCalculationError', message: msg });
+  }
+});
+
+app.post('/api/v1/hcm/payroll/run', (req: Request, res: Response) => {
+  const month = req.body.month || new Date().toISOString().slice(0, 7);
+  try {
+    const result = hcmEngine.executeMonthlyPayrollRun(month);
+    res.status(HttpStatus.CREATED).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Payroll run failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'PayrollRunError', message: msg });
+  }
+});
+
+app.get('/api/v1/hcm/payroll/runs/:month', (req: Request, res: Response) => {
+  const month = String(req.params.month);
+  const run = hcmEngine.getPayrollRun(month);
+  if (!run) {
+    return res.status(HttpStatus.NOT_FOUND).json({ error: `Payroll run for ${month} not found` });
+  }
+  res.json(run);
+});
+
+// =================================================================
+// 2.16 Project Systems & Capital Project Costing (SAP PS)
+// =================================================================
+app.get('/api/v1/projects', (req: Request, res: Response) => {
+  res.json(projectSystemsEngine.listProjects());
+});
+
+app.post('/api/v1/projects', (req: Request, res: Response) => {
+  const { projectId, name, projectType, totalApprovedBudget, responsibleCostCenter } = req.body;
+  if (!projectId || !name || !projectType || !totalApprovedBudget || !responsibleCostCenter) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory project master fields' });
+  }
+  const proj = projectSystemsEngine.createProject({
+    ...req.body,
+    status: req.body.status || 'APPROVED',
+    startDate: req.body.startDate || new Date().toISOString().split('T')[0],
+    endDate: req.body.endDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
+    totalApprovedBudget: Number(totalApprovedBudget),
+    totalCommittedCost: 0,
+    totalActualCost: 0,
+    cwipAccountId: req.body.cwipAccountId || '140800',
+    wbsElements: [],
+    milestones: [],
+  });
+  res.status(HttpStatus.CREATED).json(proj);
+});
+
+app.get('/api/v1/projects/:id', (req: Request, res: Response) => {
+  const proj = projectSystemsEngine.getProject(String(req.params.id));
+  if (!proj) {
+    return res.status(HttpStatus.NOT_FOUND).json({ error: `Project ${req.params.id} not found` });
+  }
+  res.json(proj);
+});
+
+app.post('/api/v1/projects/:id/wbs', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const { wbsCode, name, costCenter, budgetAllocated } = req.body;
+  if (!wbsCode || !name || !costCenter || budgetAllocated === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'wbsCode, name, costCenter, and budgetAllocated are required' });
+  }
+  try {
+    const wbs = projectSystemsEngine.addWbsElement({
+      wbsCode,
+      name,
+      projectId,
+      parentWbsCode: req.body.parentWbsCode,
+      costCenter,
+      budgetAllocated: Number(budgetAllocated),
+      budgetCommitted: 0,
+      actualCostIncurred: 0,
+      status: req.body.status || 'RELEASED',
+    });
+    res.status(HttpStatus.CREATED).json(wbs);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to add WBS element';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'WbsCreationError', message: msg });
+  }
+});
+
+app.post('/api/v1/projects/:id/milestones', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const { milestoneId, name, targetDate, percentageWeight } = req.body;
+  if (!milestoneId || !name || !targetDate || percentageWeight === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'milestoneId, name, targetDate, and percentageWeight are required' });
+  }
+  try {
+    const ms = projectSystemsEngine.addMilestone({
+      milestoneId,
+      projectId,
+      name,
+      targetDate,
+      percentageWeight: Number(percentageWeight),
+      isAchieved: false,
+    });
+    res.status(HttpStatus.CREATED).json(ms);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to add milestone';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'MilestoneCreationError', message: msg });
+  }
+});
+
+app.post('/api/v1/projects/:id/milestones/:milestoneId/achieve', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const milestoneId = String(req.params.milestoneId);
+  try {
+    const ms = projectSystemsEngine.achieveMilestone(projectId, milestoneId);
+    res.json(ms);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to achieve milestone';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'MilestoneAchieveError', message: msg });
+  }
+});
+
+app.get('/api/v1/projects/:id/poc', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  try {
+    const poc = projectSystemsEngine.calculateProjectPoC(projectId);
+    res.json(poc);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to calculate PoC';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'PocCalculationError', message: msg });
+  }
+});
+
+app.post('/api/v1/projects/:id/commitments', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const { wbsCode, amount } = req.body;
+  if (!wbsCode || amount === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'wbsCode and amount are required' });
+  }
+  try {
+    const wbs = projectSystemsEngine.recordCommitment(projectId, wbsCode, Number(amount));
+    res.json(wbs);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to record commitment';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CommitmentRecordError', message: msg });
+  }
+});
+
+app.post('/api/v1/projects/:id/actual-cost', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const { wbsCode, amount, reduceCommittedAmount } = req.body;
+  if (!wbsCode || amount === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'wbsCode and amount are required' });
+  }
+  try {
+    const wbs = projectSystemsEngine.recordActualCost(
+      projectId,
+      wbsCode,
+      Number(amount),
+      reduceCommittedAmount ? Number(reduceCommittedAmount) : 0
+    );
+    res.json(wbs);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to record actual cost';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ActualCostRecordError', message: msg });
+  }
+});
+
+app.post('/api/v1/projects/:id/settle-cwip', (req: Request, res: Response) => {
+  const projectId = String(req.params.id);
+  const { assetName, assetClass, usefulLifeYears } = req.body;
+  if (!assetName) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'assetName is required for CWIP settlement' });
+  }
+  try {
+    const settlement = projectSystemsEngine.settleCwipToFixedAsset(
+      projectId,
+      assetName,
+      assetClass || 'PLANT_MACHINERY',
+      usefulLifeYears ? Number(usefulLifeYears) : 15
+    );
+    res.status(HttpStatus.CREATED).json(settlement);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'CWIP settlement failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CwipSettlementError', message: msg });
   }
 });
 

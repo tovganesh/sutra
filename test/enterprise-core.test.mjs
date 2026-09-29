@@ -13,6 +13,8 @@ import {
   ControllingEngine,
   MaintenanceEngine,
   TreasuryEngine,
+  HcmEngine,
+  ProjectSystemsEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -643,6 +645,107 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       // 60 & 90 days projections
       assert.ok(forecast.forecast60Days.projectedClosingCash > forecast.forecast30Days.projectedClosingCash);
       assert.ok(forecast.forecast90Days.projectedClosingCash > forecast.forecast60Days.projectedClosingCash);
+    });
+  });
+
+  describe('Human Capital Management & Core HR Engine (SAP HCM)', () => {
+    test('calculates statutory salary, LOP deductions, and generates digital payslip', () => {
+      const hcm = new HcmEngine();
+
+      // Priya has 1 LOP day out of 22 working days
+      const payslip = hcm.calculateEmployeeSalary('EMP-IND-0102', '2026-09');
+
+      assert.equal(payslip.employeeId, 'EMP-IND-0102');
+      assert.equal(payslip.costCenter, 'CC-MFG-ASSY');
+      // Pro-rata factor = 21/22
+      assert.ok(payslip.earnedGrossSalary < 65000);
+      assert.ok(payslip.deductions.epfEmployee <= 1800); // EPF capped at 1,800
+      assert.equal(payslip.deductions.professionalTax, 200); // Standard PT
+      assert.ok(payslip.netPayableSalary > 0);
+      assert.ok(payslip.bankAccountMasked.startsWith('****'));
+    });
+
+    test('executes monthly payroll run and generates balanced General Ledger payroll voucher', () => {
+      const hcm = new HcmEngine();
+
+      const run = hcm.executeMonthlyPayrollRun('2026-09');
+
+      assert.equal(run.month, '2026-09');
+      assert.equal(run.processedCount, 3);
+      assert.ok(run.totalGrossSalaries > 0);
+      assert.ok(run.totalNetSalariesDisbursed > 0);
+
+      // Verify balanced double entry: Sum(Debit) === Sum(Credit)
+      assert.equal(run.glPosting.isBalanced, true);
+      const totalDebit = run.glPosting.journalLines.reduce((s, l) => s + l.debit, 0);
+      const totalCredit = run.glPosting.journalLines.reduce((s, l) => s + l.credit, 0);
+      assert.equal(Math.round(totalDebit), Math.round(totalCredit));
+
+      // Verify liability accounts present (EPF, ESIC, PT, TDS, Net Salaries)
+      const accounts = run.glPosting.journalLines.map((l) => l.accountCode);
+      assert.ok(accounts.includes('510000')); // Salaries Expense
+      assert.ok(accounts.includes('214100')); // EPF Payable
+      assert.ok(accounts.includes('214200')); // ESIC Payable
+      assert.ok(accounts.includes('214300')); // PT Payable
+      assert.ok(accounts.includes('214400')); // TDS 192 Payable
+      assert.ok(accounts.includes('214000')); // Net Salaries Payable
+    });
+  });
+
+  describe('Project Systems & Capital Project Costing Engine (SAP PS)', () => {
+    test('tracks WBS hierarchy, purchase commitments, and milestone completion (PoC)', () => {
+      const ps = new ProjectSystemsEngine();
+
+      const proj = ps.getProject('PRJ-EV-GIGA-01');
+      assert.ok(proj);
+      assert.equal(proj.totalApprovedBudget, 75000000);
+      assert.equal(proj.wbsElements.length, 3);
+
+      // 1. Record additional purchase commitment on WBS PRJ-EV-GIGA/03
+      const updatedWbs = ps.recordCommitment('PRJ-EV-GIGA-01', 'PRJ-EV-GIGA/03', 2000000);
+      assert.equal(updatedWbs.budgetCommitted, 7000000); // 5M + 2M
+
+      // 2. Record actual cost incurred and reduce commitment
+      const wbsWithActual = ps.recordActualCost('PRJ-EV-GIGA-01', 'PRJ-EV-GIGA/03', 2000000, 2000000);
+      assert.equal(wbsWithActual.actualCostIncurred, 5000000);
+      assert.equal(wbsWithActual.budgetCommitted, 5000000);
+
+      // 3. Complete Milestone M3 and verify Percentage of Completion (PoC) reaches 100%
+      const achieved = ps.achieveMilestone('PRJ-EV-GIGA-01', 'M3');
+      assert.equal(achieved.isAchieved, true);
+
+      const poc = ps.calculateProjectPoC('PRJ-EV-GIGA-01');
+      assert.equal(poc.pocPercentage, 100);
+      assert.equal(poc.achievedWeight, 100);
+    });
+
+    test('settles Capital Work-in-Progress (CWIP) into Fixed Asset register with balanced GL capitalization', () => {
+      const fixedAssets = new FixedAssetEngine();
+      const ps = new ProjectSystemsEngine(fixedAssets);
+
+      // Settle project CWIP into capital Fixed Asset
+      const settlement = ps.settleCwipToFixedAsset(
+        'PRJ-EV-GIGA-01',
+        'Gigafactory Pack Assembly Line 2 Infrastructure',
+        'PLANT_MACHINERY',
+        15
+      );
+
+      assert.equal(settlement.projectId, 'PRJ-EV-GIGA-01');
+      assert.ok(settlement.capitalizedAssetTag.startsWith('AST-CWIP-'));
+      assert.equal(settlement.costCenter, 'CC-MFG-BODY');
+      assert.ok(settlement.totalSettledCost > 0);
+
+      // Verify GL capitalization voucher: 140100 Dr, 140800 Cr
+      assert.equal(settlement.glJournal.debitAccount, '140100');
+      assert.equal(settlement.glJournal.creditAccount, '140800');
+      assert.equal(settlement.glJournal.amount, settlement.totalSettledCost);
+
+      // Verify asset exists in Fixed Asset register
+      const asset = fixedAssets.getAsset(settlement.capitalizedAssetTag);
+      assert.ok(asset);
+      assert.equal(asset.currentBookValue, settlement.totalSettledCost);
+      assert.equal(asset.assetClass, 'PLANT_MACHINERY');
     });
   });
 });

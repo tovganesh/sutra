@@ -26,4 +26,8 @@ export * from './maintenance/maintenance-types.js';
 export * from './maintenance/maintenance-engine.js';
 export * from './treasury/treasury-types.js';
 export * from './treasury/treasury-engine.js';
+export * from './hcm/hcm-types.js';
+export * from './hcm/hcm-engine.js';
+export * from './projects/project-types.js';
+export * from './projects/project-engine.js';
 export * from './common/http-status.js';
