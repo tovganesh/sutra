@@ -17,6 +17,7 @@ import {
   FixedAssetEngine,
   QualityEngine,
   ControllingEngine,
+  HttpStatus,
 } from '@sutra/core';
 import {
   GSTINValidator,
@@ -221,7 +222,7 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
     );
 
     if (!result.success) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         error: 'AuthenticationFailed',
         message: result.errorMessage || 'Invalid credentials',
         provider: result.provider,
@@ -246,14 +247,14 @@ app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ error: 'InternalAuthError', message: msg });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'InternalAuthError', message: msg });
   }
 });
 
 // 2.3 Get Current Authenticated User Profile (Protected by JWT Auth Middleware)
 app.get('/api/v1/auth/me', authMiddleware, (req: Request, res: Response) => {
   if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized', message: 'No active session' });
+    return res.status(HttpStatus.UNAUTHORIZED).json({ error: 'Unauthorized', message: 'No active session' });
   }
 
   res.json({
@@ -274,12 +275,12 @@ app.get('/api/v1/auth/me', authMiddleware, (req: Request, res: Response) => {
 app.post('/api/v1/auth/refresh', async (req: Request, res: Response) => {
   const { refreshToken, providerId } = req.body;
   if (!refreshToken) {
-    return res.status(400).json({ error: 'Missing refreshToken in request body' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing refreshToken in request body' });
   }
 
   const provider = providerId ? authRegistry.getProvider(providerId) : authRegistry.getDefaultProvider();
   if (!provider || !provider.refreshToken) {
-    return res.status(400).json({ error: 'Selected provider does not support token refresh' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Selected provider does not support token refresh' });
   }
 
   try {
@@ -287,7 +288,7 @@ app.post('/api/v1/auth/refresh', async (req: Request, res: Response) => {
     res.json({ tokens: newTokens });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Token refresh failed';
-    res.status(401).json({ error: 'InvalidRefreshToken', message: msg });
+    res.status(HttpStatus.UNAUTHORIZED).json({ error: 'InvalidRefreshToken', message: msg });
   }
 });
 
@@ -297,11 +298,11 @@ app.get('/api/v1/auth/sso/login-url', async (req: Request, res: Response) => {
   const provider = authRegistry.getProvider(providerId);
 
   if (!provider) {
-    return res.status(404).json({ error: `Auth provider '${providerId}' not found` });
+    return res.status(HttpStatus.NOT_FOUND).json({ error: `Auth provider '${providerId}' not found` });
   }
 
   if (!provider.getLoginUrl) {
-    return res.status(400).json({ error: `Provider '${providerId}' does not support SSO redirection` });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: `Provider '${providerId}' does not support SSO redirection` });
   }
 
   try {
@@ -309,7 +310,7 @@ app.get('/api/v1/auth/sso/login-url', async (req: Request, res: Response) => {
     res.json({ providerId, redirectUrl: url });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    res.status(500).json({ error: 'SSOUrlGenerationFailed', message: msg });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'SSOUrlGenerationFailed', message: msg });
   }
 });
 
@@ -319,7 +320,7 @@ app.post('/api/v1/auth/tenants/:tenantId/provider', (req: Request, res: Response
   const { providerId } = req.body;
 
   if (!providerId) {
-    return res.status(400).json({ error: 'providerId is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'providerId is required' });
   }
 
   try {
@@ -331,7 +332,7 @@ app.post('/api/v1/auth/tenants/:tenantId/provider', (req: Request, res: Response
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    res.status(400).json({ error: 'FailedToSetTenantProvider', message: msg });
+    res.status(HttpStatus.BAD_REQUEST).json({ error: 'FailedToSetTenantProvider', message: msg });
   }
 });
 
@@ -342,7 +343,7 @@ app.post('/api/v1/auth/tenants/:tenantId/provider', (req: Request, res: Response
 app.post('/api/v1/compliance/gst/validate-gstin', (req: Request, res: Response) => {
   const { gstin } = req.body;
   if (!gstin) {
-    return res.status(400).json({ error: 'GSTIN is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'GSTIN is required' });
   }
   const result = GSTINValidator.validate(gstin);
   res.json(result);
@@ -351,7 +352,7 @@ app.post('/api/v1/compliance/gst/validate-gstin', (req: Request, res: Response) 
 app.post('/api/v1/compliance/gst/calculate-tax', (req: Request, res: Response) => {
   const { supplierGstin, recipientGstin, placeOfSupplyStateCode, hsnSacCode, taxableAmount, customTaxRate } = req.body;
   if (!supplierGstin || !placeOfSupplyStateCode || taxableAmount === undefined) {
-    return res.status(400).json({ error: 'Missing mandatory tax calculation parameters' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory tax calculation parameters' });
   }
 
   const breakdown = IndianTaxEngine.calculate({
@@ -369,7 +370,7 @@ app.post('/api/v1/compliance/gst/calculate-tax', (req: Request, res: Response) =
 app.post('/api/v1/compliance/einvoice/generate', (req: Request, res: Response) => {
   const { supplierGstin, buyerGstin, financialYear, docNo, docDate, totalValue, itemCount } = req.body;
   if (!supplierGstin || !buyerGstin || !docNo) {
-    return res.status(400).json({ error: 'Missing e-invoice generation details' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing e-invoice generation details' });
   }
 
   const fy = financialYear || '2026-27';
@@ -396,7 +397,7 @@ app.post('/api/v1/compliance/einvoice/generate', (req: Request, res: Response) =
 app.post('/api/v1/compliance/tds/calculate', (req: Request, res: Response) => {
   const { sectionKey, grossAmount, isCompanyOrFirm, hasValidPan, cumulativeFYAmount } = req.body;
   if (!sectionKey || grossAmount === undefined) {
-    return res.status(400).json({ error: 'Section key and gross amount are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Section key and gross amount are required' });
   }
 
   const result = TDSEngine.calculate({
@@ -413,7 +414,7 @@ app.post('/api/v1/compliance/tds/calculate', (req: Request, res: Response) => {
 app.post('/api/v1/compliance/gstr1/generate', (req: Request, res: Response) => {
   const { supplierGstin, period, invoices } = req.body;
   if (!supplierGstin || !invoices || !Array.isArray(invoices)) {
-    return res.status(400).json({ error: 'supplierGstin and invoices array are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'supplierGstin and invoices array are required' });
   }
 
   const payload = GSTR1Generator.generate(
@@ -427,7 +428,7 @@ app.post('/api/v1/compliance/gstr1/generate', (req: Request, res: Response) => {
 app.post('/api/v1/compliance/gstr3b/summary', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.gstin || !input.outwardTaxableSupplies || !input.itcAvailable) {
-    return res.status(400).json({ error: 'Missing mandatory GSTR-3B return parameters' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory GSTR-3B return parameters' });
   }
 
   const summary = GSTR3BEngine.computeSummary({
@@ -446,7 +447,7 @@ app.post('/api/v1/compliance/gstr3b/summary', (req: Request, res: Response) => {
 app.post('/api/v1/compliance/ewaybill/generate', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.docNo || !input.fromGstin || !input.toGstin || !input.totalValue) {
-    return res.status(400).json({ error: 'Missing mandatory E-Way bill parameters' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory E-Way bill parameters' });
   }
 
   const payload = EWayBillGenerator.generatePayload(input);
@@ -463,7 +464,7 @@ app.post('/api/v1/compliance/ewaybill/generate', (req: Request, res: Response) =
 app.post('/api/v1/compliance/payroll/calculate', (req: Request, res: Response) => {
   const { basicSalary, dearnessAllowance, hra, specialAllowance, stateCode, gender, monthNumber, optHigherPF } = req.body;
   if (basicSalary === undefined || !stateCode) {
-    return res.status(400).json({ error: 'basicSalary and stateCode are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'basicSalary and stateCode are required' });
   }
 
   const breakdown = IndianPayrollEngine.calculate({
@@ -487,7 +488,7 @@ app.post('/api/v1/ledger/post', (req: Request, res: Response) => {
   const { tenantId, entryNumber, postingDate, reference, narration, lines } = req.body;
 
   if (!entryNumber || !lines || !Array.isArray(lines)) {
-    return res.status(400).json({ error: 'entryNumber and lines array are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'entryNumber and lines array are required' });
   }
 
   const result = GeneralLedgerEngine.postJournalEntry({
@@ -500,14 +501,14 @@ app.post('/api/v1/ledger/post', (req: Request, res: Response) => {
   });
 
   if (!result.success) {
-    return res.status(422).json({
+    return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
       error: 'DoubleEntryValidationError',
       reason: result.rejectionReason,
       result,
     });
   }
 
-  res.status(201).json({
+  res.status(HttpStatus.CREATED).json({
     message: 'Journal entry successfully posted to General Ledger',
     result,
   });
@@ -531,14 +532,14 @@ app.get('/api/v1/inventory/materials', (req: Request, res: Response) => {
 app.post('/api/v1/inventory/materials', (req: Request, res: Response) => {
   const material = req.body;
   if (!material.sku || !material.name || !material.materialType) {
-    return res.status(400).json({ error: 'sku, name, and materialType are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'sku, name, and materialType are required' });
   }
   inventoryEngine.registerMaterial({
     ...material,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-  res.status(201).json({ message: 'Material registered in Material Master', material });
+  res.status(HttpStatus.CREATED).json({ message: 'Material registered in Material Master', material });
 });
 
 app.get('/api/v1/inventory/stock', (req: Request, res: Response) => {
@@ -548,7 +549,7 @@ app.get('/api/v1/inventory/stock', (req: Request, res: Response) => {
 app.post('/api/v1/inventory/movements', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.movementType || !input.sku || !input.quantity) {
-    return res.status(400).json({ error: 'movementType, sku, and quantity are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'movementType, sku, and quantity are required' });
   }
 
   try {
@@ -565,10 +566,10 @@ app.post('/api/v1/inventory/movements', (req: Request, res: Response) => {
       costCenter: input.costCenter,
       performedBy: input.performedBy,
     });
-    res.status(201).json(result);
+    res.status(HttpStatus.CREATED).json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Inventory movement failed';
-    res.status(422).json({ error: 'InventoryMovementError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'InventoryMovementError', message: msg });
   }
 });
 
@@ -582,7 +583,7 @@ app.get('/api/v1/sales/customers', (req: Request, res: Response) => {
 app.post('/api/v1/sales/orders', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.orderNumber || !input.customerId || !input.items || !Array.isArray(input.items)) {
-    return res.status(400).json({ error: 'orderNumber, customerId, and items are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'orderNumber, customerId, and items are required' });
   }
 
   try {
@@ -597,35 +598,35 @@ app.post('/api/v1/sales/orders', (req: Request, res: Response) => {
     });
 
     if (order.status === 'REJECTED') {
-      return res.status(422).json({ error: 'SalesOrderRejected', reason: order.rejectionReason, order });
+      return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'SalesOrderRejected', reason: order.rejectionReason, order });
     }
 
-    res.status(201).json(order);
+    res.status(HttpStatus.CREATED).json(order);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Order creation failed';
-    res.status(400).json({ error: 'SalesOrderError', message: msg });
+    res.status(HttpStatus.BAD_REQUEST).json({ error: 'SalesOrderError', message: msg });
   }
 });
 
 app.post('/api/v1/sales/deliveries', (req: Request, res: Response) => {
   const { orderNumber } = req.body;
   if (!orderNumber) {
-    return res.status(400).json({ error: 'orderNumber is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'orderNumber is required' });
   }
 
   try {
     const pgi = orderToCashEngine.postGoodsIssue(orderNumber);
-    res.status(201).json(pgi);
+    res.status(HttpStatus.CREATED).json(pgi);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Post goods issue failed';
-    res.status(422).json({ error: 'PostGoodsIssueError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'PostGoodsIssueError', message: msg });
   }
 });
 
 app.post('/api/v1/sales/invoices', (req: Request, res: Response) => {
   const { tenantId, orderNumber } = req.body;
   if (!orderNumber) {
-    return res.status(400).json({ error: 'orderNumber is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'orderNumber is required' });
   }
 
   try {
@@ -633,10 +634,10 @@ app.post('/api/v1/sales/invoices', (req: Request, res: Response) => {
       tenantId || '00000000-0000-0000-0000-000000000001',
       orderNumber
     );
-    res.status(201).json(invoice);
+    res.status(HttpStatus.CREATED).json(invoice);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Billing invoice generation failed';
-    res.status(422).json({ error: 'BillingInvoiceError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'BillingInvoiceError', message: msg });
   }
 });
 
@@ -650,7 +651,7 @@ app.get('/api/v1/procurement/vendors', (req: Request, res: Response) => {
 app.post('/api/v1/procurement/orders', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.poNumber || !input.vendorId || !input.items || !Array.isArray(input.items)) {
-    return res.status(400).json({ error: 'poNumber, vendorId, and items are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'poNumber, vendorId, and items are required' });
   }
 
   try {
@@ -662,32 +663,32 @@ app.post('/api/v1/procurement/orders', (req: Request, res: Response) => {
       items: input.items,
       deliveryPlant: input.deliveryPlant || 'PLANT-1000',
     });
-    res.status(201).json(po);
+    res.status(HttpStatus.CREATED).json(po);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'PO creation failed';
-    res.status(400).json({ error: 'PurchaseOrderError', message: msg });
+    res.status(HttpStatus.BAD_REQUEST).json({ error: 'PurchaseOrderError', message: msg });
   }
 });
 
 app.post('/api/v1/procurement/grn', (req: Request, res: Response) => {
   const { poNumber, grnNumber } = req.body;
   if (!poNumber || !grnNumber) {
-    return res.status(400).json({ error: 'poNumber and grnNumber are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'poNumber and grnNumber are required' });
   }
 
   try {
     const grn = procureToPayEngine.processGoodsReceipt(poNumber, grnNumber);
-    res.status(201).json(grn);
+    res.status(HttpStatus.CREATED).json(grn);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Goods receipt failed';
-    res.status(422).json({ error: 'GoodsReceiptError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'GoodsReceiptError', message: msg });
   }
 });
 
 app.post('/api/v1/procurement/verify-invoice', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.poNumber || !input.grnNumber || !input.vendorInvoiceNumber || !input.invoicedItems) {
-    return res.status(400).json({ error: 'poNumber, grnNumber, vendorInvoiceNumber, and invoicedItems are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'poNumber, grnNumber, vendorInvoiceNumber, and invoicedItems are required' });
   }
 
   try {
@@ -700,10 +701,10 @@ app.post('/api/v1/procurement/verify-invoice', (req: Request, res: Response) => 
       invoicedItems: input.invoicedItems,
       applyTdsSection: input.applyTdsSection,
     });
-    res.status(201).json(verification);
+    res.status(HttpStatus.CREATED).json(verification);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Vendor invoice verification failed';
-    res.status(422).json({ error: 'InvoiceVerificationError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'InvoiceVerificationError', message: msg });
   }
 });
 
@@ -725,7 +726,7 @@ app.get('/api/v1/manufacturing/orders', (req: Request, res: Response) => {
 app.post('/api/v1/manufacturing/orders', (req: Request, res: Response) => {
   const input = req.body;
   if (!input.orderNumber || !input.targetSku || !input.targetQuantity) {
-    return res.status(400).json({ error: 'orderNumber, targetSku, and targetQuantity are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'orderNumber, targetSku, and targetQuantity are required' });
   }
 
   try {
@@ -738,17 +739,17 @@ app.post('/api/v1/manufacturing/orders', (req: Request, res: Response) => {
       startDate: input.startDate || new Date().toISOString().split('T')[0],
       targetCompletionDate: input.targetCompletionDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
     });
-    res.status(201).json(order);
+    res.status(HttpStatus.CREATED).json(order);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Production planning failed';
-    res.status(400).json({ error: 'ProductionPlanningError', message: msg });
+    res.status(HttpStatus.BAD_REQUEST).json({ error: 'ProductionPlanningError', message: msg });
   }
 });
 
 app.post('/api/v1/manufacturing/confirm', (req: Request, res: Response) => {
   const { tenantId, orderNumber, quantityCompleted } = req.body;
   if (!orderNumber || !quantityCompleted) {
-    return res.status(400).json({ error: 'orderNumber and quantityCompleted are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'orderNumber and quantityCompleted are required' });
   }
 
   try {
@@ -757,10 +758,10 @@ app.post('/api/v1/manufacturing/confirm', (req: Request, res: Response) => {
       orderNumber,
       Number(quantityCompleted)
     );
-    res.status(201).json(confirmation);
+    res.status(HttpStatus.CREATED).json(confirmation);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Production confirmation failed';
-    res.status(422).json({ error: 'ProductionConfirmationError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ProductionConfirmationError', message: msg });
   }
 });
 
@@ -774,14 +775,14 @@ app.get('/api/v1/assets', (req: Request, res: Response) => {
 app.post('/api/v1/assets', (req: Request, res: Response) => {
   const asset = req.body;
   if (!asset.assetId || !asset.name || !asset.assetClass || !asset.originalCost) {
-    return res.status(400).json({ error: 'assetId, name, assetClass, and originalCost are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'assetId, name, assetClass, and originalCost are required' });
   }
 
   fixedAssetEngine.registerAsset({
     ...asset,
     status: asset.status || 'ACTIVE',
   });
-  res.status(201).json({ message: 'Asset registered in Asset Master', asset });
+  res.status(HttpStatus.CREATED).json({ message: 'Asset registered in Asset Master', asset });
 });
 
 app.post('/api/v1/assets/depreciation-run', (req: Request, res: Response) => {
@@ -793,10 +794,10 @@ app.post('/api/v1/assets/depreciation-run', (req: Request, res: Response) => {
       tenantId || '00000000-0000-0000-0000-000000000001',
       targetPeriod
     );
-    res.status(201).json(result);
+    res.status(HttpStatus.CREATED).json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Depreciation run failed';
-    res.status(422).json({ error: 'DepreciationRunError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'DepreciationRunError', message: msg });
   }
 });
 
@@ -810,14 +811,14 @@ app.get('/api/v1/quality/lots', (req: Request, res: Response) => {
 app.get('/api/v1/quality/lots/:lotId', (req: Request, res: Response) => {
   const lotId = String(req.params.lotId);
   const lot = qualityEngine.getInspectionLot(lotId);
-  if (!lot) return res.status(404).json({ error: 'InspectionLotNotFound' });
+  if (!lot) return res.status(HttpStatus.NOT_FOUND).json({ error: 'InspectionLotNotFound' });
   res.json(lot);
 });
 
 app.post('/api/v1/quality/lots', (req: Request, res: Response) => {
   const { origin, materialSku, batchNumber, quantity, baseUom, plantId, referenceDocument } = req.body;
   if (!materialSku || !batchNumber || !quantity) {
-    return res.status(400).json({ error: 'materialSku, batchNumber, and quantity are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'materialSku, batchNumber, and quantity are required' });
   }
 
   try {
@@ -830,10 +831,10 @@ app.post('/api/v1/quality/lots', (req: Request, res: Response) => {
       plantId: plantId || 'PLANT-1000',
       referenceDocument: referenceDocument || `REF-${Date.now().toString(36).toUpperCase()}`,
     });
-    res.status(201).json(lot);
+    res.status(HttpStatus.CREATED).json(lot);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to create inspection lot';
-    res.status(400).json({ error: 'InspectionLotCreationError', message: msg });
+    res.status(HttpStatus.BAD_REQUEST).json({ error: 'InspectionLotCreationError', message: msg });
   }
 });
 
@@ -841,7 +842,7 @@ app.post('/api/v1/quality/lots/:lotId/results', (req: Request, res: Response) =>
   const lotId = String(req.params.lotId);
   const { results } = req.body;
   if (!results || !Array.isArray(results)) {
-    return res.status(400).json({ error: 'results array is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'results array is required' });
   }
 
   try {
@@ -849,7 +850,7 @@ app.post('/api/v1/quality/lots/:lotId/results', (req: Request, res: Response) =>
     res.json(updated);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to record inspection results';
-    res.status(422).json({ error: 'ResultsRecordingError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ResultsRecordingError', message: msg });
   }
 });
 
@@ -857,7 +858,7 @@ app.post('/api/v1/quality/lots/:lotId/usage-decision', (req: Request, res: Respo
   const lotId = String(req.params.lotId);
   const { decision, decidedBy, notes } = req.body;
   if (!decision || !decidedBy) {
-    return res.status(400).json({ error: 'decision and decidedBy are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'decision and decidedBy are required' });
   }
 
   try {
@@ -870,7 +871,7 @@ app.post('/api/v1/quality/lots/:lotId/usage-decision', (req: Request, res: Respo
     res.json(udResult);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Usage decision recording failed';
-    res.status(422).json({ error: 'UsageDecisionError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'UsageDecisionError', message: msg });
   }
 });
 
@@ -878,7 +879,7 @@ app.post('/api/v1/quality/lots/:lotId/certificate-of-analysis', (req: Request, r
   const lotId = String(req.params.lotId);
   const { qaManager } = req.body;
   if (!qaManager) {
-    return res.status(400).json({ error: 'qaManager is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'qaManager is required' });
   }
 
   try {
@@ -886,7 +887,7 @@ app.post('/api/v1/quality/lots/:lotId/certificate-of-analysis', (req: Request, r
     res.json(coa);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'CoA generation failed';
-    res.status(422).json({ error: 'CertificateGenerationError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CertificateGenerationError', message: msg });
   }
 });
 
@@ -901,7 +902,7 @@ app.get('/api/v1/quality/batches/:batchNumber/trace', (req: Request, res: Respon
     res.json(trace);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Batch trace failed';
-    res.status(404).json({ error: 'BatchTraceError', message: msg });
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'BatchTraceError', message: msg });
   }
 });
 
@@ -923,7 +924,7 @@ app.get('/api/v1/controlling/allocation-rules', (req: Request, res: Response) =>
 app.post('/api/v1/controlling/assessment-cycles/run', (req: Request, res: Response) => {
   const { ruleId, period, amountToAllocate, tenantId } = req.body;
   if (!ruleId || !period) {
-    return res.status(400).json({ error: 'ruleId and period are required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'ruleId and period are required' });
   }
 
   try {
@@ -933,10 +934,10 @@ app.post('/api/v1/controlling/assessment-cycles/run', (req: Request, res: Respon
       amountToAllocate: amountToAllocate ? Number(amountToAllocate) : undefined,
       tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
     });
-    res.status(201).json(result);
+    res.status(HttpStatus.CREATED).json(result);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Cost allocation cycle failed';
-    res.status(422).json({ error: 'CostAllocationError', message: msg });
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CostAllocationError', message: msg });
   }
 });
 
@@ -948,7 +949,7 @@ app.get('/api/v1/controlling/cost-centers/:code/variance', (req: Request, res: R
     res.json(variance);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Variance analysis failed';
-    res.status(404).json({ error: 'VarianceAnalysisError', message: msg });
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'VarianceAnalysisError', message: msg });
   }
 });
 // =================================================================
@@ -959,7 +960,7 @@ app.get('/api/v1/nocode/schemas', (req: Request, res: Response) => {
 app.post('/api/v1/nocode/schemas', (req: Request, res: Response) => {
   const schema: EntitySchemaDefinition = req.body;
   if (!schema.name || !schema.slug || !schema.fields) {
-    return res.status(400).json({ error: 'Invalid schema definition format' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid schema definition format' });
   }
 
   inMemoryEntities.set(schema.slug, schema);
@@ -967,7 +968,7 @@ app.post('/api/v1/nocode/schemas', (req: Request, res: Response) => {
     inMemoryRecords.set(schema.slug, []);
   }
 
-  res.status(201).json({ message: 'Dynamic entity created successfully', schema });
+  res.status(HttpStatus.CREATED).json({ message: 'Dynamic entity created successfully', schema });
 });
 
 app.get('/api/v1/nocode/records/:slug', (req: Request, res: Response) => {
@@ -981,14 +982,14 @@ app.post('/api/v1/nocode/records/:slug', async (req: Request, res: Response) => 
   const schema = inMemoryEntities.get(slug);
 
   if (!schema) {
-    return res.status(404).json({ error: `Dynamic entity '${slug}' not found` });
+    return res.status(HttpStatus.NOT_FOUND).json({ error: `Dynamic entity '${slug}' not found` });
   }
 
   const recordData = req.body;
   const validation = EntityValidator.validateRecord(schema, recordData);
 
   if (!validation.valid) {
-    return res.status(422).json({ error: 'Record failed schema validation', issues: validation.issues });
+    return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'Record failed schema validation', issues: validation.issues });
   }
 
   const newRecord = {
@@ -1001,7 +1002,7 @@ app.post('/api/v1/nocode/records/:slug', async (req: Request, res: Response) => 
   records.push(newRecord);
   inMemoryRecords.set(slug, records);
 
-  res.status(201).json({ message: 'Record saved successfully', record: newRecord });
+  res.status(HttpStatus.CREATED).json({ message: 'Record saved successfully', record: newRecord });
 });
 
 // =================================================================
@@ -1051,7 +1052,7 @@ app.get('/api/v1/analytics/balance-sheet', (req: Request, res: Response) => {
 app.post('/api/v1/ai/query', async (req: Request, res: Response) => {
   const { question } = req.body;
   if (!question) {
-    return res.status(400).json({ error: 'Prompt/question is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Prompt/question is required' });
   }
 
   try {
@@ -1069,21 +1070,21 @@ app.post('/api/v1/ai/query', async (req: Request, res: Response) => {
 
     res.json(responsePayload);
   } catch (err: any) {
-    res.status(500).json({ error: 'AI interpretation failed', message: err.message });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'AI interpretation failed', message: err.message });
   }
 });
 
 app.post('/api/v1/ai/extract-invoice', async (req: Request, res: Response) => {
   const { documentText } = req.body;
   if (!documentText) {
-    return res.status(400).json({ error: 'Raw document text or OCR is required' });
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Raw document text or OCR is required' });
   }
 
   try {
     const extracted = await invoiceExtractorAgent.extract(documentText);
     res.json(extracted);
   } catch (err: any) {
-    res.status(500).json({ error: 'IDP Invoice extraction failed', message: err.message });
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'IDP Invoice extraction failed', message: err.message });
   }
 });
 

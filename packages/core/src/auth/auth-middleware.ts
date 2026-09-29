@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthPluginRegistry } from './auth-plugin-registry.js';
 import { AccessControlEngine, UserContext } from '../security/rbac.js';
+import { HttpStatus } from '../common/http-status.js';
 
 // Extend Express Request interface to include user and tenant context
 declare global {
@@ -16,7 +17,7 @@ export function createAuthMiddleware(registry: AuthPluginRegistry) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         error: 'Unauthorized',
         message: 'Missing or malformed Authorization header. Expected Bearer <token>',
       });
@@ -24,7 +25,7 @@ export function createAuthMiddleware(registry: AuthPluginRegistry) {
 
     const token = authHeader.substring(7).trim();
     if (!token) {
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         error: 'Unauthorized',
         message: 'Bearer token is empty',
       });
@@ -44,7 +45,7 @@ export function createAuthMiddleware(registry: AuthPluginRegistry) {
       next();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid token';
-      return res.status(401).json({
+      return res.status(HttpStatus.UNAUTHORIZED).json({
         error: 'Unauthorized',
         message: msg,
       });
@@ -55,12 +56,12 @@ export function createAuthMiddleware(registry: AuthPluginRegistry) {
 export function requirePermission(permissionCode: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized', message: 'Authentication required' });
+      return res.status(HttpStatus.UNAUTHORIZED).json({ error: 'Unauthorized', message: 'Authentication required' });
     }
 
     const hasAccess = AccessControlEngine.can(req.user, permissionCode, req.body);
     if (!hasAccess) {
-      return res.status(403).json({
+      return res.status(HttpStatus.FORBIDDEN).json({
         error: 'Forbidden',
         message: `User lacks required permission: ${permissionCode}`,
       });
