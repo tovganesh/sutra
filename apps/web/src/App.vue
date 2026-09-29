@@ -110,12 +110,14 @@ import {
   Sun,
   Moon,
   Lock,
+  Truck,
 } from 'lucide-vue-next';
 
 // Views
 import ExecutiveDashboard from './views/ExecutiveDashboard.vue';
 import EnterpriseAuth from './views/EnterpriseAuth.vue';
 import ComplianceIndia from './views/ComplianceIndia.vue';
+import SupplyChainERP from './views/SupplyChainERP.vue';
 import NoCodeStudio from './views/NoCodeStudio.vue';
 import FinancialAnalytics from './views/FinancialAnalytics.vue';
 import GenAICopilot from './views/GenAICopilot.vue';
@@ -128,6 +130,7 @@ const isDark = ref(true);
 const navItems = [
   { id: 'dashboard', label: 'Executive Cockpit', icon: LayoutDashboard },
   { id: 'auth', label: 'Auth & Identity', icon: Lock, badge: 'JWT/SSO' },
+  { id: 'supplychain', label: 'Supply Chain & ERP', icon: Truck, badge: 'MM/SD' },
   { id: 'compliance', label: 'India Compliance', icon: ShieldCheck, badge: 'GST' },
   { id: 'nocode', label: 'No-Code Studio', icon: Boxes },
   { id: 'analytics', label: 'Financial OLAP', icon: LineChart },
@@ -138,6 +141,7 @@ const currentViewTitle = computed(() => {
   const map: Record<string, string> = {
     dashboard: 'Executive Cockpit',
     auth: 'Pluggable Enterprise Auth & JWT Console',
+    supplychain: 'Supply Chain & Enterprise Operations (MM • SD • P2P)',
     compliance: 'India Statutory & GST Compliance',
     nocode: 'No-Code Entity & Workflow Studio',
     analytics: 'Financial Statements (P&L & Balance Sheet)',
@@ -151,6 +155,7 @@ const currentViewComponent = computed(() => {
   const compMap: Record<string, any> = {
     dashboard: ExecutiveDashboard,
     auth: EnterpriseAuth,
+    supplychain: SupplyChainERP,
     compliance: ComplianceIndia,
     nocode: NoCodeStudio,
     analytics: FinancialAnalytics,

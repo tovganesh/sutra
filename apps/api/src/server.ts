@@ -9,6 +9,10 @@ import {
   requirePermission,
   GeneralLedgerEngine,
   ValkeyQueueService,
+  InventoryEngine,
+  OrderToCashEngine,
+  ProcureToPayEngine,
+  SubledgerEngine,
 } from '@sutra/core';
 import {
   GSTINValidator,
@@ -146,6 +150,12 @@ const aiProvider = LLMFactory.createProvider({
 });
 const textToERPAgent = new TextToERPAgent(aiProvider);
 const invoiceExtractorAgent = new InvoiceExtractorAgent(aiProvider);
+
+// Enterprise Engines (SAP Core Equivalents)
+const inventoryEngine = new InventoryEngine();
+const orderToCashEngine = new OrderToCashEngine(inventoryEngine);
+const procureToPayEngine = new ProcureToPayEngine(inventoryEngine);
+const subledgerEngine = new SubledgerEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -495,6 +505,199 @@ app.post('/api/v1/ledger/post', (req: Request, res: Response) => {
   });
 });
 
+// =================================================================
+// 2.5 Subledger Engine & Working Capital (SAP FI-AR / FI-AP)
+// =================================================================
+app.get('/api/v1/ledger/aging', (req: Request, res: Response) => {
+  const report = subledgerEngine.generateAgingReport();
+  res.json(report);
+});
+
+// =================================================================
+// 2.6 Materials Management & Inventory Engine (SAP MM)
+// =================================================================
+app.get('/api/v1/inventory/materials', (req: Request, res: Response) => {
+  res.json(inventoryEngine.getAllMaterials());
+});
+
+app.post('/api/v1/inventory/materials', (req: Request, res: Response) => {
+  const material = req.body;
+  if (!material.sku || !material.name || !material.materialType) {
+    return res.status(400).json({ error: 'sku, name, and materialType are required' });
+  }
+  inventoryEngine.registerMaterial({
+    ...material,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  res.status(201).json({ message: 'Material registered in Material Master', material });
+});
+
+app.get('/api/v1/inventory/stock', (req: Request, res: Response) => {
+  res.json(inventoryEngine.getStockLocations());
+});
+
+app.post('/api/v1/inventory/movements', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.movementType || !input.sku || !input.quantity) {
+    return res.status(400).json({ error: 'movementType, sku, and quantity are required' });
+  }
+
+  try {
+    const result = inventoryEngine.executeStockMovement({
+      movementType: input.movementType,
+      sku: input.sku,
+      quantity: Number(input.quantity),
+      unitCost: input.unitCost !== undefined ? Number(input.unitCost) : undefined,
+      fromPlant: input.fromPlant,
+      fromStorageLocation: input.fromStorageLocation,
+      toPlant: input.toPlant,
+      toStorageLocation: input.toStorageLocation,
+      referenceDocument: input.referenceDocument,
+      costCenter: input.costCenter,
+      performedBy: input.performedBy,
+    });
+    res.status(201).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Inventory movement failed';
+    res.status(422).json({ error: 'InventoryMovementError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.7 Sales & Distribution / Order-to-Cash (SAP SD / O2C)
+// =================================================================
+app.get('/api/v1/sales/customers', (req: Request, res: Response) => {
+  res.json(orderToCashEngine.getAllCustomers());
+});
+
+app.post('/api/v1/sales/orders', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.orderNumber || !input.customerId || !input.items || !Array.isArray(input.items)) {
+    return res.status(400).json({ error: 'orderNumber, customerId, and items are required' });
+  }
+
+  try {
+    const order = orderToCashEngine.createSalesOrder({
+      tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+      orderNumber: input.orderNumber,
+      customerId: input.customerId,
+      supplierGstin: input.supplierGstin || '27AABCS1429B1ZB',
+      supplierStateCode: input.supplierStateCode || '27',
+      items: input.items,
+      deliveryAddress: input.deliveryAddress || 'Default Warehouse Delivery Address',
+    });
+
+    if (order.status === 'REJECTED') {
+      return res.status(422).json({ error: 'SalesOrderRejected', reason: order.rejectionReason, order });
+    }
+
+    res.status(201).json(order);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Order creation failed';
+    res.status(400).json({ error: 'SalesOrderError', message: msg });
+  }
+});
+
+app.post('/api/v1/sales/deliveries', (req: Request, res: Response) => {
+  const { orderNumber } = req.body;
+  if (!orderNumber) {
+    return res.status(400).json({ error: 'orderNumber is required' });
+  }
+
+  try {
+    const pgi = orderToCashEngine.postGoodsIssue(orderNumber);
+    res.status(201).json(pgi);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Post goods issue failed';
+    res.status(422).json({ error: 'PostGoodsIssueError', message: msg });
+  }
+});
+
+app.post('/api/v1/sales/invoices', (req: Request, res: Response) => {
+  const { tenantId, orderNumber } = req.body;
+  if (!orderNumber) {
+    return res.status(400).json({ error: 'orderNumber is required' });
+  }
+
+  try {
+    const invoice = orderToCashEngine.generateBillingInvoice(
+      tenantId || '00000000-0000-0000-0000-000000000001',
+      orderNumber
+    );
+    res.status(201).json(invoice);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Billing invoice generation failed';
+    res.status(422).json({ error: 'BillingInvoiceError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.8 Procure-to-Pay Engine (SAP MM / P2P)
+// =================================================================
+app.get('/api/v1/procurement/vendors', (req: Request, res: Response) => {
+  res.json(procureToPayEngine.getAllVendors());
+});
+
+app.post('/api/v1/procurement/orders', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.poNumber || !input.vendorId || !input.items || !Array.isArray(input.items)) {
+    return res.status(400).json({ error: 'poNumber, vendorId, and items are required' });
+  }
+
+  try {
+    const po = procureToPayEngine.createPurchaseOrder({
+      tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+      poNumber: input.poNumber,
+      vendorId: input.vendorId,
+      supplierStateCode: input.supplierStateCode || '27',
+      items: input.items,
+      deliveryPlant: input.deliveryPlant || 'PLANT-1000',
+    });
+    res.status(201).json(po);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'PO creation failed';
+    res.status(400).json({ error: 'PurchaseOrderError', message: msg });
+  }
+});
+
+app.post('/api/v1/procurement/grn', (req: Request, res: Response) => {
+  const { poNumber, grnNumber } = req.body;
+  if (!poNumber || !grnNumber) {
+    return res.status(400).json({ error: 'poNumber and grnNumber are required' });
+  }
+
+  try {
+    const grn = procureToPayEngine.processGoodsReceipt(poNumber, grnNumber);
+    res.status(201).json(grn);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Goods receipt failed';
+    res.status(422).json({ error: 'GoodsReceiptError', message: msg });
+  }
+});
+
+app.post('/api/v1/procurement/verify-invoice', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.poNumber || !input.grnNumber || !input.vendorInvoiceNumber || !input.invoicedItems) {
+    return res.status(400).json({ error: 'poNumber, grnNumber, vendorInvoiceNumber, and invoicedItems are required' });
+  }
+
+  try {
+    const verification = procureToPayEngine.verifyVendorInvoice({
+      tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+      vendorInvoiceNumber: input.vendorInvoiceNumber,
+      poNumber: input.poNumber,
+      grnNumber: input.grnNumber,
+      invoiceDate: input.invoiceDate || new Date().toISOString().split('T')[0],
+      invoicedItems: input.invoicedItems,
+      applyTdsSection: input.applyTdsSection,
+    });
+    res.status(201).json(verification);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Vendor invoice verification failed';
+    res.status(422).json({ error: 'InvoiceVerificationError', message: msg });
+  }
+});
 
 // =================================================================
 // 3. No-Code Dynamic Entity Modeler & Studio Records
