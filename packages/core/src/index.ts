@@ -22,3 +22,4 @@ export * from './quality/quality-types.js';
 export * from './quality/quality-engine.js';
 export * from './controlling/controlling-types.js';
 export * from './controlling/controlling-engine.js';
+export * from './common/http-status.js';
