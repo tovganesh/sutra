@@ -147,3 +147,21 @@ graph TD
 * **`HttpStatus` Centralization**: Exported from `@sutra/core` following RFC 7231, RFC 7538, and RFC 6585 (e.g. `HttpStatus.OK`, `HttpStatus.CREATED`, `HttpStatus.BAD_REQUEST`, `HttpStatus.UNAUTHORIZED`, `HttpStatus.FORBIDDEN`, `HttpStatus.NOT_FOUND`, `HttpStatus.UNPROCESSABLE_ENTITY`, `HttpStatus.INTERNAL_SERVER_ERROR`).
 * **Guaranteed Uniformity**: Single-source-of-truth status code dictionary across all monorepo micro-packages, plugins, and REST endpoints.
 
+#### 3.14 Human Capital Management & Core HR (HCM)
+* **Employee Master Data**: Comprehensive employee lifecycle records, organizational units, departmental cost center assignments, statutory identity identifiers (PAN, Aadhaar, UAN, ESIC IP), and structured CTC breakdown (Basic, HRA, Special Allowance, Conveyance, Medical).
+* **Attendance & Loss of Pay (LOP)**: Monthly attendance period capture with calendar working days, present days, paid leaves, and automatic LOP pro-rata salary computation.
+* **Statutory Indian Deductions Engine**:
+  * **Employee Provident Fund (EPF)**: 12% contribution under EPFO rules capped at statutory wage ceiling (₹15,000 / ₹1,800 monthly limit) or uncapped basic.
+  * **Employees' State Insurance (ESIC)**: 0.75% deduction for employees with monthly gross salary $\le$ ₹21,000.
+  * **Professional Tax (PT)**: State-specific slabs (e.g., ₹200/month Maharashtra/Karnataka).
+  * **Income Tax TDS (Section 192)**: Projected annual tax liabilities withheld on a monthly pro-rata basis.
+* **Digital Payslip Generation**: Tamper-evident itemized salary vouchers detailing earned gross, statutory withholdings, net take-home salary, and masked bank disbursement account.
+* **Automated General Ledger Payroll Voucher**: Multi-line balanced accounting voucher posting gross salary to Salaries & Wages Expense (`510000 Dr`) and credit lines to EPF Payable (`214100 Cr`), ESIC Payable (`214200 Cr`), PT Payable (`214300 Cr`), TDS Payable (`214400 Cr`), and Payroll Clearing / Net Salaries Payable (`214000 Cr`).
+
+#### 3.15 Project Systems & Capital Project Costing (PS)
+* **Project Master & CapEx/OpEx Classification**: Capital expenditure project creation, budget appropriation, planned start/completion scheduling, and Commercial Operation Date (COD) governance.
+* **Work Breakdown Structure (WBS)**: Hierarchical element tree (`WBS-01-CIVIL`, `WBS-02-PRESS`, `WBS-03-AUTOMATION`) mapping budgets to specific engineering cost centers.
+* **Commitment Accounting & Cost Tracking**: Real-time integration with Procure-to-Pay (P2P), locking committed budget against approved Purchase Orders (`budgetCommitted`) and actual expenditure upon Goods Receipt / Service Entry (`actualCostIncurred`).
+* **Milestone Progress & Percentage of Completion (PoC)**: Weighted milestone tracking computing overall physical and financial project completion percentages.
+* **Capital Work-in-Progress (CWIP) Settlement & Capitalization**: Seamless transfer of accumulated construction and engineering spend from CWIP asset clearing accounts (`140800 Cr`) into the active Fixed Asset Register (FI-AA, `140100 Dr`) upon project completion and commissioning.
+

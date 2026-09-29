@@ -701,3 +701,126 @@ CREATE TABLE IF NOT EXISTS trm_gl_clearing_items (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_trm_clr UNIQUE (tenant_id, account_id, entry_number)
 );
+
+-- =================================================================
+-- 19. Human Capital Management & Core HR (HCM)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS hcm_employees (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    employee_id VARCHAR(100) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    designation VARCHAR(100) NOT NULL,
+    cost_center VARCHAR(100) NOT NULL,
+    employment_type VARCHAR(50) NOT NULL DEFAULT 'FULL_TIME', -- FULL_TIME, PART_TIME, CONTRACT, INTERN
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, ON_LEAVE, PROBATION, TERMINATED
+    date_of_joining DATE NOT NULL,
+    pan_number VARCHAR(20) NOT NULL,
+    aadhaar_token VARCHAR(100) NOT NULL,
+    uan_number VARCHAR(50),
+    esic_number VARCHAR(50),
+    bank_account_number VARCHAR(50) NOT NULL,
+    bank_ifsc VARCHAR(20) NOT NULL,
+    salary_structure JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_hcm_emp UNIQUE (tenant_id, employee_id)
+);
+
+CREATE TABLE IF NOT EXISTS hcm_attendance_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    employee_id VARCHAR(100) NOT NULL,
+    month VARCHAR(10) NOT NULL, -- YYYY-MM
+    total_working_days INT NOT NULL DEFAULT 22,
+    present_days INT NOT NULL DEFAULT 22,
+    paid_leave_days INT NOT NULL DEFAULT 0,
+    loss_of_pay_days INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_hcm_att UNIQUE (tenant_id, employee_id, month)
+);
+
+CREATE TABLE IF NOT EXISTS hcm_payroll_runs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    run_id VARCHAR(100) NOT NULL,
+    month VARCHAR(10) NOT NULL,
+    processed_count INT NOT NULL DEFAULT 0,
+    total_gross_salaries NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_employee_deductions NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_employer_contributions NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_net_salaries NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    gl_posting JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_hcm_run UNIQUE (tenant_id, run_id)
+);
+
+CREATE TABLE IF NOT EXISTS hcm_payslips (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    payslip_id VARCHAR(100) NOT NULL,
+    employee_id VARCHAR(100) NOT NULL,
+    month VARCHAR(10) NOT NULL,
+    earned_gross_salary NUMERIC(18, 4) NOT NULL,
+    total_deductions NUMERIC(18, 4) NOT NULL,
+    net_payable_salary NUMERIC(18, 4) NOT NULL,
+    deductions_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+    payment_date DATE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_hcm_payslip UNIQUE (tenant_id, payslip_id)
+);
+
+-- =================================================================
+-- 20. Project Systems & Capital Project Costing (PS)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS ps_projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    project_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    project_type VARCHAR(50) NOT NULL DEFAULT 'CAPEX', -- CAPEX, OPEX, CUSTOMER_PROJECT, R_AND_D
+    status VARCHAR(50) NOT NULL DEFAULT 'IN_PROGRESS', -- CREATED, APPROVED, IN_PROGRESS, COMPLETED, CLOSED
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    project_manager VARCHAR(100) NOT NULL,
+    responsible_cost_center VARCHAR(100) NOT NULL,
+    total_approved_budget NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_committed_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_actual_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    cwip_account_id VARCHAR(50) NOT NULL DEFAULT '140800',
+    capitalized_asset_tag VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ps_project UNIQUE (tenant_id, project_id)
+);
+
+CREATE TABLE IF NOT EXISTS ps_wbs_elements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    wbs_code VARCHAR(100) NOT NULL,
+    project_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    parent_wbs_code VARCHAR(100),
+    cost_center VARCHAR(100) NOT NULL,
+    budget_allocated NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    budget_committed NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    actual_cost_incurred NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'RELEASED',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ps_wbs UNIQUE (tenant_id, project_id, wbs_code)
+);
+
+CREATE TABLE IF NOT EXISTS ps_project_milestones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    milestone_id VARCHAR(100) NOT NULL,
+    project_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    target_date DATE NOT NULL,
+    completed_date DATE,
+    percentage_weight NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    is_achieved BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ps_milestone UNIQUE (tenant_id, project_id, milestone_id)
+);

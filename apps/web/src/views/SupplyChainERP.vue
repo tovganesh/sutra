@@ -123,6 +123,24 @@
         <Landmark class="tab-icon" />
         <span>Treasury & Bank Recon (TRM)</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'hcm' }"
+        @click="activeTab = 'hcm'"
+      >
+        <Users class="tab-icon" />
+        <span>Human Capital & Payroll (HCM)</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'projects' }"
+        @click="activeTab = 'projects'"
+      >
+        <Briefcase class="tab-icon" />
+        <span>Project Systems & CWIP (PS)</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -1447,6 +1465,313 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 11: Human Capital Management & Core HR (SAP HCM) -->
+    <div v-if="activeTab === 'hcm'" class="tab-content">
+      <!-- Quick HCM KPI Banner -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Active Headcount</span>
+          <span class="kpi-value">{{ employeesList.length }} Employees</span>
+          <span class="kpi-trend positive">100% On-Roll</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Current Payroll Month</span>
+          <span class="kpi-value text-accent">September 2026</span>
+          <span class="kpi-trend info">Cycle: 22 Working Days</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Monthly Gross Payroll</span>
+          <span class="kpi-value">₹{{ (totalMonthlyGross).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend positive">Cost Centers Assigned</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Statutory Compliance</span>
+          <span class="kpi-value text-green">100% Compliant</span>
+          <span class="kpi-trend positive">EPF • ESIC • PT • TDS 192</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- Employee Master Directory -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Employee Master Directory (SAP HCM)</h3>
+              <span class="panel-sub">Statutory Records, Cost Center Mapping & CTC Structures</span>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Emp ID</th>
+                <th>Name / Designation</th>
+                <th>Department</th>
+                <th>Cost Center</th>
+                <th>Monthly CTC</th>
+                <th>Attendance / LOP</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="emp in employeesList" :key="emp.employeeId">
+                <td class="font-mono">{{ emp.employeeId }}</td>
+                <td>
+                  <div class="sku-cell">
+                    <strong>{{ emp.fullName }}</strong>
+                    <span class="sku-sub font-mono">{{ emp.designation }}</span>
+                  </div>
+                </td>
+                <td><span class="badge blue">{{ emp.department }}</span></td>
+                <td><span class="font-mono text-cyan">{{ emp.costCenter }}</span></td>
+                <td class="font-mono text-green">₹{{ emp.salaryStructure.grossMonthly.toLocaleString('en-IN') }}</td>
+                <td>
+                  <span class="status-pill" :class="emp.lossOfPayDays > 0 ? 'warning' : 'active'">
+                    {{ emp.presentDays }}/{{ emp.totalWorkingDays }} Days {{ emp.lossOfPayDays > 0 ? `(${emp.lossOfPayDays} LOP)` : '' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="action-btn-sm" @click="selectEmployeeForPayslip(emp)">
+                    <span>View Payslip</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Monthly Payroll Execution & Digital Payslip -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Monthly Payroll Execution & GL Voucher</h3>
+              <span class="panel-sub">Indian Statutory Deductions & Multi-Line Posting</span>
+            </div>
+            <button class="action-btn-sm primary" @click="runPayrollExecution">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>Execute September Payroll</span>
+            </button>
+          </div>
+
+          <!-- Digital Payslip Preview -->
+          <div v-if="selectedPayslip" class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 16px;">
+            <div class="calc-row">
+              <strong>Payslip: {{ selectedPayslip.employeeName }} ({{ selectedPayslip.employeeId }})</strong>
+              <span class="badge green">PAID</span>
+            </div>
+            <div class="calc-row">
+              <span class="text-dim">Dept / Designation: {{ selectedPayslip.department }} • {{ selectedPayslip.designation }}</span>
+              <span class="font-mono text-dim">Bank: {{ selectedPayslip.bankAccountMasked }}</span>
+            </div>
+
+            <div style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px;">
+              <span class="gl-title text-green">Earnings (Pro-Rata for Present Days):</span>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Basic Salary:</span>
+                <span class="font-mono text-green">₹{{ selectedPayslip.earnedBasic.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>House Rent Allowance (HRA):</span>
+                <span class="font-mono text-green">₹{{ selectedPayslip.earnedHra.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Special Allowance:</span>
+                <span class="font-mono text-green">₹{{ selectedPayslip.earnedSpecialAllowance.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px; font-weight: bold;">
+                <span>Earned Gross:</span>
+                <span class="font-mono text-green">₹{{ selectedPayslip.earnedGrossSalary.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px;">
+              <span class="gl-title text-danger">Statutory Deductions:</span>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Employee EPF (12% capped at ₹1,800):</span>
+                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.epfEmployee.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Employee ESIC (0.75%):</span>
+                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.esiEmployee.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Professional Tax (PT):</span>
+                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.professionalTax.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row" style="padding-left: 10px;">
+                <span>Income Tax TDS (Sec 192):</span>
+                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.incomeTaxTds192.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div class="calc-row total" style="margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 8px;">
+              <strong>Net Take-Home Disbursed:</strong>
+              <strong class="font-mono text-accent">₹{{ selectedPayslip.netPayableSalary.toLocaleString('en-IN') }}</strong>
+            </div>
+          </div>
+
+          <!-- Multi-line GL Voucher -->
+          <div v-if="payrollGlLines.length > 0" class="gl-lines-box">
+            <span class="gl-title">Payroll General Ledger Voucher (PAY-JRN-2026-09):</span>
+            <div v-for="line in payrollGlLines" :key="line.accountCode" class="gl-line">
+              <span class="font-mono text-dim">{{ line.accountCode }}</span>
+              <span class="gl-acc-name">{{ line.accountName }}</span>
+              <span class="font-mono" :class="line.debit > 0 ? 'text-green' : 'text-cyan'">
+                {{ line.debit > 0 ? `Dr ₹${line.debit.toLocaleString('en-IN')}` : `Cr ₹${line.credit.toLocaleString('en-IN')}` }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 12: Project Systems & Capital Project Costing (SAP PS) -->
+    <div v-if="activeTab === 'projects'" class="tab-content">
+      <!-- Quick Project KPI Banner -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Active Capital Project</span>
+          <span class="kpi-value text-accent">{{ currentProject.name }}</span>
+          <span class="kpi-trend positive">{{ currentProject.projectId }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Approved Project Budget</span>
+          <span class="kpi-value">₹{{ (currentProject.totalApprovedBudget).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend info">CapEx Facility</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Committed PO Funds</span>
+          <span class="kpi-value text-cyan">₹{{ (currentProject.totalCommittedCost).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend info">Vendor Purchase Orders</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Actual Incurred CWIP</span>
+          <span class="kpi-value text-green">₹{{ (currentProject.totalActualCost).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend positive">GL 140800 CWIP Asset</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- Work Breakdown Structure (WBS) & Milestones -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Work Breakdown Structure (WBS Elements - SAP PS)</h3>
+              <span class="panel-sub">Cost Elements, Committed POs & Actual Spend Tracking</span>
+            </div>
+            <button class="action-btn-sm" @click="achieveCommissioningMilestone">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>Complete Milestone M3 (Commissioning)</span>
+            </button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>WBS Code</th>
+                <th>Element Description</th>
+                <th>Cost Center</th>
+                <th>Allocated Budget</th>
+                <th>Committed (POs)</th>
+                <th>Actual Incurred</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="wbs in wbsElementsList" :key="wbs.wbsCode">
+                <td class="font-mono text-cyan">{{ wbs.wbsCode }}</td>
+                <td><strong>{{ wbs.name }}</strong></td>
+                <td class="font-mono">{{ wbs.costCenter }}</td>
+                <td class="font-mono">₹{{ wbs.budgetAllocated.toLocaleString('en-IN') }}</td>
+                <td class="font-mono text-cyan">₹{{ wbs.budgetCommitted.toLocaleString('en-IN') }}</td>
+                <td class="font-mono text-green">₹{{ wbs.actualCostIncurred.toLocaleString('en-IN') }}</td>
+                <td><span class="status-pill active">{{ wbs.status }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Milestones Progress & PoC -->
+          <div style="margin-top: 20px;">
+            <div class="panel-header" style="margin-bottom: 8px;">
+              <div>
+                <h4>Project Milestones & Percentage of Completion (PoC)</h4>
+                <span class="panel-sub">Weighted Progress: {{ projectPoc.pocPercentage }}% Achieved</span>
+              </div>
+            </div>
+
+            <div class="char-list">
+              <div v-for="m in projectMilestones" :key="m.milestoneId" class="char-item">
+                <div class="char-desc">
+                  <strong>{{ m.name }} (Weight: {{ m.percentageWeight }}%)</strong>
+                  <span class="text-dim">Target Date: {{ m.targetDate }}</span>
+                </div>
+                <span class="status-pill" :class="m.isAchieved ? 'active' : 'warning'">
+                  {{ m.isAchieved ? 'ACHIEVED' : 'PENDING' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capital Work-in-Progress (CWIP) Settlement -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>CWIP Settlement & Fixed Asset Capitalization</h3>
+              <span class="panel-sub">Commercial Operation Date (COD) Asset Transfer</span>
+            </div>
+            <button class="action-btn-sm primary" @click="settleProjectCwip">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>Settle CWIP & Capitalize Asset</span>
+            </button>
+          </div>
+
+          <div v-if="cwipSettlement" class="coa-card" style="margin-bottom: 16px;">
+            <div class="coa-header">
+              <CheckCircle2 class="coa-icon" style="color: #10b981;" />
+              <div>
+                <strong style="color: #10b981;">CWIP Capitalized Successfully!</strong>
+                <p class="subtitle font-mono">{{ cwipSettlement.settlementId }}</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px;">
+              <div class="calc-row">
+                <span>Capitalized Asset Tag:</span>
+                <span class="font-mono text-accent">{{ cwipSettlement.capitalizedAssetTag }}</span>
+              </div>
+              <div class="calc-row">
+                <span>Asset Description:</span>
+                <span>{{ cwipSettlement.assetName }}</span>
+              </div>
+              <div class="calc-row">
+                <span>Total Capitalized Cost:</span>
+                <span class="font-mono text-green">₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div class="gl-lines-box" style="margin-top: 14px;">
+              <span class="gl-title">Capitalization General Ledger Voucher:</span>
+              <div class="gl-line">
+                <span class="font-mono text-dim">140100</span>
+                <span class="gl-acc-name">Plant Machinery & Infrastructure (Fixed Asset)</span>
+                <span class="font-mono text-green">Dr ₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="gl-line">
+                <span class="font-mono text-dim">140800</span>
+                <span class="gl-acc-name">Capital Work-in-Progress (CWIP) Clearing</span>
+                <span class="font-mono text-cyan">Cr ₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <Briefcase class="empty-icon" />
+            <p>Click "Settle CWIP & Capitalize Asset" upon project commissioning to transfer accumulated construction costs into the Fixed Asset register (FI-AA).</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1469,9 +1794,11 @@ import {
   PieChart,
   Wrench,
   Landmark,
+  Users,
+  Briefcase,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -2258,6 +2585,232 @@ function runAutoReconciliation() {
   brsData.value.balanceAsPerCompanyBooks = 13080000;
   brsData.value.variance = 0.00;
   brsData.value.isBalanced = true;
+}
+
+// =================================================================
+// Human Capital Management & Payroll (SAP HCM) State
+// =================================================================
+const employeesList = ref([
+  {
+    employeeId: 'EMP-2026-001',
+    fullName: 'Aarav Sharma',
+    designation: 'Lead Powertrain Engineer',
+    department: 'R&D / EV Systems',
+    costCenter: 'CC-MFG-BODY',
+    salaryStructure: {
+      basicMonthly: 60000,
+      hraMonthly: 24000,
+      specialAllowanceMonthly: 36000,
+      grossMonthly: 120000,
+    },
+    totalWorkingDays: 30,
+    presentDays: 28,
+    lossOfPayDays: 2,
+  },
+  {
+    employeeId: 'EMP-2026-002',
+    fullName: 'Priya Venkatesh',
+    designation: 'Robotics Automation Specialist',
+    department: 'Manufacturing Operations',
+    costCenter: 'CC-MFG-ASSY',
+    salaryStructure: {
+      basicMonthly: 10000,
+      hraMonthly: 4000,
+      specialAllowanceMonthly: 4000,
+      grossMonthly: 18000,
+    },
+    totalWorkingDays: 30,
+    presentDays: 30,
+    lossOfPayDays: 0,
+  },
+  {
+    employeeId: 'EMP-2026-003',
+    fullName: 'Vikram Malhotra',
+    designation: 'VP Supply Chain & Operations',
+    department: 'Executive Operations',
+    costCenter: 'CC-LOGISTICS',
+    salaryStructure: {
+      basicMonthly: 125000,
+      hraMonthly: 50000,
+      specialAllowanceMonthly: 75000,
+      grossMonthly: 250000,
+    },
+    totalWorkingDays: 30,
+    presentDays: 30,
+    lossOfPayDays: 0,
+  },
+]);
+
+const selectedPayslip = ref<any>({
+  employeeId: 'EMP-2026-001',
+  employeeName: 'Aarav Sharma',
+  designation: 'Lead Powertrain Engineer',
+  department: 'R&D / EV Systems',
+  bankAccountMasked: 'HDFC •••• 9102',
+  earnedBasic: 56000,
+  earnedHra: 22400,
+  earnedSpecialAllowance: 33600,
+  earnedGrossSalary: 112000,
+  deductions: {
+    epfEmployee: 1800,
+    esiEmployee: 0,
+    professionalTax: 200,
+    incomeTaxTds192: 8400,
+    totalDeductions: 10400,
+  },
+  netPayableSalary: 101600,
+});
+
+const payrollGlLines = ref<any[]>([
+  { accountCode: '510000', accountName: 'Salaries & Wages Expense', debit: 374000, credit: 0 },
+  { accountCode: '214100', accountName: 'EPF Payable (Statutory Holding)', debit: 0, credit: 4800 },
+  { accountCode: '214200', accountName: 'ESIC Payable (Statutory Holding)', debit: 0, credit: 135 },
+  { accountCode: '214300', accountName: 'Professional Tax (PT) Payable', debit: 0, credit: 600 },
+  { accountCode: '214400', accountName: 'TDS Payable (Sec 192 Income Tax)', debit: 0, credit: 32400 },
+  { accountCode: '214000', accountName: 'Payroll Clearing / Net Salaries Payable', debit: 0, credit: 336065 },
+]);
+
+function selectEmployeeForPayslip(emp: any) {
+  const payableDays = emp.totalWorkingDays - emp.lossOfPayDays;
+  const ratio = payableDays / emp.totalWorkingDays;
+  const earnedBasic = Math.round(emp.salaryStructure.basicMonthly * ratio);
+  const earnedHra = Math.round(emp.salaryStructure.hraMonthly * ratio);
+  const earnedSpl = Math.round(emp.salaryStructure.specialAllowanceMonthly * ratio);
+  const earnedGross = earnedBasic + earnedHra + earnedSpl;
+
+  const epf = Math.min(1800, Math.round(basicRatio(emp.salaryStructure.basicMonthly, ratio) * 0.12));
+  const esi = earnedGross <= 21000 ? Math.round(earnedGross * 0.0075) : 0;
+  const pt = 200;
+  const tds = earnedGross > 50000 ? Math.round(earnedGross * 0.075) : 0;
+  const totalDeductions = epf + esi + pt + tds;
+
+  selectedPayslip.value = {
+    employeeId: emp.employeeId,
+    employeeName: emp.fullName,
+    designation: emp.designation,
+    department: emp.department,
+    bankAccountMasked: 'HDFC •••• ' + Math.floor(1000 + Math.random() * 9000),
+    earnedBasic,
+    earnedHra,
+    earnedSpecialAllowance: earnedSpl,
+    earnedGrossSalary: earnedGross,
+    deductions: {
+      epfEmployee: epf,
+      esiEmployee: esi,
+      professionalTax: pt,
+      incomeTaxTds192: tds,
+      totalDeductions,
+    },
+    netPayableSalary: earnedGross - totalDeductions,
+  };
+}
+
+function basicRatio(basic: number, ratio: number) {
+  return Math.round(basic * ratio);
+}
+
+function runPayrollExecution() {
+  let totalGross = 0;
+  let totalEpf = 0;
+  let totalEsi = 0;
+  let totalPt = 0;
+  let totalTds = 0;
+
+  for (const emp of employeesList.value) {
+    const payableDays = emp.totalWorkingDays - emp.lossOfPayDays;
+    const ratio = payableDays / emp.totalWorkingDays;
+    const basic = Math.round(emp.salaryStructure.basicMonthly * ratio);
+    const gross = Math.round(emp.salaryStructure.grossMonthly * ratio);
+    totalGross += gross;
+    totalEpf += Math.min(1800, Math.round(basic * 0.12));
+    if (gross <= 21000) totalEsi += Math.round(gross * 0.0075);
+    totalPt += 200;
+    if (gross > 50000) totalTds += Math.round(gross * 0.075);
+  }
+
+  const netPay = totalGross - (totalEpf + totalEsi + totalPt + totalTds);
+
+  payrollGlLines.value = [
+    { accountCode: '510000', accountName: 'Salaries & Wages Expense', debit: totalGross, credit: 0 },
+    { accountCode: '214100', accountName: 'EPF Payable (Statutory Holding)', debit: 0, credit: totalEpf },
+    { accountCode: '214200', accountName: 'ESIC Payable (Statutory Holding)', debit: 0, credit: totalEsi },
+    { accountCode: '214300', accountName: 'Professional Tax (PT) Payable', debit: 0, credit: totalPt },
+    { accountCode: '214400', accountName: 'TDS Payable (Sec 192 Income Tax)', debit: 0, credit: totalTds },
+    { accountCode: '214000', accountName: 'Payroll Clearing / Net Salaries Payable', debit: 0, credit: netPay },
+  ];
+}
+
+// =================================================================
+// Project Systems & Capital Costing (SAP PS) State
+// =================================================================
+const currentProject = ref({
+  projectId: 'PRJ-EV-PLANT-01',
+  name: 'Chakan Giga-Factory Line 3 Expansion',
+  totalApprovedBudget: 250000000,
+  totalCommittedCost: 145000000,
+  totalActualCost: 92000000,
+  status: 'IN_PROGRESS',
+});
+
+const wbsElementsList = ref([
+  {
+    wbsCode: 'WBS-01-CIVIL',
+    name: 'Cleanroom Foundation & Structural Civil Works',
+    costCenter: 'CC-MFG-BODY',
+    budgetAllocated: 75000000,
+    budgetCommitted: 60000000,
+    actualCostIncurred: 45000000,
+    status: 'RELEASED',
+  },
+  {
+    wbsCode: 'WBS-02-PRESS',
+    name: 'High-Speed Automated Stamping Press Installation',
+    costCenter: 'CC-MFG-BODY',
+    budgetAllocated: 110000000,
+    budgetCommitted: 55000000,
+    actualCostIncurred: 32000000,
+    status: 'RELEASED',
+  },
+  {
+    wbsCode: 'WBS-03-AUTOMATION',
+    name: 'Robotic Welding Cell & PLC Control Systems',
+    costCenter: 'CC-MFG-ASSY',
+    budgetAllocated: 65000000,
+    budgetCommitted: 30000000,
+    actualCostIncurred: 15000000,
+    status: 'RELEASED',
+  },
+]);
+
+const projectMilestones = ref([
+  { milestoneId: 'M1-CIVIL', name: 'Civil Foundation Sign-off', targetDate: '2026-06-30', percentageWeight: 30, isAchieved: true },
+  { milestoneId: 'M2-EQUIP', name: 'Equipment Delivery & Erection', targetDate: '2026-08-31', percentageWeight: 40, isAchieved: true },
+  { milestoneId: 'M3-COMM', name: 'Cold Commissioning & Trial Runs', targetDate: '2026-09-30', percentageWeight: 30, isAchieved: false },
+]);
+
+const projectPoc = ref({
+  pocPercentage: 70,
+});
+
+const cwipSettlement = ref<any>(null);
+
+function achieveCommissioningMilestone() {
+  const m3 = projectMilestones.value.find((m) => m.milestoneId === 'M3-COMM');
+  if (m3) {
+    m3.isAchieved = true;
+  }
+  projectPoc.value.pocPercentage = 100;
+}
+
+function settleProjectCwip() {
+  cwipSettlement.value = {
+    settlementId: `CWIP-SETTLE-${Date.now().toString(36).toUpperCase()}`,
+    capitalizedAssetTag: 'AST-PUNE-LINE3-001',
+    assetName: 'Chakan EV Manufacturing Line 3 Infrastructure',
+    totalSettledCost: currentProject.value.totalActualCost,
+    settlementDate: new Date().toISOString().split('T')[0],
+  };
+  currentProject.value.status = 'COMPLETED';
 }
 </script>
 
