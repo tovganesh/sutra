@@ -30,4 +30,9 @@ export * from './hcm/hcm-types.js';
 export * from './hcm/hcm-engine.js';
 export * from './projects/project-types.js';
 export * from './projects/project-engine.js';
+export * from './warehouse/warehouse-types.js';
+export * from './warehouse/warehouse-engine.js';
+export * from './multicurrency/multicurrency-types.js';
+export * from './multicurrency/multicurrency-engine.js';
 export * from './common/http-status.js';
+

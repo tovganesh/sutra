@@ -165,3 +165,24 @@ graph TD
 * **Milestone Progress & Percentage of Completion (PoC)**: Weighted milestone tracking computing overall physical and financial project completion percentages.
 * **Capital Work-in-Progress (CWIP) Settlement & Capitalization**: Seamless transfer of accumulated construction and engineering spend from CWIP asset clearing accounts (`140800 Cr`) into the active Fixed Asset Register (FI-AA, `140100 Dr`) upon project completion and commissioning.
 
+#### 3.16 Extended Warehouse Management (EWM)
+* **Storage Bin Master & Topology**: Hierarchical warehouse representation down to Zone, Aisle, Rack, Shelf, and Position coordinates (`WH-PUN-ZA-01`).
+* **Bin Type & Capacity Controls**: Segregated bin handling for High-Bay storage, Ambient racking, Cold-Chain storage, and Hazardous chemicals with real-time weight (kg) and volume ($m^3$) limit enforcement.
+* **Automated Putaway Strategies**: Constraint-driven bin allocation prioritizing empty bins or clustering identical SKUs while preventing warehouse capacity overflows.
+* **Picking Optimization & FEFO/FIFO Wave Execution**: Dynamic picking algorithms sorting batches by First-Expired-First-Out (FEFO) or First-In-First-Out (FIFO) receipt timestamp to minimize scrap and aging.
+* **Internal Stock Transfers & Replenishment**: Guided bin-to-bin movements transferring materials between reserve high-bay racks and active forward pick faces.
+* **Physical Inventory & Cycle Counting**: Discrepancy tracking between counted physical stock and system book quantity with automated balanced GL adjustment voucher postings (`540100 Dr Inventory Shrinkage Expense`, `120100 Cr Inventory Clearing`).
+
+#### 3.17 Multi-Currency & Parallel Accounting (SAP FI Parallel Ledgers & Global Compliance)
+* **Exchange Rates Architecture**: Spot, closing, and monthly average exchange rate management supporting multi-currency transactions across global trading currencies (INR, USD, EUR, GBP, AED, SGD, JPY).
+* **Parallel Accounting Ledgers (SAP 0L vs 2L)**:
+  * **Leading Ledger `0L`**: Local statutory GAAP reporting (e.g. Ind AS / Indian Companies Act).
+  * **Non-Leading Ledger `2L`**: Global parallel ledger configured for IFRS or US GAAP reporting in Group Currency (USD).
+* **Foreign Exchange (Forex) Revaluation (IAS 21 / AS 11)**: Automated month-end revaluation of open foreign currency monetary assets (Accounts Receivable) and liabilities (Accounts Payable), generating balanced general ledger postings to Unrealized Forex Gain (`420100 Cr`) or Unrealized Forex Loss (`540200 Dr`).
+* **Pluggable Global Tax Jurisdiction Framework**: Modular interface (`GlobalTaxJurisdictionPlugin`) enabling zero-code addition of country-specific tax rules:
+  * **India (`IN`)**: GST split into CGST/SGST (intra-state) or IGST (inter-state), TCS/TDS withholdings.
+  * **United States (`US`)**: Combined state, county, and city sales tax nexus calculation.
+  * **European Union (`EU`)**: Cross-border B2B intra-community VAT exemption with Article 194 Reverse Charge Mechanism and VIES validation.
+  * **United Arab Emirates (`AE`)**: Federal Tax Authority 5% standard VAT calculation.
+
+

@@ -824,3 +824,124 @@ CREATE TABLE IF NOT EXISTS ps_project_milestones (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_ps_milestone UNIQUE (tenant_id, project_id, milestone_id)
 );
+
+-- =================================================================
+-- 21. Extended Warehouse Management (SAP EWM)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS ewm_storage_bins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    bin_id VARCHAR(100) NOT NULL,
+    warehouse_id VARCHAR(100) NOT NULL,
+    zone VARCHAR(100) NOT NULL,
+    aisle VARCHAR(50) NOT NULL,
+    rack VARCHAR(50) NOT NULL,
+    shelf VARCHAR(50) NOT NULL,
+    position VARCHAR(50) NOT NULL,
+    bin_type VARCHAR(50) NOT NULL DEFAULT 'STANDARD', -- STANDARD, HIGH_BAY, COLD_STORAGE, HAZARDOUS, STAGING
+    max_weight_kg NUMERIC(18, 4) NOT NULL DEFAULT 1000,
+    current_weight_kg NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    max_volume_cbm NUMERIC(18, 4) NOT NULL DEFAULT 5.0,
+    current_volume_cbm NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    is_blocked BOOLEAN NOT NULL DEFAULT false,
+    is_occupied BOOLEAN NOT NULL DEFAULT false,
+    stored_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ewm_bin UNIQUE (tenant_id, warehouse_id, bin_id)
+);
+
+CREATE TABLE IF NOT EXISTS ewm_warehouse_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    task_id VARCHAR(100) NOT NULL,
+    task_type VARCHAR(50) NOT NULL, -- PUTAWAY, PICKING, INTERNAL_TRANSFER, REPLENISHMENT
+    warehouse_id VARCHAR(100) NOT NULL,
+    source_bin_id VARCHAR(100),
+    target_bin_id VARCHAR(100),
+    sku VARCHAR(100) NOT NULL,
+    batch_number VARCHAR(100) NOT NULL,
+    quantity NUMERIC(18, 4) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED', -- OPEN, IN_PROGRESS, CONFIRMED, CANCELLED
+    allocations JSONB,
+    confirmed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ewm_task UNIQUE (tenant_id, task_id)
+);
+
+CREATE TABLE IF NOT EXISTS ewm_cycle_counts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    count_id VARCHAR(100) NOT NULL,
+    warehouse_id VARCHAR(100) NOT NULL,
+    bin_id VARCHAR(100) NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    batch_number VARCHAR(100) NOT NULL,
+    book_quantity NUMERIC(18, 4) NOT NULL,
+    physical_counted_quantity NUMERIC(18, 4) NOT NULL,
+    variance_quantity NUMERIC(18, 4) NOT NULL,
+    unit_cost NUMERIC(18, 4) NOT NULL,
+    variance_value NUMERIC(18, 4) NOT NULL,
+    gl_voucher_lines JSONB,
+    counted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_ewm_count UNIQUE (tenant_id, count_id)
+);
+
+-- =================================================================
+-- 22. Multi-Currency & Parallel Accounting Ledgers (SAP FI-GL)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS gl_exchange_rates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    from_currency VARCHAR(10) NOT NULL,
+    to_currency VARCHAR(10) NOT NULL,
+    rate_date DATE NOT NULL,
+    rate_type VARCHAR(50) NOT NULL DEFAULT 'SPOT', -- SPOT, CLOSING, MONTHLY_AVERAGE
+    rate NUMERIC(18, 6) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_gl_rate UNIQUE (tenant_id, from_currency, to_currency, rate_date, rate_type)
+);
+
+CREATE TABLE IF NOT EXISTS gl_parallel_ledgers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    ledger_code VARCHAR(10) NOT NULL, -- e.g. 0L (Leading Ind AS), 2L (Non-Leading IFRS/US GAAP)
+    name VARCHAR(255) NOT NULL,
+    ledger_type VARCHAR(50) NOT NULL DEFAULT 'LEADING', -- LEADING, NON_LEADING, EXTENSION
+    base_currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+    description TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_gl_ledger UNIQUE (tenant_id, ledger_code)
+);
+
+CREATE TABLE IF NOT EXISTS gl_parallel_journals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    document_number VARCHAR(100) NOT NULL,
+    ledger_group VARCHAR(50) NOT NULL DEFAULT 'ALL',
+    posting_date DATE NOT NULL,
+    reference VARCHAR(100),
+    narrative TEXT,
+    transaction_currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+    exchange_rate_used NUMERIC(18, 6) NOT NULL DEFAULT 1.0,
+    lines JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_gl_par_jrn UNIQUE (tenant_id, document_number)
+);
+
+CREATE TABLE IF NOT EXISTS gl_forex_revaluations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    revaluation_id VARCHAR(100) NOT NULL,
+    valuation_date DATE NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    closing_rate NUMERIC(18, 6) NOT NULL,
+    items_evaluated INT NOT NULL DEFAULT 0,
+    total_unrealized_gain NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_unrealized_loss NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    net_forex_impact NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    gl_voucher_lines JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_gl_fx_rev UNIQUE (tenant_id, revaluation_id)
+);
+
