@@ -11,6 +11,8 @@ import {
   FixedAssetEngine,
   QualityEngine,
   ControllingEngine,
+  MaintenanceEngine,
+  TreasuryEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -495,6 +497,152 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       assert.equal(variance.plannedBudget, 1500000);
       assert.equal(variance.varianceType, 'UNFAVORABLE');
       assert.ok(variance.varianceAmount < 0);
+    });
+  });
+
+  describe('Plant Maintenance & Enterprise Asset Management Engine (SAP PM/EAM)', () => {
+    test('manages maintenance lifecycle: breakdown -> work order -> parts issue -> completion -> settlement', () => {
+      const pm = new MaintenanceEngine();
+
+      // 1. Create Breakdown Notification
+      const notif = pm.createNotification({
+        equipmentNumber: 'EQ-ROBOT-01',
+        type: 'BREAKDOWN',
+        priority: 'VERY_HIGH',
+        shortDescription: 'Axis 4 servo motor intermittent overload trip',
+        reportedBy: 'Vikram Joshi (Shop Floor Lead)',
+      });
+
+      assert.equal(notif.status, 'NEW');
+      const eqAfterNotif = pm.getEquipment('EQ-ROBOT-01');
+      assert.equal(eqAfterNotif.status, 'BREAKDOWN');
+
+      // 2. Create Maintenance Work Order
+      const wo = pm.createWorkOrder({
+        equipmentNumber: 'EQ-ROBOT-01',
+        notificationNumber: notif.notificationNumber,
+        orderType: 'CORRECTIVE',
+        scheduledStart: '2026-09-29T08:00:00Z',
+        scheduledEnd: '2026-09-29T14:00:00Z',
+        assignedTechnician: 'Ramesh K (Senior Robotics Tech)',
+        estimatedLaborHours: 5,
+        laborHourlyRate: 800,
+        spareParts: [
+          { sku: 'SPARE-SERVO-01', name: 'AC Servo Motor 4kW', requiredQuantity: 1, unitCost: 45000 },
+        ],
+      });
+
+      assert.equal(wo.status, 'CREATED');
+      assert.equal(wo.costCenter, 'CC-MFG-100');
+
+      // 3. Release Work Order
+      const released = pm.releaseWorkOrder(wo.orderNumber);
+      assert.equal(released.status, 'RELEASED');
+
+      // 4. Issue Spare Parts
+      const { workOrder: woWithParts, issuedPart } = pm.issueSpareParts(wo.orderNumber, 'SPARE-SERVO-01', 1);
+      assert.equal(issuedPart.issuedQuantity, 1);
+      assert.equal(woWithParts.totalMaterialCost, 45000);
+
+      // 5. Complete Work Order with 4 hours labor and 3.5 hours downtime
+      const completed = pm.completeWorkOrder(wo.orderNumber, 4, 3.5);
+      assert.equal(completed.status, 'TECHNICALLY_COMPLETED');
+      assert.equal(completed.actualLaborHours, 4);
+      assert.equal(completed.totalLaborCost, 3200); // 4 * 800
+      assert.equal(completed.totalActualCost, 48200); // 45000 + 3200
+
+      // Equipment restored to OPERATIONAL
+      const eqRestored = pm.getEquipment('EQ-ROBOT-01');
+      assert.equal(eqRestored.status, 'OPERATIONAL');
+
+      // 6. Settle Work Order to Cost Center
+      const { workOrder: settledWo, settlement } = pm.settleWorkOrder(wo.orderNumber);
+      assert.equal(settledWo.status, 'CLOSED');
+      assert.equal(settlement.settledAmount, 48200);
+      assert.equal(settlement.debitCostCenter, 'CC-MFG-100');
+      assert.equal(settledWo.glSettlementEntry.debitAccount, '510300');
+    });
+
+    test('evaluates preventive maintenance schedules and calculates MTBF/MTTR reliability metrics', () => {
+      const pm = new MaintenanceEngine();
+
+      // Update operating hours to trigger usage-based maintenance (cycle 1000 hrs, last 4000)
+      pm.updateOperatingHours('EQ-ROBOT-01', 800); // 4250 + 800 = 5050 hrs (> 5000 trigger threshold)
+      const generated = pm.evaluatePreventiveSchedules();
+      assert.ok(generated.length > 0);
+      assert.equal(generated[0].orderType, 'PREVENTIVE');
+      assert.equal(generated[0].equipmentNumber, 'EQ-ROBOT-01');
+
+      // Calculate Reliability Metrics (MTBF, MTTR, Availability %)
+      const reliability = pm.calculateEquipmentReliability('EQ-ROBOT-01');
+      assert.equal(reliability.equipmentNumber, 'EQ-ROBOT-01');
+      assert.ok(reliability.breakdownCount > 0);
+      assert.ok(reliability.mtbfHours > 0);
+      assert.ok(reliability.mttrHours > 0);
+      assert.ok(reliability.availabilityPercentage >= 95.0);
+    });
+  });
+
+  describe('Treasury & Bank Statement Reconciliation Engine (SAP TRM / FI-BL)', () => {
+    test('executes automated 2-way bank statement reconciliation and calculates match confidence', () => {
+      const trm = new TreasuryEngine();
+
+      // Execute Auto Reconciliation on seeded statement BS-2026-09-01
+      const result = trm.executeAutoReconciliation('BS-2026-09-01');
+
+      assert.equal(result.statementId, 'BS-2026-09-01');
+      assert.equal(result.matchedCount, 2);
+      assert.equal(result.unmatchedCount, 0);
+      assert.equal(result.matchedAmount, 1270000); // 850,000 + 420,000
+
+      // Verify line items marked AUTO_CLEARED with 100 score
+      const line1 = result.reconciledLines.find((l) => l.transactionReference === 'UTR-HDFC-9921');
+      const line2 = result.reconciledLines.find((l) => l.transactionReference === 'CHQ-440192');
+      assert.equal(line1.reconciliationStatus, 'AUTO_CLEARED');
+      assert.equal(line1.matchScore, 100);
+      assert.equal(line2.reconciliationStatus, 'AUTO_CLEARED');
+      assert.equal(line2.matchScore, 100);
+    });
+
+    test('generates Bank Reconciliation Statement (BRS) with deposits in transit and unpresented cheques', () => {
+      const trm = new TreasuryEngine();
+
+      // First run auto reconciliation to clear matched items
+      trm.executeAutoReconciliation('BS-2026-09-01');
+
+      // Generate BRS
+      const brs = trm.generateBRS('BA-HDFC-INR-01', '2026-09-07');
+
+      assert.equal(brs.accountId, 'BA-HDFC-INR-01');
+      assert.equal(brs.balanceAsPerBank, 12880000);
+
+      // Uncleared items:
+      // Deposit in transit: NEFT-AXIS-8812 (+350,000)
+      // Unpresented cheque: CHQ-440193 (-150,000)
+      // Adjusted Bank Balance: 12,880,000 + 350,000 - 150,000 = 13,080,000
+      assert.ok(brs.addDepositsInTransit.some((d) => d.reference === 'NEFT-AXIS-8812'));
+      assert.ok(brs.lessUnpresentedCheques.some((c) => c.reference === 'CHQ-440193'));
+      assert.equal(brs.adjustedBankBalance, 13080000);
+    });
+
+    test('projects 30, 60, and 90-day cash liquidity forecasting', () => {
+      const trm = new TreasuryEngine();
+
+      const forecast = trm.forecastCashLiquidity('BA-HDFC-INR-01', 5000000, 3000000);
+
+      assert.equal(forecast.currency, 'INR');
+      assert.ok(forecast.currentCashBalance > 0);
+
+      // 30 days: net +20L
+      assert.equal(forecast.forecast30Days.netCashFlow, 2000000);
+      assert.equal(
+        forecast.forecast30Days.projectedClosingCash,
+        forecast.currentCashBalance + 2000000
+      );
+
+      // 60 & 90 days projections
+      assert.ok(forecast.forecast60Days.projectedClosingCash > forecast.forecast30Days.projectedClosingCash);
+      assert.ok(forecast.forecast90Days.projectedClosingCash > forecast.forecast60Days.projectedClosingCash);
     });
   });
 });

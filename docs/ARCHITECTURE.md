@@ -128,3 +128,22 @@ graph TD
 * **Secondary Cost Assessment Cycles**: Periodic overhead allocation distributing shared services (IT, Facilities, Maintenance) across production work centers via allocation weights and balanced secondary cost element journals (GL `610000`).
 * **Variance Analysis**: Automated budget vs actual cost variance calculation, classifying performance as Favorable, Unfavorable, or On Track.
 
+#### 3.11 Plant Maintenance & Enterprise Asset Management (PM/EAM)
+* **Equipment Master & Functional Locations**: Hierarchical functional location structure (`FLOC-*`), machine specifications, serial tracking, and operational status transitions (`OPERATIONAL`, `IN_MAINTENANCE`, `BREAKDOWN`, `DECOMMISSIONED`).
+* **Maintenance Notifications & Work Orders**: Corrective, breakdown, and inspection notifications linked to work orders with technician scheduling, labor hours tracking, and spare parts reservation from MM Inventory (Movement Type `201`).
+* **Preventive Maintenance Schedules**: Usage-based (operating hours counter) and time-based (interval days) recurring maintenance cycles.
+* **Reliability Analytics**: Continuous computation of Mean Time Between Failures (MTBF), Mean Time To Repair (MTTR), and Overall Equipment Availability Percentage.
+* **Cost Settlement**: Automatic settlement of combined work order labor and materials expense to the responsible Cost Center in Controlling (GL `510300`).
+
+#### 3.12 Treasury Management & Bank Statement Reconciliation (TRM / FI-BL)
+* **House Banks & Bank Accounts Master**: Multi-currency current accounts, Cash Credit, and Escrow facilities linked to primary GL cash accounts and intermediate bank clearing accounts (`100101`).
+* **Electronic Bank Statement (EBS) Parsing**: Ingestion of standard SWIFT MT940 statement tags (`:60F:`, `:61:`, `:62F:`), CAMT.053, and banking CSV feeds.
+* **Automated 2-Way Reconciliation Engine**: Multi-tiered matching algorithm (Exact Reference & Amount $\rightarrow$ Partial Reference & Amount $\rightarrow$ Amount within tolerance) scoring match confidence (70-100%) and auto-clearing matched items.
+* **Bank Reconciliation Statement (BRS)**: Automated generation of statutory BRS reconciling Bank Statement Balance with Company Book Balance, tracking deposits in transit and unpresented cheques with zero-variance balance verification.
+* **Cash Liquidity Forecasting**: Rolling 30, 60, and 90-day cash position forecasting synthesizing real-time bank balances, open customer accounts receivable (SD), and vendor accounts payable (P2P).
+
+#### 3.13 API Standards & Standardized HTTP Status Constants
+* **Named Constant Convention**: All API route handlers and middleware strictly avoid magic inline numeric HTTP status codes (e.g. `res.status(404)`).
+* **`HttpStatus` Centralization**: Exported from `@sutra/core` following RFC 7231, RFC 7538, and RFC 6585 (e.g. `HttpStatus.OK`, `HttpStatus.CREATED`, `HttpStatus.BAD_REQUEST`, `HttpStatus.UNAUTHORIZED`, `HttpStatus.FORBIDDEN`, `HttpStatus.NOT_FOUND`, `HttpStatus.UNPROCESSABLE_ENTITY`, `HttpStatus.INTERNAL_SERVER_ERROR`).
+* **Guaranteed Uniformity**: Single-source-of-truth status code dictionary across all monorepo micro-packages, plugins, and REST endpoints.
+

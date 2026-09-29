@@ -105,6 +105,24 @@
         <PieChart class="tab-icon" />
         <span>Cost Centers & Alloc (CO)</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'maintenance' }"
+        @click="activeTab = 'maintenance'"
+      >
+        <Wrench class="tab-icon" />
+        <span>Plant Maintenance (PM/EAM)</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'treasury' }"
+        @click="activeTab = 'treasury'"
+      >
+        <Landmark class="tab-icon" />
+        <span>Treasury & Bank Recon (TRM)</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -1076,6 +1094,359 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 9: Plant Maintenance & Enterprise Asset Management (PM/EAM) -->
+    <div v-if="activeTab === 'maintenance'" class="tab-content">
+      <!-- Quick PM KPI Banner -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Active Machinery Equipment</span>
+          <span class="kpi-value">{{ equipmentList.length }} Assets</span>
+          <span class="kpi-trend positive">100% Registered</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Plant MTBF (Mean Time Between Failures)</span>
+          <span class="kpi-value text-accent">{{ plantReliability.mtbfHours }} Hours</span>
+          <span class="kpi-trend positive">Target: &gt; 1,000h</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Plant MTTR (Mean Time to Repair)</span>
+          <span class="kpi-value">{{ plantReliability.mttrHours }} Hours</span>
+          <span class="kpi-trend info">Target: &lt; 4.0h</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Equipment Availability</span>
+          <span class="kpi-value text-green">{{ plantReliability.availabilityPercentage }}%</span>
+          <span class="kpi-trend positive">OEE Benchmark</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- Equipment Master & Reliability -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Equipment Master & Reliability KPIs (SAP PM)</h3>
+              <span class="panel-sub">Functional Locations, Operating Hours & Predictive Cycles</span>
+            </div>
+            <button class="action-btn-sm" @click="runPreventiveEvaluation">
+              <RefreshCw class="btn-icon-sm" />
+              <span>Evaluate Preventive Cycles</span>
+            </button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Equipment No</th>
+                <th>Name / Description</th>
+                <th>Category</th>
+                <th>Location / Cost Center</th>
+                <th>Operating Hours</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="eq in equipmentList" :key="eq.equipmentNumber">
+                <td class="font-mono">{{ eq.equipmentNumber }}</td>
+                <td>
+                  <div class="sku-cell">
+                    <strong>{{ eq.name }}</strong>
+                    <span class="sku-sub font-mono">{{ eq.serialNumber }} ({{ eq.manufacturer }})</span>
+                  </div>
+                </td>
+                <td><span class="badge blue">{{ eq.category }}</span></td>
+                <td>
+                  <div class="sku-cell">
+                    <span>{{ eq.functionalLocationId }}</span>
+                    <span class="sku-sub font-mono">{{ eq.costCenter }}</span>
+                  </div>
+                </td>
+                <td class="font-mono text-cyan">{{ eq.operatingHours.toLocaleString('en-IN') }} hrs</td>
+                <td>
+                  <span class="status-pill" :class="eq.status === 'OPERATIONAL' ? 'active' : 'danger'">
+                    {{ eq.status }}
+                  </span>
+                </td>
+                <td>
+                  <button class="action-btn-sm" @click="selectEquipmentForWo(eq)">
+                    <span>Create WO</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Work Orders & Spare Parts Execution -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Maintenance Work Orders</h3>
+              <span class="panel-sub">Spare Parts Reservation & Cost Settlement</span>
+            </div>
+          </div>
+
+          <div v-for="wo in workOrders" :key="wo.orderNumber" class="process-card" style="margin-bottom: 16px;">
+            <div class="process-step-header">
+              <span class="step-num font-mono">{{ wo.orderNumber }}</span>
+              <div>
+                <h4>{{ wo.orderType }} Maintenance: {{ wo.equipmentNumber }}</h4>
+                <p class="subtitle">Assigned Tech: {{ wo.assignedTechnician }} | Cost Center: {{ wo.costCenter }}</p>
+              </div>
+              <span class="status-pill" :class="wo.status === 'CLOSED' ? 'active' : wo.status === 'RELEASED' ? 'info' : 'warning'">
+                {{ wo.status }}
+              </span>
+            </div>
+
+            <!-- Spare parts section -->
+            <div style="margin-top: 12px;">
+              <span class="gl-title">Allocated Spare Parts (MM Integration):</span>
+              <div v-for="part in wo.spareParts" :key="part.sku" class="calc-row">
+                <span>{{ part.name }} (Qty: {{ part.issuedQuantity }}/{{ part.requiredQuantity }}):</span>
+                <span class="font-mono text-green">₹{{ part.totalCost.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div class="cost-summary-box" style="margin-top: 12px;">
+              <div class="cost-row">
+                <span>Labor Cost ({{ wo.actualLaborHours }} hrs @ ₹{{ wo.laborHourlyRate }}/hr):</span>
+                <span class="font-mono">₹{{ wo.totalLaborCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="cost-row">
+                <span>Spare Parts Material Cost:</span>
+                <span class="font-mono">₹{{ wo.totalMaterialCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="cost-row total">
+                <strong>Total Maintenance Cost Settled:</strong>
+                <strong class="font-mono text-cyan">₹{{ wo.totalActualCost.toLocaleString('en-IN') }}</strong>
+              </div>
+            </div>
+
+            <div class="action-row" style="margin-top: 14px;">
+              <button
+                v-if="wo.status === 'RELEASED'"
+                class="action-btn-sm"
+                @click="issueSparePart(wo.orderNumber)"
+              >
+                <span>Issue Spare Part (Mvt 201)</span>
+              </button>
+              <button
+                v-if="wo.status === 'RELEASED'"
+                class="action-btn-sm primary"
+                @click="completeAndSettleWo(wo.orderNumber)"
+              >
+                <CheckCircle2 class="btn-icon-sm" />
+                <span>Technically Complete & Settle</span>
+              </button>
+              <span v-else-if="wo.status === 'CLOSED'" class="text-green font-mono" style="font-size: 12px;">
+                ✔ Settled to GL 510300 (Maintenance Exp)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: Treasury & Bank Statement Reconciliation (TRM/FI-BL) -->
+    <div v-if="activeTab === 'treasury'" class="tab-content">
+      <!-- Quick Treasury KPI Banner -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Operating Bank Balance</span>
+          <span class="kpi-value text-green">₹{{ (totalBankBalance).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend positive">HDFC & SBI Accounts</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">GL Book Balance</span>
+          <span class="kpi-value">₹{{ (treasuryBookBalance).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend info">GL Account 100100</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Reconciliation Status</span>
+          <span class="kpi-value text-accent">{{ brsData.isBalanced ? '100% Balanced' : 'Open Variance' }}</span>
+          <span class="kpi-trend positive">Variance: ₹{{ brsData.variance }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">30-Day Projected Net Cash</span>
+          <span class="kpi-value text-cyan">₹{{ (cashForecast.forecast30Days.projectedClosingCash).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend positive">+₹{{ (cashForecast.forecast30Days.netCashFlow).toLocaleString('en-IN') }} Net Flow</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- House Banks & Statement Importer -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>House Banks & MT940 Electronic Statements (SAP FI-BL)</h3>
+              <span class="panel-sub">Current Accounts, RTGS/NEFT Feeds & Statement Ingestion</span>
+            </div>
+            <button class="action-btn-sm primary" @click="runAutoReconciliation">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>Execute 2-Way Auto-Reconciliation</span>
+            </button>
+          </div>
+
+          <!-- Bank Accounts Summary -->
+          <div class="bank-accounts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px;">
+            <div v-for="acc in companyBankAccounts" :key="acc.accountId" class="cost-center-card active">
+              <div class="cc-header">
+                <div>
+                  <span class="cc-code font-mono">{{ acc.accountNumber }}</span>
+                  <h4 style="margin: 2px 0 0 0;">{{ acc.bankName }}</h4>
+                </div>
+                <span class="badge blue">{{ acc.accountType }}</span>
+              </div>
+              <div class="calc-row" style="margin-top: 10px;">
+                <span>GL Book Balance:</span>
+                <span class="font-mono text-cyan">₹{{ acc.currentBookBalance.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row">
+                <span>Reconciled Bank Balance:</span>
+                <span class="font-mono text-green">₹{{ acc.reconciledBankBalance.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row">
+                <span>IFSC / Branch:</span>
+                <span class="font-mono text-dim">{{ acc.ifscCode }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statement Lines Table -->
+          <h4 style="margin: 16px 0 8px 0;">Imported Bank Statement Lines (MT940 Feed)</h4>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Line ID</th>
+                <th>Date</th>
+                <th>Reference / UTR</th>
+                <th>Counterparty</th>
+                <th>Type</th>
+                <th>Amount (INR)</th>
+                <th>Recon Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="line in statementLines" :key="line.lineId">
+                <td class="font-mono">{{ line.lineId }}</td>
+                <td class="font-mono">{{ line.transactionDate }}</td>
+                <td class="font-mono text-cyan">{{ line.transactionReference }}</td>
+                <td>{{ line.counterpartyName || 'Corporate Settlement' }}</td>
+                <td>
+                  <span class="badge" :class="line.direction === 'CREDIT' ? 'green' : 'blue'">
+                    {{ line.direction }}
+                  </span>
+                </td>
+                <td class="font-mono" :class="line.direction === 'CREDIT' ? 'text-green' : 'text-danger'">
+                  {{ line.direction === 'CREDIT' ? '+' : '-' }}₹{{ line.amount.toLocaleString('en-IN') }}
+                </td>
+                <td>
+                  <span class="status-pill" :class="line.reconciliationStatus === 'AUTO_CLEARED' ? 'active' : 'warning'">
+                    {{ line.reconciliationStatus }} ({{ line.matchScore || 0 }}%)
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bank Reconciliation Statement (BRS) & Liquidity Forecast -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Bank Reconciliation Statement (BRS)</h3>
+              <span class="panel-sub">Automated Balancing & Cash Forecasting</span>
+            </div>
+          </div>
+
+          <!-- BRS Card -->
+          <div class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="calc-row">
+              <span><strong>Balance as per Bank Statement:</strong></span>
+              <strong class="font-mono text-green">₹{{ brsData.balanceAsPerBank.toLocaleString('en-IN') }}</strong>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <span class="gl-title text-cyan">Add: Deposits in Transit (Debited in Books, Not by Bank):</span>
+              <div v-for="dep in brsData.addDepositsInTransit" :key="dep.reference" class="calc-row" style="padding-left: 10px;">
+                <span class="font-mono">{{ dep.reference }}:</span>
+                <span class="font-mono text-cyan">+₹{{ dep.amount.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <span class="gl-title text-danger">Less: Unpresented Cheques (Issued in Books, Uncleared):</span>
+              <div v-for="chq in brsData.lessUnpresentedCheques" :key="chq.reference" class="calc-row" style="padding-left: 10px;">
+                <span class="font-mono">{{ chq.reference }}:</span>
+                <span class="font-mono text-danger">-₹{{ chq.amount.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div class="calc-row total" style="margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 10px;">
+              <strong>Adjusted Bank Balance:</strong>
+              <strong class="font-mono text-accent">₹{{ brsData.adjustedBankBalance.toLocaleString('en-IN') }}</strong>
+            </div>
+            <div class="calc-row">
+              <span>Balance as per Company Books:</span>
+              <span class="font-mono text-cyan">₹{{ brsData.balanceAsPerCompanyBooks.toLocaleString('en-IN') }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Reconciliation Variance:</span>
+              <span class="font-mono" :class="brsData.isBalanced ? 'text-green' : 'text-danger'">
+                ₹{{ brsData.variance }} {{ brsData.isBalanced ? '(PERFECT MATCH)' : '' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Cash Liquidity Forecast Projection -->
+          <div style="margin-top: 20px;">
+            <div class="panel-header" style="margin-bottom: 10px;">
+              <div>
+                <h4>30 / 60 / 90-Day Cash Liquidity Forecast</h4>
+                <span class="panel-sub">Real-Time AR & AP Open Invoices Inflow/Outflow</span>
+              </div>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Horizon</th>
+                  <th>Receivables Inflow</th>
+                  <th>Payables Outflow</th>
+                  <th>Net Cash Flow</th>
+                  <th>Projected Closing Cash</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>30 Days</strong></td>
+                  <td class="font-mono text-green">+₹{{ cashForecast.forecast30Days.expectedReceivables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast30Days.expectedPayables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast30Days.netCashFlow.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast30Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>60 Days</strong></td>
+                  <td class="font-mono text-green">+₹{{ cashForecast.forecast60Days.expectedReceivables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast60Days.expectedPayables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast60Days.netCashFlow.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast60Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>90 Days</strong></td>
+                  <td class="font-mono text-green">+₹{{ cashForecast.forecast90Days.expectedReceivables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast90Days.expectedPayables.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast90Days.netCashFlow.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast90Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1096,9 +1467,11 @@ import {
   Factory,
   Building2,
   PieChart,
+  Wrench,
+  Landmark,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -1636,6 +2009,255 @@ function runAssessmentCycle() {
       { receiver: 'CC-LOGISTICS (Logistics)', amount: 150000, percentage: 15 },
     ],
   };
+}
+
+// =================================================================
+// Plant Maintenance & Enterprise Asset Management (PM/EAM) State
+// =================================================================
+const equipmentList = ref([
+  {
+    equipmentNumber: 'EQ-ROBOT-01',
+    name: '6-Axis High Precision Robotic Welding Center',
+    functionalLocationId: 'FLOC-PUNE-LINE1',
+    serialNumber: 'KUKA-KR60-9844',
+    manufacturer: 'KUKA Robotics GmbH',
+    category: 'MACHINERY',
+    status: 'OPERATIONAL',
+    operatingHours: 4250,
+    costCenter: 'CC-MFG-BODY',
+  },
+  {
+    equipmentNumber: 'EQ-PRESS-02',
+    name: '250-Ton Heavy Hydraulic Stamping Press',
+    functionalLocationId: 'FLOC-PUNE-LINE1',
+    serialNumber: 'SCHULER-HP250-2021',
+    manufacturer: 'Schuler AG',
+    category: 'MACHINERY',
+    status: 'OPERATIONAL',
+    operatingHours: 8900,
+    costCenter: 'CC-MFG-BODY',
+  },
+  {
+    equipmentNumber: 'EQ-AGV-05',
+    name: 'Autonomous Guided Transport Vehicle (AGV)',
+    functionalLocationId: 'FLOC-PUNE-LINE1',
+    serialNumber: 'OMRON-HD1500-441',
+    manufacturer: 'OMRON Adept',
+    category: 'VEHICLE',
+    status: 'OPERATIONAL',
+    operatingHours: 2100,
+    costCenter: 'CC-LOGISTICS',
+  },
+]);
+
+const workOrders = ref([
+  {
+    orderNumber: 'WO-2026-0041',
+    equipmentNumber: 'EQ-ROBOT-01',
+    orderType: 'PREVENTIVE',
+    status: 'RELEASED',
+    assignedTechnician: 'Ramesh K (Senior Robotics Tech)',
+    costCenter: 'CC-MFG-BODY',
+    scheduledStart: '2026-09-29T08:00:00Z',
+    scheduledEnd: '2026-09-29T14:00:00Z',
+    estimatedLaborHours: 4,
+    actualLaborHours: 4,
+    laborHourlyRate: 750,
+    totalLaborCost: 3000,
+    totalMaterialCost: 45000,
+    totalActualCost: 48000,
+    spareParts: [
+      { sku: 'SPARE-SERVO-01', name: 'AC Servo Motor 4kW', requiredQuantity: 1, issuedQuantity: 1, unitCost: 45000, totalCost: 45000 },
+    ],
+  },
+]);
+
+const plantReliability = ref({
+  mtbfHours: 1416.7,
+  mttrHours: 3.3,
+  availabilityPercentage: 99.8,
+});
+
+function runPreventiveEvaluation() {
+  const eq = equipmentList.value.find((e) => e.equipmentNumber === 'EQ-PRESS-02');
+  if (eq) {
+    workOrders.value.unshift({
+      orderNumber: `WO-${Date.now().toString(36).toUpperCase()}`,
+      equipmentNumber: 'EQ-PRESS-02',
+      orderType: 'PREVENTIVE',
+      status: 'RELEASED',
+      assignedTechnician: 'Dinesh Kumar (Hydraulics Specialist)',
+      costCenter: 'CC-MFG-BODY',
+      scheduledStart: new Date().toISOString(),
+      scheduledEnd: new Date(Date.now() + 86400000).toISOString(),
+      estimatedLaborHours: 6,
+      actualLaborHours: 0,
+      laborHourlyRate: 750,
+      totalLaborCost: 0,
+      totalMaterialCost: 18500,
+      totalActualCost: 18500,
+      spareParts: [
+        { sku: 'SPARE-SEAL-KIT', name: 'High-Pressure Hydraulic Seal Kit', requiredQuantity: 1, issuedQuantity: 1, unitCost: 18500, totalCost: 18500 },
+      ],
+    });
+  }
+}
+
+function selectEquipmentForWo(eq: any) {
+  workOrders.value.unshift({
+    orderNumber: `WO-${Date.now().toString(36).toUpperCase()}`,
+    equipmentNumber: eq.equipmentNumber,
+    orderType: 'CORRECTIVE',
+    status: 'RELEASED',
+    assignedTechnician: 'Vikram Joshi (Shop Floor Lead)',
+    costCenter: eq.costCenter,
+    scheduledStart: new Date().toISOString(),
+    scheduledEnd: new Date(Date.now() + 43200000).toISOString(),
+    estimatedLaborHours: 3,
+    actualLaborHours: 0,
+    laborHourlyRate: 750,
+    totalLaborCost: 0,
+    totalMaterialCost: 0,
+    totalActualCost: 0,
+    spareParts: [
+      { sku: 'SPARE-GREASE-LUBE', name: 'High-Temp Synthetic Gear Grease', requiredQuantity: 2, issuedQuantity: 0, unitCost: 3500, totalCost: 0 },
+    ],
+  });
+}
+
+function issueSparePart(orderNum: string) {
+  const wo = workOrders.value.find((w) => w.orderNumber === orderNum);
+  if (wo && wo.spareParts.length > 0) {
+    const part = wo.spareParts[0];
+    part.issuedQuantity = part.requiredQuantity;
+    part.totalCost = part.issuedQuantity * part.unitCost;
+    wo.totalMaterialCost = part.totalCost;
+    wo.totalActualCost = wo.totalLaborCost + wo.totalMaterialCost;
+  }
+}
+
+function completeAndSettleWo(orderNum: string) {
+  const wo = workOrders.value.find((w) => w.orderNumber === orderNum);
+  if (wo) {
+    wo.actualLaborHours = wo.estimatedLaborHours || 4;
+    wo.totalLaborCost = wo.actualLaborHours * wo.laborHourlyRate;
+    wo.totalActualCost = wo.totalLaborCost + wo.totalMaterialCost;
+    wo.status = 'CLOSED';
+  }
+}
+
+// =================================================================
+// Treasury & Bank Statement Reconciliation (TRM/FI-BL) State
+// =================================================================
+const companyBankAccounts = ref([
+  {
+    accountId: 'BA-HDFC-INR-01',
+    bankName: 'HDFC Bank Ltd (BKC Corporate Branch)',
+    accountNumber: '50200055418291',
+    accountType: 'CURRENT',
+    ifscCode: 'HDFC0000123',
+    currentBookBalance: 12500000,
+    reconciledBankBalance: 12880000,
+  },
+  {
+    accountId: 'BA-SBI-INR-02',
+    bankName: 'State Bank of India (Industrial Branch)',
+    accountNumber: '3941008892110',
+    accountType: 'CURRENT',
+    ifscCode: 'SBIN0004133',
+    currentBookBalance: 8500000,
+    reconciledBankBalance: 8500000,
+  },
+]);
+
+const totalBankBalance = computed(() =>
+  companyBankAccounts.value.reduce((acc, b) => acc + b.reconciledBankBalance, 0)
+);
+
+const treasuryBookBalance = computed(() =>
+  companyBankAccounts.value.reduce((acc, b) => acc + b.currentBookBalance, 0)
+);
+
+const statementLines = ref([
+  {
+    lineId: 'BSL-001',
+    transactionDate: '2026-09-02',
+    transactionReference: 'UTR-HDFC-9921',
+    counterpartyName: 'Reliance Retail Ltd',
+    direction: 'CREDIT',
+    amount: 850000,
+    reconciliationStatus: 'UNMATCHED',
+    matchScore: 0,
+  },
+  {
+    lineId: 'BSL-002',
+    transactionDate: '2026-09-04',
+    transactionReference: 'CHQ-440192',
+    counterpartyName: 'Tata Steel Special Alloy Ltd',
+    direction: 'DEBIT',
+    amount: 420000,
+    reconciliationStatus: 'UNMATCHED',
+    matchScore: 0,
+  },
+  {
+    lineId: 'BSL-003',
+    transactionDate: '2026-09-06',
+    transactionReference: 'NEFT-MAH-1102',
+    counterpartyName: 'Mahindra Logistics Ltd',
+    direction: 'CREDIT',
+    amount: 600000,
+    reconciliationStatus: 'UNMATCHED',
+    matchScore: 0,
+  },
+]);
+
+const brsData = ref({
+  balanceAsPerBank: 12880000,
+  addDepositsInTransit: [
+    { reference: 'NEFT-AXIS-8812', amount: 350000, date: '2026-09-05' },
+  ],
+  lessUnpresentedCheques: [
+    { reference: 'CHQ-440193', amount: 150000, date: '2026-09-06' },
+  ],
+  adjustedBankBalance: 13080000,
+  balanceAsPerCompanyBooks: 12500000,
+  variance: 580000,
+  isBalanced: false,
+});
+
+const cashForecast = ref({
+  forecast30Days: {
+    expectedReceivables: 5000000,
+    expectedPayables: 3000000,
+    netCashFlow: 2000000,
+    projectedClosingCash: 14500000,
+  },
+  forecast60Days: {
+    expectedReceivables: 5750000,
+    expectedPayables: 3300000,
+    netCashFlow: 2450000,
+    projectedClosingCash: 16950000,
+  },
+  forecast90Days: {
+    expectedReceivables: 6250000,
+    expectedPayables: 3540000,
+    netCashFlow: 2710000,
+    projectedClosingCash: 19660000,
+  },
+});
+
+function runAutoReconciliation() {
+  for (const line of statementLines.value) {
+    line.reconciliationStatus = 'AUTO_CLEARED';
+    line.matchScore = 100;
+  }
+  const hdfc = companyBankAccounts.value.find((b) => b.accountId === 'BA-HDFC-INR-01');
+  if (hdfc) {
+    hdfc.currentBookBalance = 13080000;
+  }
+  brsData.value.balanceAsPerCompanyBooks = 13080000;
+  brsData.value.variance = 0.00;
+  brsData.value.isBalanced = true;
 }
 </script>
 
