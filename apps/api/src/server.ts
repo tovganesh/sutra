@@ -13,6 +13,8 @@ import {
   OrderToCashEngine,
   ProcureToPayEngine,
   SubledgerEngine,
+  ManufacturingEngine,
+  FixedAssetEngine,
 } from '@sutra/core';
 import {
   GSTINValidator,
@@ -156,6 +158,8 @@ const inventoryEngine = new InventoryEngine();
 const orderToCashEngine = new OrderToCashEngine(inventoryEngine);
 const procureToPayEngine = new ProcureToPayEngine(inventoryEngine);
 const subledgerEngine = new SubledgerEngine();
+const manufacturingEngine = new ManufacturingEngine(inventoryEngine);
+const fixedAssetEngine = new FixedAssetEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -700,7 +704,97 @@ app.post('/api/v1/procurement/verify-invoice', (req: Request, res: Response) => 
 });
 
 // =================================================================
-// 3. No-Code Dynamic Entity Modeler & Studio Records
+// 2.9 Production Planning & Manufacturing (SAP PP)
+// =================================================================
+app.get('/api/v1/manufacturing/boms', (req: Request, res: Response) => {
+  res.json(manufacturingEngine.getAllBoms());
+});
+
+app.get('/api/v1/manufacturing/work-centers', (req: Request, res: Response) => {
+  res.json(manufacturingEngine.getWorkCenters());
+});
+
+app.get('/api/v1/manufacturing/orders', (req: Request, res: Response) => {
+  res.json(manufacturingEngine.getAllProductionOrders());
+});
+
+app.post('/api/v1/manufacturing/orders', (req: Request, res: Response) => {
+  const input = req.body;
+  if (!input.orderNumber || !input.targetSku || !input.targetQuantity) {
+    return res.status(400).json({ error: 'orderNumber, targetSku, and targetQuantity are required' });
+  }
+
+  try {
+    const order = manufacturingEngine.planProductionOrder({
+      tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+      orderNumber: input.orderNumber,
+      targetSku: input.targetSku,
+      targetQuantity: Number(input.targetQuantity),
+      plantId: input.plantId || 'PLANT-1000',
+      startDate: input.startDate || new Date().toISOString().split('T')[0],
+      targetCompletionDate: input.targetCompletionDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    });
+    res.status(201).json(order);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Production planning failed';
+    res.status(400).json({ error: 'ProductionPlanningError', message: msg });
+  }
+});
+
+app.post('/api/v1/manufacturing/confirm', (req: Request, res: Response) => {
+  const { tenantId, orderNumber, quantityCompleted } = req.body;
+  if (!orderNumber || !quantityCompleted) {
+    return res.status(400).json({ error: 'orderNumber and quantityCompleted are required' });
+  }
+
+  try {
+    const confirmation = manufacturingEngine.confirmProductionOrder(
+      tenantId || '00000000-0000-0000-0000-000000000001',
+      orderNumber,
+      Number(quantityCompleted)
+    );
+    res.status(201).json(confirmation);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Production confirmation failed';
+    res.status(422).json({ error: 'ProductionConfirmationError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.10 Fixed Asset Accounting (SAP FI-AA)
+// =================================================================
+app.get('/api/v1/assets', (req: Request, res: Response) => {
+  res.json(fixedAssetEngine.getAllAssets());
+});
+
+app.post('/api/v1/assets', (req: Request, res: Response) => {
+  const asset = req.body;
+  if (!asset.assetId || !asset.name || !asset.assetClass || !asset.originalCost) {
+    return res.status(400).json({ error: 'assetId, name, assetClass, and originalCost are required' });
+  }
+
+  fixedAssetEngine.registerAsset({
+    ...asset,
+    status: asset.status || 'ACTIVE',
+  });
+  res.status(201).json({ message: 'Asset registered in Asset Master', asset });
+});
+
+app.post('/api/v1/assets/depreciation-run', (req: Request, res: Response) => {
+  const { tenantId, period } = req.body;
+  const targetPeriod = period || new Date().toISOString().slice(0, 7); // YYYY-MM
+
+  try {
+    const result = fixedAssetEngine.executeMonthlyDepreciationRun(
+      tenantId || '00000000-0000-0000-0000-000000000001',
+      targetPeriod
+    );
+    res.status(201).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Depreciation run failed';
+    res.status(422).json({ error: 'DepreciationRunError', message: msg });
+  }
+});
 // =================================================================
 app.get('/api/v1/nocode/schemas', (req: Request, res: Response) => {
   res.json(Array.from(inMemoryEntities.values()));

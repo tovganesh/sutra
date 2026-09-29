@@ -15,3 +15,6 @@ export * from './inventory/inventory-types.js';
 export * from './inventory/inventory-engine.js';
 export * from './sales/order-to-cash.js';
 export * from './procurement/procure-to-pay.js';
+export * from './manufacturing/bom-types.js';
+export * from './manufacturing/manufacturing-engine.js';
+export * from './assets/fixed-asset-engine.js';

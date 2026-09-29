@@ -7,6 +7,8 @@ import {
   ProcureToPayEngine,
   SubledgerEngine,
   LocalJwtAuthProvider,
+  ManufacturingEngine,
+  FixedAssetEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -279,6 +281,81 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       const verified = await provider.validateToken(authResult.tokens.accessToken);
       assert.equal(verified.email, 'admin@sutra.local');
       assert.ok(verified.permissions.has('*'));
+    });
+  });
+
+  describe('Production Planning & Manufacturing Engine (SAP PP)', () => {
+    test('explodes BOM and verifies material availability for production order', () => {
+      const inventory = new InventoryEngine();
+      const mfg = new ManufacturingEngine(inventory);
+
+      const order = mfg.planProductionOrder({
+        tenantId: '00000000-0000-0000-0000-000000000001',
+        orderNumber: 'PRD-TEST-001',
+        targetSku: 'FERT-EVTRK-001',
+        targetQuantity: 2,
+        plantId: 'PLANT-1000',
+        startDate: '2026-09-29',
+        targetCompletionDate: '2026-10-05',
+      });
+
+      assert.equal(order.status, 'RELEASED');
+      assert.equal(order.targetQuantity, 2);
+      assert.equal(order.componentsRequired.length, 2);
+      assert.ok(order.totalDirectMaterialCost > 0);
+      assert.ok(order.estimatedLaborCost > 0);
+      assert.ok(order.costPerFinishedUnit > 0);
+    });
+
+    test('confirms production order, consumes WIP components, and posts finished inventory', () => {
+      const inventory = new InventoryEngine();
+      const mfg = new ManufacturingEngine(inventory);
+
+      mfg.planProductionOrder({
+        tenantId: '00000000-0000-0000-0000-000000000001',
+        orderNumber: 'PRD-TEST-002',
+        targetSku: 'FERT-EVTRK-001',
+        targetQuantity: 1,
+        plantId: 'PLANT-1000',
+        startDate: '2026-09-29',
+        targetCompletionDate: '2026-10-05',
+      });
+
+      const confirmation = mfg.confirmProductionOrder(
+        '00000000-0000-0000-0000-000000000001',
+        'PRD-TEST-002',
+        1
+      );
+
+      assert.equal(confirmation.producedQuantity, 1);
+      assert.ok(confirmation.goodsIssueMovementDocIds.length > 0);
+      assert.ok(confirmation.goodsReceiptMovementDocId);
+      assert.ok(confirmation.unitFinishedCost > 0);
+      assert.ok(confirmation.glJournalNumber);
+    });
+  });
+
+  describe('Fixed Asset Accounting Engine (SAP FI-AA)', () => {
+    test('calculates straight line (SLM) depreciation under Companies Act 2013', () => {
+      const assetEngine = new FixedAssetEngine();
+      const asset = assetEngine.getAsset('AST-PUNE-ROBOT-01');
+      assert.ok(asset);
+
+      // Cost = 65L, Salvage = 3.25L, Depreciable = 61.75L over 15 years (180 months) -> ~34,305.56/mo
+      const monthly = assetEngine.calculateMonthlyDepreciation(asset);
+      assert.ok(monthly > 34000 && monthly < 35000);
+    });
+
+    test('executes monthly depreciation run and posts balanced GL entries', () => {
+      const assetEngine = new FixedAssetEngine();
+      const result = assetEngine.executeMonthlyDepreciationRun(
+        '00000000-0000-0000-0000-000000000001',
+        '2026-09'
+      );
+
+      assert.ok(result.assetsProcessed >= 3);
+      assert.ok(result.totalDepreciationAmount > 0);
+      assert.ok(result.glJournalNumber);
     });
   });
 });
