@@ -456,3 +456,87 @@ CREATE TABLE IF NOT EXISTS fixed_assets (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_asset_id UNIQUE (tenant_id, asset_id)
 );
+
+-- =================================================================
+-- 15. Quality Management (QM) & Batch Traceability
+-- =================================================================
+CREATE TABLE IF NOT EXISTS inspection_lots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    lot_id VARCHAR(100) NOT NULL,
+    origin VARCHAR(50) NOT NULL, -- 01_GOODS_RECEIPT, 04_PRODUCTION, 08_STOCK_TRANSFER
+    material_sku VARCHAR(100) NOT NULL,
+    batch_number VARCHAR(100) NOT NULL,
+    quantity NUMERIC(18, 4) NOT NULL,
+    base_uom VARCHAR(20) NOT NULL,
+    plant_id VARCHAR(50) NOT NULL,
+    reference_document VARCHAR(100),
+    status VARCHAR(50) NOT NULL DEFAULT 'CREATED', -- CREATED, RESULTS_RECORDED, UD_COMPLETED
+    usage_decision VARCHAR(50), -- ACCEPTED, REJECTED, SCRAPPED
+    movement_type VARCHAR(10),  -- 321, 350, 551
+    characteristics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    results JSONB NOT NULL DEFAULT '[]'::jsonb,
+    decided_by VARCHAR(100),
+    decided_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_lot_id UNIQUE (tenant_id, lot_id)
+);
+
+CREATE TABLE IF NOT EXISTS batch_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    batch_number VARCHAR(100) NOT NULL,
+    material_sku VARCHAR(100) NOT NULL,
+    plant_id VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'IN_QUALITY', -- UNRESTRICTED, IN_QUALITY, BLOCKED
+    manufacturing_date DATE NOT NULL,
+    expiry_date DATE,
+    vendor_batch VARCHAR(100),
+    total_quantity NUMERIC(18, 4) NOT NULL,
+    parent_batches JSONB NOT NULL DEFAULT '[]'::jsonb,
+    child_batches JSONB NOT NULL DEFAULT '[]'::jsonb,
+    delivered_sales_orders JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_batch_num UNIQUE (tenant_id, batch_number)
+);
+
+-- =================================================================
+-- 16. Controlling (CO) & Cost Center Accounting
+-- =================================================================
+CREATE TABLE IF NOT EXISTS profit_centers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    segment VARCHAR(100) NOT NULL,
+    responsible_person VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_profit_center UNIQUE (tenant_id, code)
+);
+
+CREATE TABLE IF NOT EXISTS cost_centers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL, -- PRODUCTION, ADMINISTRATION, R_AND_D, LOGISTICS, SHARED_SERVICE
+    manager VARCHAR(100),
+    currency VARCHAR(10) DEFAULT 'INR',
+    profit_center_code VARCHAR(50) REFERENCES profit_centers(code),
+    budget_annual NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    actual_incurred NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_cost_center UNIQUE (tenant_id, code)
+);
+
+CREATE TABLE IF NOT EXISTS cost_allocation_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    rule_id VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    sender_cost_center VARCHAR(50) NOT NULL,
+    assessment_type VARCHAR(50) NOT NULL DEFAULT 'PERCENTAGE',
+    receiver_distributions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_alloc_rule UNIQUE (tenant_id, rule_id)
+);

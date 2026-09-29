@@ -87,6 +87,24 @@
         <Building2 class="tab-icon" />
         <span>Fixed Assets & Depr (FI-AA)</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'quality' }"
+        @click="activeTab = 'quality'"
+      >
+        <ShieldCheck class="tab-icon" />
+        <span>Quality & Traceability (QM)</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'controlling' }"
+        @click="activeTab = 'controlling'"
+      >
+        <PieChart class="tab-icon" />
+        <span>Cost Centers & Alloc (CO)</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -812,6 +830,252 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 7: Quality Management & Batch Traceability (QM) -->
+    <div v-if="activeTab === 'quality'" class="tab-content">
+      <div class="grid-2-1">
+        <!-- Inspection Lots Register -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Quality Inspection Lots (SAP QM)</h3>
+              <span class="panel-sub">Goods Receipt (01), In-Process Production (04), Stock Transfers</span>
+            </div>
+            <button class="action-btn-sm" @click="createDemoInspectionLot">
+              <RefreshCw class="btn-icon-sm" />
+              <span>Simulate GR Inspection</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lot ID</th>
+                  <th>Origin</th>
+                  <th>Material SKU</th>
+                  <th>Batch #</th>
+                  <th>Qty</th>
+                  <th>Status</th>
+                  <th>Decision</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="lot in inspectionLots"
+                  :key="lot.lotId"
+                  :class="{ 'selected-row': selectedLot?.lotId === lot.lotId }"
+                  style="cursor: pointer;"
+                  @click="selectedLot = lot"
+                >
+                  <td class="font-mono text-cyan">{{ lot.lotId }}</td>
+                  <td><span class="badge blue">{{ lot.origin.replace('_', ' ') }}</span></td>
+                  <td class="font-mono text-dim">{{ lot.materialSku }}</td>
+                  <td class="font-mono font-bold">{{ lot.batchNumber }}</td>
+                  <td class="font-mono">{{ lot.quantity }} {{ lot.baseUom }}</td>
+                  <td>
+                    <span class="status-pill" :class="lot.status === 'UD_COMPLETED' ? 'success' : 'warning'">
+                      {{ lot.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="lot.usageDecision" class="status-pill" :class="lot.usageDecision.decision === 'ACCEPTED' ? 'success' : 'danger'">
+                      {{ lot.usageDecision.decision }} (Mvt {{ lot.usageDecision.movementType }})
+                    </span>
+                    <span v-else class="text-dim">Pending</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Batch Genealogy Trace View -->
+          <div style="margin-top: 24px;">
+            <h4>End-to-End Batch Genealogy Traceability</h4>
+            <span class="panel-sub">Full upstream supplier origin to downstream vehicle & customer sales order</span>
+            <div class="genealogy-card" style="margin-top: 10px;">
+              <div class="trace-step">
+                <span class="trace-label">1. Supplier Raw Material Batch</span>
+                <strong class="font-mono text-cyan">{{ activeTrace.upstreamRaw }}</strong>
+                <span class="trace-meta">Jindal Steel & Power Ltd • PO-2026-0891</span>
+              </div>
+              <ArrowRight class="trace-arrow" />
+              <div class="trace-step">
+                <span class="trace-label">2. Manufacturing Order (PP)</span>
+                <strong class="font-mono text-yellow">{{ activeTrace.mfgOrder }}</strong>
+                <span class="trace-meta">Press Line WC-PRESS-01 • WIP Consumed</span>
+              </div>
+              <ArrowRight class="trace-arrow" />
+              <div class="trace-step">
+                <span class="trace-label">3. Finished EV Batch</span>
+                <strong class="font-mono text-green">{{ activeTrace.finishedBatch }}</strong>
+                <span class="trace-meta">Sutra E-Titan 1.5T • 10 Units</span>
+              </div>
+              <ArrowRight class="trace-arrow" />
+              <div class="trace-step">
+                <span class="trace-label">4. Customer Sales Order</span>
+                <strong class="font-mono text-accent">{{ activeTrace.customerOrder }}</strong>
+                <span class="trace-meta">Tata Motors Fleet Solutions • Inv #4901</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lot Inspection & Usage Decision Cockpit -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Usage Decision & CoA</h3>
+            <span class="panel-sub">Results recording, tolerance validation & digital signature</span>
+          </div>
+
+          <div v-if="selectedLot" class="inspection-detail-box">
+            <div class="lot-header-box">
+              <div>
+                <strong class="font-mono text-cyan">{{ selectedLot.lotId }}</strong>
+                <div class="text-dim">{{ selectedLot.materialSku }} — Batch {{ selectedLot.batchNumber }}</div>
+              </div>
+              <span class="badge purple">{{ selectedLot.quantity }} {{ selectedLot.baseUom }}</span>
+            </div>
+
+            <div class="char-list" style="margin-top: 14px;">
+              <span class="gl-title">Quality Inspection Characteristics:</span>
+              <div v-for="char in selectedLot.characteristics" :key="char.charId" class="char-item">
+                <div class="char-desc">
+                  <strong>{{ char.name }}</strong>
+                  <span class="text-dim font-mono">
+                    {{ char.type === 'QUANTITATIVE' ? `Target: ${char.targetValue} (${char.lowerLimit} - ${char.upperLimit} ${char.uom})` : `Spec: ${char.expectedText}` }}
+                  </span>
+                </div>
+                <div class="char-val font-mono font-bold text-green">
+                  {{ char.observed || 'CONFORMS' }}
+                </div>
+              </div>
+            </div>
+
+            <div v-if="!selectedLot.usageDecision" class="qm-actions" style="margin-top: 16px; display: flex; gap: 10px;">
+              <button class="workflow-btn primary" @click="postUsageDecision(selectedLot, 'ACCEPTED')">
+                <CheckCircle2 class="btn-icon-sm" />
+                <span>Accept (Mvt 321)</span>
+              </button>
+              <button class="workflow-btn" style="border-color: #ef4444; color: #f87171;" @click="postUsageDecision(selectedLot, 'REJECTED')">
+                <span>Reject (Mvt 350)</span>
+              </button>
+            </div>
+
+            <div v-else class="coa-card" style="margin-top: 16px;">
+              <div class="coa-header">
+                <ShieldCheck class="icon-success" />
+                <div>
+                  <strong>Certificate of Analysis (CoA)</strong>
+                  <span class="font-mono text-dim" style="display: block; font-size: 11px;">Signed by QA Manager</span>
+                </div>
+              </div>
+              <div class="irn-snippet" style="margin-top: 10px;">
+                SHA-256 Hash: {{ selectedLot.coaHash || 'a7f9c2e4b8d10356e92c4a17fb823019d45e78a6231bc54e90fd18247cae9812' }}
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <ShieldCheck class="empty-icon" />
+            <p>Select an inspection lot to review test parameters and record Usage Decisions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: Controlling & Cost Center Accounting (CO) -->
+    <div v-if="activeTab === 'controlling'" class="tab-content">
+      <div class="grid-2-1">
+        <!-- Cost Center Master & Budgets -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Cost Center Accounting (SAP CO-CCA)</h3>
+              <span class="panel-sub">Operating cost centers, profit centers, and annual budget absorption</span>
+            </div>
+            <button class="action-btn-sm" @click="runAssessmentCycle">
+              <RefreshCw class="btn-icon-sm" />
+              <span>Run Assessment Cycle</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cost Center</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Profit Center</th>
+                  <th>Annual Budget</th>
+                  <th>Actual Incurred</th>
+                  <th>Utilization</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="cc in costCenters" :key="cc.code">
+                  <td class="font-mono text-cyan">{{ cc.code }}</td>
+                  <td>{{ cc.name }}</td>
+                  <td><span class="badge blue">{{ cc.category }}</span></td>
+                  <td class="font-mono text-dim">{{ cc.profitCenterCode }}</td>
+                  <td class="font-mono">₹{{ cc.budgetAnnual.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono font-bold text-accent">₹{{ cc.actualIncurred.toLocaleString('en-IN') }}</td>
+                  <td>
+                    <div class="progress-bar" style="width: 80px;">
+                      <div class="progress-fill" :style="{ width: Math.min(100, Math.round((cc.actualIncurred / cc.budgetAnnual) * 100)) + '%' }"></div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Overhead Assessment Cycle Audit -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Secondary Cost Allocation</h3>
+            <span class="panel-sub">Periodic distribution of IT & Facility shared services</span>
+          </div>
+
+          <div v-if="assessmentResult" class="audit-card">
+            <div class="audit-status">
+              <CheckCircle2 class="icon-success" />
+              <div>
+                <strong>Assessment Cycle {{ assessmentResult.cycleId }}</strong>
+                <span>Distributed ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }} from {{ assessmentResult.sender }}</span>
+              </div>
+            </div>
+
+            <div class="tax-tds-breakdown" style="margin-top: 14px;">
+              <span class="gl-title">Secondary Cost Allocations:</span>
+              <div v-for="alloc in assessmentResult.distributions" :key="alloc.receiver" class="calc-row">
+                <span>{{ alloc.receiver }} ({{ alloc.percentage }}%):</span>
+                <span class="font-mono text-cyan">₹{{ alloc.amount.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+
+            <div class="gl-lines-box" style="margin-top: 14px;">
+              <span class="gl-title">Secondary Cost Element Journal (GL 610000):</span>
+              <div class="gl-line">
+                <span class="font-mono text-dim">610000</span>
+                <span class="gl-acc-name">Cost Assessment Inflow</span>
+                <span class="font-mono text-green">Dr ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="gl-line">
+                <span class="font-mono text-dim">610000</span>
+                <span class="gl-acc-name">Cost Assessment Outflow</span>
+                <span class="font-mono text-cyan">Cr ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <Clock class="empty-icon" />
+            <p>Click "Run Assessment Cycle" to allocate support cost center expenses to production work centers.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -831,9 +1095,10 @@ import {
   ArrowRight,
   Factory,
   Building2,
+  PieChart,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -1233,6 +1498,143 @@ function executeDepreciationRun() {
     runId: `DEP-${Date.now().toString(36).toUpperCase()}`,
     period: '2026-09',
     totalDepreciationAmount: monthlyTotal,
+  };
+}
+
+// Quality Management (QM) & Batch Traceability
+const inspectionLots = ref([
+  {
+    lotId: 'LOT-2026-ST-01',
+    origin: '01_GOODS_RECEIPT',
+    materialSku: 'ROH-STEEL-001',
+    batchNumber: 'BATCH-2026-ST-088',
+    quantity: 5000,
+    baseUom: 'KG',
+    status: 'UD_COMPLETED',
+    characteristics: [
+      { charId: 'C1', name: 'Sheet Thickness (mm)', type: 'QUANTITATIVE', targetValue: 1.2, lowerLimit: 1.15, upperLimit: 1.25, uom: 'MM', observed: '1.21 MM' },
+      { charId: 'C2', name: 'Tensile Strength (MPa)', type: 'QUANTITATIVE', targetValue: 340, lowerLimit: 310, upperLimit: 390, uom: 'MPA', observed: '348 MPA' },
+      { charId: 'C3', name: 'Visual Surface Defect', type: 'QUALITATIVE', expectedText: 'PASS', observed: 'PASS (No Rust)' },
+    ],
+    usageDecision: { decision: 'ACCEPTED', movementType: '321' },
+    coaHash: 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+  },
+  {
+    lotId: 'LOT-2026-EV-04',
+    origin: '04_PRODUCTION',
+    materialSku: 'FERT-EVTRK-001',
+    batchNumber: 'BATCH-2026-EV-001',
+    quantity: 5,
+    baseUom: 'EA',
+    status: 'CREATED',
+    characteristics: [
+      { charId: 'C4', name: 'Battery Traction Voltage (V)', type: 'QUANTITATIVE', targetValue: 400.0, lowerLimit: 385.0, upperLimit: 415.0, uom: 'V', observed: '402.5 V' },
+      { charId: 'C5', name: 'Regen Braking Decel (m/s²)', type: 'QUANTITATIVE', targetValue: 6.8, lowerLimit: 6.2, upperLimit: 7.5, uom: 'M/S2', observed: '6.9 M/S2' },
+      { charId: 'C6', name: 'AIS-140 GPS Fix & Telematics', type: 'QUALITATIVE', expectedText: 'CONNECTED', observed: 'CONNECTED' },
+    ],
+    usageDecision: null as any,
+    coaHash: '',
+  },
+]);
+
+const selectedLot = ref<any>(inspectionLots.value[1]);
+
+const activeTrace = ref({
+  upstreamRaw: 'BATCH-2026-ST-088',
+  mfgOrder: 'ORD-PP-EV981',
+  finishedBatch: 'BATCH-2026-EV-001',
+  customerOrder: 'SO-2026-0042',
+});
+
+function createDemoInspectionLot() {
+  const newLot = {
+    lotId: `LOT-${Date.now().toString(36).toUpperCase()}`,
+    origin: '01_GOODS_RECEIPT',
+    materialSku: 'ROH-STEEL-001',
+    batchNumber: `BATCH-2026-ST-${Math.floor(Math.random() * 900 + 100)}`,
+    quantity: 2500,
+    baseUom: 'KG',
+    status: 'CREATED',
+    characteristics: [
+      { charId: 'C1', name: 'Sheet Thickness (mm)', type: 'QUANTITATIVE', targetValue: 1.2, lowerLimit: 1.15, upperLimit: 1.25, uom: 'MM', observed: '1.20 MM' },
+      { charId: 'C2', name: 'Tensile Strength (MPa)', type: 'QUANTITATIVE', targetValue: 340, lowerLimit: 310, upperLimit: 390, uom: 'MPA', observed: '342 MPA' },
+      { charId: 'C3', name: 'Visual Surface Defect', type: 'QUALITATIVE', expectedText: 'PASS', observed: 'PASS' },
+    ],
+    usageDecision: null as any,
+    coaHash: '',
+  };
+  inspectionLots.value.unshift(newLot);
+  selectedLot.value = newLot;
+}
+
+function postUsageDecision(lot: any, decision: 'ACCEPTED' | 'REJECTED') {
+  lot.usageDecision = {
+    decision,
+    movementType: decision === 'ACCEPTED' ? '321' : '350',
+  };
+  lot.status = 'UD_COMPLETED';
+  lot.coaHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+// Controlling (CO) & Cost Centers
+const costCenters = ref([
+  {
+    code: 'CC-MFG-BODY',
+    name: 'Chassis Stamping & Body Shop',
+    category: 'PRODUCTION',
+    profitCenterCode: 'PC-EV-COMMERCIAL',
+    budgetAnnual: 48000000,
+    actualIncurred: 36500000,
+  },
+  {
+    code: 'CC-MFG-ASSY',
+    name: 'Powertrain & Final Robotic Assembly',
+    category: 'PRODUCTION',
+    profitCenterCode: 'PC-EV-COMMERCIAL',
+    budgetAnnual: 72000000,
+    actualIncurred: 54200000,
+  },
+  {
+    code: 'CC-SHARED-IT',
+    name: 'Enterprise IT, Cloud & Robotics Telemetry',
+    category: 'SHARED_SERVICE',
+    profitCenterCode: 'PC-EV-COMMERCIAL',
+    budgetAnnual: 18000000,
+    actualIncurred: 12000000,
+  },
+  {
+    code: 'CC-LOGISTICS',
+    name: 'Central Warehouse & Finished Vehicle Logistics',
+    category: 'LOGISTICS',
+    profitCenterCode: 'PC-EV-COMMERCIAL',
+    budgetAnnual: 24000000,
+    actualIncurred: 19800000,
+  },
+]);
+
+const assessmentResult = ref<any>(null);
+
+function runAssessmentCycle() {
+  const itCC = costCenters.value.find((c) => c.code === 'CC-SHARED-IT');
+  const bodyCC = costCenters.value.find((c) => c.code === 'CC-MFG-BODY');
+  const assyCC = costCenters.value.find((c) => c.code === 'CC-MFG-ASSY');
+  const logCC = costCenters.value.find((c) => c.code === 'CC-LOGISTICS');
+
+  const allocateAmt = 1000000;
+  if (itCC) itCC.actualIncurred = Math.max(0, itCC.actualIncurred - allocateAmt);
+  if (bodyCC) bodyCC.actualIncurred += 400000;
+  if (assyCC) assyCC.actualIncurred += 450000;
+  if (logCC) logCC.actualIncurred += 150000;
+
+  assessmentResult.value = {
+    cycleId: `CYC-${Date.now().toString(36).toUpperCase()}`,
+    sender: 'CC-SHARED-IT',
+    totalAmount: allocateAmt,
+    distributions: [
+      { receiver: 'CC-MFG-BODY (Body Shop)', amount: 400000, percentage: 40 },
+      { receiver: 'CC-MFG-ASSY (Assembly)', amount: 450000, percentage: 45 },
+      { receiver: 'CC-LOGISTICS (Logistics)', amount: 150000, percentage: 15 },
+    ],
   };
 }
 </script>
@@ -1850,4 +2252,89 @@ function executeDepreciationRun() {
 }
 .type-pill.roh { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
 .type-pill.halb { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+/* QM & CO Styles */
+.selected-row {
+  background: rgba(56, 189, 248, 0.1) !important;
+}
+.genealogy-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.trace-step {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 170px;
+}
+.trace-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.trace-meta {
+  font-size: 11px;
+  color: #64748b;
+}
+.trace-arrow {
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.inspection-detail-box {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+.lot-header-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.char-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.char-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 6px;
+}
+.char-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+.coa-card {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 14px;
+}
+.coa-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
 </style>
