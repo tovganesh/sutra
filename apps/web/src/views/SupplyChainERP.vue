@@ -67,7 +67,25 @@
         @click="activeTab = 'subledger'"
       >
         <Clock class="tab-icon" />
-        <span>AR / AP Working Capital Aging</span>
+        <span>AR / AP Working Capital</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'mfg' }"
+        @click="activeTab = 'mfg'"
+      >
+        <Factory class="tab-icon" />
+        <span>Manufacturing & BOM (PP)</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'assets' }"
+        @click="activeTab = 'assets'"
+      >
+        <Building2 class="tab-icon" />
+        <span>Fixed Assets & Depr (FI-AA)</span>
       </button>
     </div>
 
@@ -589,6 +607,211 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 5: Production Planning & Manufacturing (PP) -->
+    <div v-if="activeTab === 'mfg'" class="tab-content">
+      <div class="grid-2-1">
+        <!-- Bill of Materials (BOM) & Work Centers -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Bill of Materials (BOM) & Work Centers</h3>
+              <span class="panel-sub">Multi-level component explosion & machine routing</span>
+            </div>
+          </div>
+
+          <div class="bom-card">
+            <div class="bom-title-row">
+              <span class="badge green">Active BOM v1.0</span>
+              <strong class="font-mono text-cyan">FERT-EVTRK-001 — Sutra E-Titan 1.5T EV</strong>
+            </div>
+
+            <table class="data-table" style="margin-top: 12px;">
+              <thead>
+                <tr>
+                  <th>Component SKU</th>
+                  <th>Quantity / Unit</th>
+                  <th>UoM</th>
+                  <th>Scrap %</th>
+                  <th>Component Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="comp in activeBom.components" :key="comp.componentSku">
+                  <td class="font-mono text-cyan">{{ comp.componentSku }}</td>
+                  <td class="font-mono font-bold">{{ comp.quantityRequired }}</td>
+                  <td class="text-dim">{{ comp.baseUom }}</td>
+                  <td class="font-mono text-dim">{{ comp.scrapFactorPercent }}%</td>
+                  <td>
+                    <span class="type-pill" :class="comp.componentSku.startsWith('ROH') ? 'roh' : 'halb'">
+                      {{ comp.componentSku.startsWith('ROH') ? 'Raw Material' : 'Sub-Assembly' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Work Centers & Routing Operations -->
+          <div style="margin-top: 20px;">
+            <h4>Manufacturing Work Centers & Routings</h4>
+            <div class="wc-grid">
+              <div v-for="wc in workCenters" :key="wc.workCenterId" class="wc-card">
+                <div class="wc-head">
+                  <Factory class="btn-icon-sm text-cyan" />
+                  <strong>{{ wc.name }}</strong>
+                </div>
+                <div class="wc-rates">
+                  <div><span class="text-dim">Labor:</span> ₹{{ wc.hourlyLaborCost }}/hr</div>
+                  <div><span class="text-dim">Machine:</span> ₹{{ wc.hourlyMachineCost }}/hr</div>
+                  <div><span class="text-dim">Capacity:</span> {{ wc.capacityHoursPerDay }} hrs/day</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Production Order Simulator -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Production Order Execution</h3>
+            <span class="panel-sub">Release -> Consume WIP (Mvt 261) -> Confirm FG (Mvt 131)</span>
+          </div>
+
+          <div class="mfg-order-box">
+            <div class="form-group">
+              <label>Target Quantity to Manufacture</label>
+              <input v-model.number="mfgOrderQty" type="number" min="1" class="form-input" />
+            </div>
+
+            <button class="workflow-btn primary" :disabled="mfgPlanning" @click="planProductionOrder" style="margin-top: 10px;">
+              <Layers class="btn-icon-sm" />
+              <span>1. Plan Order & Explode BOM</span>
+            </button>
+          </div>
+
+          <div v-if="plannedOrder" class="planned-order-card" style="margin-top: 16px;">
+            <div class="po-title">
+              <span class="font-mono text-cyan font-bold">{{ plannedOrder.orderNumber }}</span>
+              <span class="status-pill success">{{ plannedOrder.status }}</span>
+            </div>
+
+            <div class="cost-summary-box">
+              <div class="summary-line">
+                <span>Direct Material Cost:</span>
+                <span class="font-mono">₹{{ plannedOrder.totalDirectMaterialCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="summary-line">
+                <span>Direct Labor Overhead:</span>
+                <span class="font-mono">₹{{ plannedOrder.estimatedLaborCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="summary-line">
+                <span>Machine Overhead:</span>
+                <span class="font-mono">₹{{ plannedOrder.estimatedMachineCost.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="summary-line total">
+                <span>Total Standard Cost:</span>
+                <strong class="font-mono text-accent">₹{{ plannedOrder.totalPlannedCost.toLocaleString('en-IN') }}</strong>
+              </div>
+            </div>
+
+            <button class="workflow-btn" :disabled="mfgConfirmed" @click="confirmProductionOrder" style="margin-top: 14px; width: 100%;">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>{{ mfgConfirmed ? 'Confirmed & Inventory Updated' : '2. Confirm Batch & Post WIP to GL' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: Fixed Asset Accounting (FI-AA) -->
+    <div v-if="activeTab === 'assets'" class="tab-content">
+      <div class="grid-2-1">
+        <!-- Asset Master Register -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Capital Fixed Asset Register (FI-AA)</h3>
+              <span class="panel-sub">Indian Companies Act 2013 Schedule II Useful Life & Salvage Cap (5%)</span>
+            </div>
+            <button class="action-btn-sm" @click="executeDepreciationRun">
+              <RefreshCw class="btn-icon-sm" />
+              <span>Run Monthly Depreciation</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Asset ID</th>
+                  <th>Description</th>
+                  <th>Class</th>
+                  <th>Useful Life</th>
+                  <th>Method</th>
+                  <th>Original Cost</th>
+                  <th>Acc. Depreciation</th>
+                  <th>Net Book Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="ast in fixedAssets" :key="ast.assetId">
+                  <td class="font-mono text-cyan">{{ ast.assetId }}</td>
+                  <td>{{ ast.name }}</td>
+                  <td><span class="badge blue">{{ ast.assetClass }}</span></td>
+                  <td class="font-mono">{{ ast.usefulLifeYears }} Yrs</td>
+                  <td class="font-mono text-dim">{{ ast.depreciationMethod }}</td>
+                  <td class="font-mono">₹{{ ast.originalCost.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono text-red">₹{{ ast.accumulatedDepreciation.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono font-bold text-green">₹{{ ast.currentBookValue.toLocaleString('en-IN') }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Monthly Depreciation Run Audit -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Depreciation Run Audit</h3>
+            <span class="panel-sub">Automated GL Expense & Contra-Asset Posting</span>
+          </div>
+
+          <div v-if="deprRunResult" class="depr-audit-card">
+            <div class="result-header">
+              <CheckCircle2 class="icon-success" />
+              <div>
+                <strong>Run {{ deprRunResult.runId }}</strong>
+                <span>Period {{ deprRunResult.period }} Processed</span>
+              </div>
+            </div>
+
+            <div class="calc-row total" style="margin: 12px 0;">
+              <span>Total Monthly Depreciation:</span>
+              <strong class="font-mono text-accent">₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</strong>
+            </div>
+
+            <div class="gl-lines-box">
+              <span class="gl-title">Automated GL Postings:</span>
+              <div class="gl-line">
+                <span class="font-mono text-dim">530100</span>
+                <span class="gl-acc-name">Depreciation Expense (P&L)</span>
+                <span class="font-mono text-green">Dr ₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="gl-line">
+                <span class="font-mono text-dim">140900</span>
+                <span class="gl-acc-name">Accumulated Depreciation (Contra Asset)</span>
+                <span class="font-mono text-cyan">Cr ₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <Building2 class="empty-icon" />
+            <p>Click "Run Monthly Depreciation" to execute Schedule II calculations and generate balanced General Ledger entries.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -606,9 +829,11 @@ import {
   FileText,
   ShieldCheck,
   ArrowRight,
+  Factory,
+  Building2,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -889,6 +1114,127 @@ const agingData = ref({
     dpoDays: 39,
   },
 });
+
+// Manufacturing & BOM (PP)
+const activeBom = ref({
+  bomId: 'BOM-EVTRK-001',
+  finishedGoodSku: 'FERT-EVTRK-001',
+  version: '1.0',
+  components: [
+    { componentSku: 'ROH-STEEL-001', name: 'Cold-Rolled Steel Coils', quantityRequired: 150, baseUom: 'KG', scrapFactorPercent: 2.0 },
+    { componentSku: 'HALB-AXLE-001', name: 'Rear Axle Hub Sub-Assembly', quantityRequired: 2, baseUom: 'EA', scrapFactorPercent: 0.5 },
+  ],
+});
+
+const workCenters = ref([
+  {
+    workCenterId: 'WC-PRESS-01',
+    name: 'Chassis Stamping & Press Line',
+    hourlyLaborCost: 450,
+    hourlyMachineCost: 1200,
+    capacityHoursPerDay: 16,
+  },
+  {
+    workCenterId: 'WC-ASSY-02',
+    name: 'EV Powertrain Robotic Integration',
+    hourlyLaborCost: 650,
+    hourlyMachineCost: 2100,
+    capacityHoursPerDay: 20,
+  },
+]);
+
+const mfgOrderQty = ref(5);
+const mfgPlanning = ref(false);
+const mfgConfirmed = ref(false);
+const plannedOrder = ref<any>(null);
+
+function planProductionOrder() {
+  mfgPlanning.value = true;
+  setTimeout(() => {
+    mfgPlanning.value = false;
+    mfgConfirmed.value = false;
+    const qty = mfgOrderQty.value || 1;
+    const matCost = qty * ((150 * 62.5) + (2 * 1820));
+    const laborCost = qty * 4.5 * 550;
+    const machCost = qty * 3.2 * 1650;
+    plannedOrder.value = {
+      orderNumber: `ORD-PP-${Date.now().toString(36).toUpperCase()}`,
+      status: 'PLANNED_RELEASED',
+      quantity: qty,
+      totalDirectMaterialCost: Math.round(matCost),
+      estimatedLaborCost: Math.round(laborCost),
+      estimatedMachineCost: Math.round(machCost),
+      totalPlannedCost: Math.round(matCost + laborCost + machCost),
+    };
+  }, 300);
+}
+
+function confirmProductionOrder() {
+  if (!plannedOrder.value) return;
+  mfgConfirmed.value = true;
+  plannedOrder.value.status = 'CONFIRMED_POSTED';
+  const fert = materials.value.find((m) => m.sku === 'FERT-EVTRK-001');
+  if (fert) fert.totalStock += plannedOrder.value.quantity;
+
+  const steel = materials.value.find((m) => m.sku === 'ROH-STEEL-001');
+  if (steel) steel.totalStock = Math.max(0, steel.totalStock - (plannedOrder.value.quantity * 150));
+
+  const axle = materials.value.find((m) => m.sku === 'HALB-AXLE-001');
+  if (axle) axle.totalStock = Math.max(0, axle.totalStock - (plannedOrder.value.quantity * 2));
+}
+
+// Fixed Asset Accounting (FI-AA)
+const fixedAssets = ref([
+  {
+    assetId: 'AST-PLANT-001',
+    name: '500-Ton Hydraulic Stamping Press',
+    assetClass: 'PLANT_MACHINERY',
+    usefulLifeYears: 15,
+    depreciationMethod: 'STRAIGHT_LINE',
+    originalCost: 8500000,
+    accumulatedDepreciation: 1700000,
+    currentBookValue: 6800000,
+  },
+  {
+    assetId: 'AST-ROBOT-002',
+    name: '6-Axis ABB Robotic Welding Cell',
+    assetClass: 'AUTOMATION',
+    usefulLifeYears: 10,
+    depreciationMethod: 'STRAIGHT_LINE',
+    originalCost: 4200000,
+    accumulatedDepreciation: 1260000,
+    currentBookValue: 2940000,
+  },
+  {
+    assetId: 'AST-SRV-003',
+    name: 'Dell PowerEdge Tier-3 Data Center Clustered Servers',
+    assetClass: 'IT_HARDWARE',
+    usefulLifeYears: 6,
+    depreciationMethod: 'STRAIGHT_LINE',
+    originalCost: 1800000,
+    accumulatedDepreciation: 900000,
+    currentBookValue: 900000,
+  },
+]);
+
+const deprRunResult = ref<any>(null);
+
+function executeDepreciationRun() {
+  let monthlyTotal = 0;
+  for (const asset of fixedAssets.value) {
+    const depreciableBase = asset.originalCost * 0.95;
+    const monthlyDepr = Math.round(depreciableBase / (asset.usefulLifeYears * 12));
+    monthlyTotal += monthlyDepr;
+    asset.accumulatedDepreciation += monthlyDepr;
+    asset.currentBookValue = Math.max(asset.originalCost * 0.05, asset.currentBookValue - monthlyDepr);
+  }
+
+  deprRunResult.value = {
+    runId: `DEP-${Date.now().toString(36).toUpperCase()}`,
+    period: '2026-09',
+    totalDepreciationAmount: monthlyTotal,
+  };
+}
 </script>
 
 <style scoped>
@@ -1382,4 +1728,126 @@ const agingData = ref({
 .badge-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .irn-snippet { font-size: 10px; word-break: break-all; color: #cbd5e1; margin-bottom: 8px; }
 .eway-tag { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+
+/* Manufacturing & BOM */
+.bom-card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+.bom-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.wc-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 12px;
+}
+.wc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.wc-rates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.mfg-order-box {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 16px;
+}
+.planned-order-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+.po-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cost-summary-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(30, 41, 59, 0.4);
+  padding: 12px;
+  border-radius: 6px;
+}
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.summary-line.total {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+/* Fixed Assets FI-AA */
+.depr-audit-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon-success {
+  width: 24px;
+  height: 24px;
+  color: #34d399;
+}
+.gl-lines-box {
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gl-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.gl-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.gl-acc-name {
+  color: #cbd5e1;
+  flex: 1;
+  margin: 0 10px;
+}
+.type-pill.roh { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+.type-pill.halb { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
 </style>

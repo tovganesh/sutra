@@ -327,3 +327,132 @@ INSERT INTO chart_of_accounts (tenant_id, code, name, account_type) VALUES
 ('00000000-0000-0000-0000-000000000001', '5000', 'Cost of Goods Sold (COGS)', 'EXPENSE'),
 ('00000000-0000-0000-0000-000000000001', '5100', 'Employee Salaries & Benefits', 'EXPENSE')
 ON CONFLICT DO NOTHING;
+
+-- =================================================================
+-- 11. Materials Management (MM) - Material Master & Movements
+-- =================================================================
+CREATE TABLE IF NOT EXISTS materials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    sku VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    material_type VARCHAR(20) NOT NULL, -- ROH, HALB, FERT, HAWA, DIEN
+    base_uom VARCHAR(20) NOT NULL,      -- KG, EA, LTR, MTR
+    hsn_code VARCHAR(10) NOT NULL,
+    standard_price NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    moving_avg_price NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_stock NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    safety_stock NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    reorder_point NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    valuation_class VARCHAR(20) DEFAULT '3000',
+    gl_inventory_account VARCHAR(50) DEFAULT '1300',
+    gl_cogs_account VARCHAR(50) DEFAULT '5000',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_material_sku UNIQUE (tenant_id, sku)
+);
+
+CREATE TABLE IF NOT EXISTS inventory_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    document_number VARCHAR(100) NOT NULL,
+    movement_type VARCHAR(10) NOT NULL, -- 101, 102, 201, 261, 311, 601
+    material_sku VARCHAR(100) NOT NULL,
+    quantity NUMERIC(18, 4) NOT NULL,
+    unit_cost NUMERIC(18, 4) NOT NULL,
+    from_plant VARCHAR(50),
+    to_plant VARCHAR(50),
+    reference_document VARCHAR(100),
+    cost_center VARCHAR(100),
+    journal_id UUID REFERENCES journal_entries(id),
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =================================================================
+-- 12. Sales Orders (SD) & Purchase Orders (P2P)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS sales_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    order_number VARCHAR(100) NOT NULL,
+    customer_id VARCHAR(100) NOT NULL,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_gstin VARCHAR(15),
+    status VARCHAR(50) NOT NULL DEFAULT 'CONFIRMED',
+    taxable_amount NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    cgst_amount NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    sgst_amount NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    igst_amount NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    grand_total NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_sales_order_num UNIQUE (tenant_id, order_number)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    po_number VARCHAR(100) NOT NULL,
+    vendor_id VARCHAR(100) NOT NULL,
+    vendor_name VARCHAR(255) NOT NULL,
+    vendor_gstin VARCHAR(15),
+    is_msme BOOLEAN DEFAULT false,
+    status VARCHAR(50) NOT NULL DEFAULT 'APPROVED',
+    taxable_total NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_po_value NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    payment_terms_days INT DEFAULT 45,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_po_number UNIQUE (tenant_id, po_number)
+);
+
+-- =================================================================
+-- 13. Production Planning & Manufacturing (PP)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS bills_of_materials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    parent_sku VARCHAR(100) NOT NULL,
+    bom_version VARCHAR(20) NOT NULL DEFAULT '1.0',
+    plant_id VARCHAR(50) NOT NULL DEFAULT 'PLANT-1000',
+    components JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_bom_parent UNIQUE (tenant_id, parent_sku, bom_version)
+);
+
+CREATE TABLE IF NOT EXISTS production_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    order_number VARCHAR(100) NOT NULL,
+    target_sku VARCHAR(100) NOT NULL,
+    target_quantity NUMERIC(18, 4) NOT NULL,
+    produced_quantity NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'RELEASED',
+    planned_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    actual_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_production_order_num UNIQUE (tenant_id, order_number)
+);
+
+-- =================================================================
+-- 14. Fixed Asset Accounting (FI-AA)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS fixed_assets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    asset_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    asset_class VARCHAR(50) NOT NULL, -- BUILDINGS, PLANT_MACHINERY, IT_EQUIPMENT, VEHICLES
+    cost_center VARCHAR(100) NOT NULL,
+    capitalization_date DATE NOT NULL,
+    original_cost NUMERIC(18, 4) NOT NULL,
+    salvage_value NUMERIC(18, 4) NOT NULL,
+    useful_life_years INT NOT NULL,
+    depreciation_method VARCHAR(20) NOT NULL DEFAULT 'SLM',
+    accumulated_depreciation NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    current_book_value NUMERIC(18, 4) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_asset_id UNIQUE (tenant_id, asset_id)
+);
