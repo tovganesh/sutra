@@ -79,10 +79,10 @@ docker compose up -d
 sutra/
 ├── apps/
 │   ├── api/                    # Core Express/TypeScript API Gateway & Microservices
-│   └── web/                    # Modern Web Console & Studio (HTML5/CSS3/Vanilla JS)
+│   └── web/                    # Enterprise Web Console & Studio (Vue 3 + Vite + Glassmorphism SPA)
 ├── packages/
-│   ├── core/                   # RBAC, ABAC, PostgreSQL Pool, Audit Logger, MinIO Storage
-│   ├── compliance-india/       # GSTIN (Modulo-36), E-Invoice (IRN Hash + QR), TDS Engine
+│   ├── core/                   # RBAC, Pluggable Auth, Double-Entry Ledger, MM, O2C, P2P, Valkey Queue
+│   ├── compliance-india/       # GSTIN (Modulo-36), GSTR-1/3B, E-Invoice, E-Way Bill, Payroll & TDS Engine
 │   ├── no-code/                # Dynamic Entity Modeler & Workflow State Machine Engine
 │   ├── analytics/              # Real-time P&L, Balance Sheet & Executive KPI Evaluator
 │   └── ai-agent/               # Unified LLM Client (Ollama / Cloud), Text-to-ERP, IDP OCR
@@ -91,10 +91,35 @@ sutra/
 │   ├── Dockerfile.web          # Container definition for web console
 │   └── postgres-init/          # SQL DDL migrations, pgvector, and initial seed data
 ├── docs/                       # Architectural blueprints, migration guides, compliance docs
-├── docker-compose.yml          # Complete orchestration
+├── test/                       # Automated unit tests for compliance, ledger, and enterprise core
+├── docker-compose.yml          # Complete orchestration (PostgreSQL 16, Valkey 8, MinIO, API, Web)
 ├── LICENSE                     # Apache 2.0 License
 └── README.md
 ```
+
+---
+
+## 🏭 Enterprise ERP Operations (MM, SD, P2P, FI)
+
+Sutra includes end-to-end operational workflows on modern cloud-native foundations:
+1. **Materials Management (SAP MM)**:
+   * Multi-type Material Master (`ROH` Raw Materials, `HALB` Semi-Finished, `FERT` Finished Goods, `HAWA` Trading Goods).
+   * Real-time Moving Average Price (MAP) recalculation on receipt:
+     $$\text{New MAP} = \frac{(\text{Current Qty} \times \text{Current MAP}) + (\text{Receipt Qty} \times \text{Unit Cost})}{\text{Current Qty} + \text{Receipt Qty}}$$
+   * Movement types (`101` Goods Receipt, `102` Reversal, `201` Consumption, `311` Storage Transfer, `601` Sales Delivery).
+   * Automated double-entry GL postings (`Dr Inventory`, `Cr GR/IR Clearing Account`).
+2. **Order-to-Cash (SAP SD / O2C)**:
+   * Real-time Available-to-Promise (ATP) stock checks and Customer Credit Limit enforcement.
+   * Outbound Delivery Picking and Post Goods Issue (PGI Movement 601) with live COGS accounting.
+   * Billing Invoice generation with official NIC E-Invoice 64-char IRN hash and automatic E-Way Bill triggers (&gt; ₹50,000).
+3. **Procure-to-Pay (SAP MM / FI-AP / P2P)**:
+   * Purchase Order creation with MSME Section 43B(h) statutory payment deadline calculation (45-day cap).
+   * Dock Goods Receipt (GRN Movement 101) updating inventory and MAP.
+   * **3-Way Matching Verification**: Audits PO price & quantity vs GRN physical receipt vs Vendor Invoice.
+   * Statutory Income Tax TDS withholding (Sec 194Q for goods &gt; ₹50L @ 0.1%, Sec 194C contractor @ 2%, Sec 194J professional @ 10%).
+4. **Subledger Aging & Working Capital (SAP FI-AR / FI-AP)**:
+   * Real-time aging buckets: Current (0–30 Days), 31–60 Days, 61–90 Days, and Overdue (&gt; 90 Days).
+   * Days Sales Outstanding (DSO) and Days Payable Outstanding (DPO) gauges with net working capital exposure analysis.
 
 ---
 
@@ -105,9 +130,16 @@ Sutra is specifically tuned for Indian enterprise statutory regulations:
 2. **Intra vs Inter-State Tax Determination**:
    * Intra-State (`Supplier State == Place of Supply`): Splits tax into `CGST (50%) + SGST (50%)`.
    * Inter-State (`Supplier State != Place of Supply`): Applies `IGST (100%)`.
-3. **E-Invoicing IRN Generator**: Computes the 64-character SHA-256 Invoice Reference Number (IRN) hash following Government of India NIC guidelines.
-4. **TDS Evaluator**: Supports Sections 194C, 194J(a), 194J(b), and 194Q with Section 206AA penalty rate checks for invalid PANs.
-5. **Configurable for the World**: Pluggable compliance interfaces allow easy additions for US Sales Tax, EU VAT, or GCC ZATCA.
+3. **Official GSTR Returns**:
+   * **GSTR-1**: Generates official JSON payloads (Table 4 B2B, Table 12 HSN Summary, Table 13 Document Issue).
+   * **GSTR-3B**: Full summary with statutory **Rule 88A set-off order** (IGST ITC fully exhausted before CGST/SGST).
+4. **NIC E-Invoicing & E-Way Bill**:
+   * Computes 64-character SHA-256 IRN hash and signed QR code payload.
+   * E-Way Bill JSON generation with distance-based statutory validity calculation (200 km/day).
+5. **Indian Payroll & TDS**:
+   * Statutory EPF (12%), EPS (8.33%), EDLI, Admin charges, and ESI (0.75% / 3.25%).
+   * State-wise Professional Tax (Maharashtra, Karnataka, Telangana, Tamil Nadu, West Bengal).
+   * Income Tax TDS (Sections 194C, 194J, 194Q) with Section 206AA penalty rate checks (20%) for missing PANs.
 
 ---
 
@@ -118,6 +150,17 @@ Sutra provides an enterprise-ready Gen AI layer that respects data privacy:
 * **Cloud High-Throughput**: Switch to **OpenAI** (`gpt-4o`), **Google Gemini**, or **Anthropic** with a single configuration flag (`AI_PROVIDER=openai`).
 * **Text-to-ERP**: Translate natural language questions ("Which customers in Pune have unpaid bills over ₹50,000?") into safe, structured database operations.
 * **Intelligent Document Processing (IDP)**: Zero-shot extraction of vendor bills, line items, and tax breakdowns from scanned PDFs or raw OCR text.
+
+---
+
+## 🧪 Automated Test Suite
+
+Run the complete test suite validating compliance algorithms, double-entry ledger invariants, and enterprise core engines:
+
+```bash
+# Run 22+ automated tests using native Node.js test runner
+npm test
+```
 
 ---
 
@@ -132,10 +175,13 @@ npm.cmd install
 # 2. Build packages
 npm.cmd run build
 
-# 3. Start API gateway
+# 3. Run automated tests
+npm.cmd test
+
+# 4. Start API gateway
 npm.cmd run dev:api
 
-# 4. In a separate terminal, serve Web Console
+# 5. In a separate terminal, serve Vue 3 Web Console
 npm.cmd run dev:web
 ```
 

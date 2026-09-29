@@ -100,3 +100,9 @@ graph TD
   * **Text-to-ERP**: Natural language querying over company data ("Which customers in Pune have unpaid invoices older than 45 days?").
   * **Intelligent Document Processing (IDP)**: Zero-shot PDF/Image invoice extraction to structured Bill of Entry.
   * **AI Copilot**: Automated discrepancy resolution, PO matching, and smart anomaly alerts.
+
+#### 3.6 Enterprise Supply Chain & Operations (MM, SD, P2P, FI-AR/AP)
+* **Materials Management (MM)**: Multi-type SKU catalog (`ROH`, `HALB`, `FERT`, `HAWA`), multi-warehouse plant/storage location tracking, Moving Average Price (MAP) continuous recalculation on receipt, and standard movement types (101, 102, 201, 311, 601).
+* **Order-to-Cash (SD)**: Customer master with real-time credit limit enforcement, Available-to-Promise (ATP) stock checks, Outbound Delivery with Post Goods Issue (PGI Mvt 601), automated Cost of Goods Sold (COGS) accounting, and billing invoices linked to Indian E-Invoice IRN & E-Way bills.
+* **Procure-to-Pay (P2P)**: Purchase Order workflow, dock Goods Receipt Notes (GRN Mvt 101), 3-Way Matching audit (PO vs GRN vs Vendor Invoice) with price/quantity tolerance gates, Indian Section 194Q TDS withholding, and MSME Section 43B(h) 45-day payment tracking.
+* **Subledger Aging & Working Capital**: Real-time accounts receivable and accounts payable aging buckets (0-30, 31-60, 61-90, 90+ days), DSO and DPO metrics, and net working capital exposure forecasting.
