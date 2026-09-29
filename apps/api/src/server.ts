@@ -1,6 +1,14 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import {
+  AuthPluginRegistry,
+  LocalJwtAuthProvider,
+  OidcAuthProvider,
+  SamlAuthProvider,
+  createAuthMiddleware,
+  requirePermission,
+} from '@sutra/core';
+import {
   GSTINValidator,
   IndianTaxEngine,
   EInvoiceService,
@@ -28,6 +36,45 @@ const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
+
+// =================================================================
+// 0. Pluggable Enterprise Authentication System
+// =================================================================
+const authRegistry = new AuthPluginRegistry();
+
+// 1. Built-in Local JWT Auth Provider (Default)
+const jwtProvider = new LocalJwtAuthProvider({
+  secretKey: process.env.JWT_SECRET || 'sutra-enterprise-super-secure-jwt-secret-replace-in-production',
+  issuer: 'sutra-enterprise-os',
+  tokenExpirationSeconds: 86400, // 24 hours
+});
+authRegistry.registerProvider(jwtProvider);
+authRegistry.setDefaultProvider('local-jwt');
+
+// 2. Enterprise OIDC Plugin (Okta / Azure AD / Keycloak)
+const oidcProvider = new OidcAuthProvider({
+  id: 'azure-ad-oidc',
+  name: 'Microsoft Entra ID (Azure AD)',
+  issuerUrl: process.env.OIDC_ISSUER_URL || 'https://login.microsoftonline.com/common/v2.0',
+  clientId: process.env.OIDC_CLIENT_ID || 'sutra-enterprise-client-id',
+  clientSecret: process.env.OIDC_CLIENT_SECRET || 'sutra-enterprise-secret',
+  redirectUri: process.env.OIDC_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+});
+authRegistry.registerProvider(oidcProvider);
+
+// 3. Enterprise SAML 2.0 Plugin (ADFS / Okta SAML)
+const samlProvider = new SamlAuthProvider({
+  id: 'okta-saml',
+  name: 'Okta Enterprise SAML 2.0',
+  entryPointUrl: process.env.SAML_ENTRY_POINT || 'https://enterprise.okta.com/app/sutra/sso/saml',
+  issuer: 'urn:sutra:enterprise:sp',
+  cert: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...',
+  callbackUrl: 'http://localhost:4000/api/v1/auth/saml/callback',
+});
+authRegistry.registerProvider(samlProvider);
+
+const authMiddleware = createAuthMiddleware(authRegistry);
+
 
 // In-Memory dynamic store for demonstration & fallback
 const inMemoryEntities: Map<string, EntitySchemaDefinition> = new Map();
@@ -107,6 +154,11 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     components: {
       apiGateway: 'ONLINE',
+      authSystem: {
+        status: 'ONLINE',
+        defaultProvider: authRegistry.getDefaultProvider().name,
+        plugins: authRegistry.listProviders().map((p) => ({ id: p.id, name: p.name, type: p.type })),
+      },
       complianceEngine: 'READY (GST, E-Invoice, TDS)',
       noCodeStudio: 'READY',
       analyticsEngine: 'ONLINE',
@@ -117,6 +169,148 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
     },
   });
 });
+
+// =================================================================
+// 2. Pluggable Enterprise Authentication Endpoints (JWT, OIDC, SAML)
+// =================================================================
+
+// 2.1 List All Available Auth Provider Plugins
+app.get('/api/v1/auth/providers', (req: Request, res: Response) => {
+  res.json({
+    defaultProvider: authRegistry.getDefaultProvider().id,
+    providers: authRegistry.listProviders(),
+  });
+});
+
+// 2.2 User Login (Supports standard JWT credentials or dispatching to third-party provider)
+app.post('/api/v1/auth/login', async (req: Request, res: Response) => {
+  const { email, password, tenantId, providerId } = req.body;
+
+  try {
+    const result = await authRegistry.authenticate(
+      {
+        email,
+        password,
+        tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+      },
+      providerId
+    );
+
+    if (!result.success) {
+      return res.status(401).json({
+        error: 'AuthenticationFailed',
+        message: result.errorMessage || 'Invalid credentials',
+        provider: result.provider,
+      });
+    }
+
+    res.json({
+      message: 'Authentication successful',
+      provider: result.provider,
+      providerId: result.providerId,
+      user: {
+        id: result.user?.userId,
+        tenantId: result.user?.tenantId,
+        email: result.user?.email,
+        fullName: result.user?.fullName,
+        isSuperAdmin: result.user?.isSuperAdmin,
+        roles: result.user?.roles,
+        permissions: result.user ? Array.from(result.user.permissions) : [],
+        attributes: result.user?.attributes,
+      },
+      tokens: result.tokens,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: 'InternalAuthError', message: msg });
+  }
+});
+
+// 2.3 Get Current Authenticated User Profile (Protected by JWT Auth Middleware)
+app.get('/api/v1/auth/me', authMiddleware, (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'No active session' });
+  }
+
+  res.json({
+    user: {
+      id: req.user.userId,
+      tenantId: req.user.tenantId,
+      email: req.user.email,
+      fullName: req.user.fullName,
+      isSuperAdmin: req.user.isSuperAdmin,
+      roles: req.user.roles,
+      permissions: Array.from(req.user.permissions),
+      attributes: req.user.attributes,
+    },
+  });
+});
+
+// 2.4 Refresh JWT Access Token
+app.post('/api/v1/auth/refresh', async (req: Request, res: Response) => {
+  const { refreshToken, providerId } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ error: 'Missing refreshToken in request body' });
+  }
+
+  const provider = providerId ? authRegistry.getProvider(providerId) : authRegistry.getDefaultProvider();
+  if (!provider || !provider.refreshToken) {
+    return res.status(400).json({ error: 'Selected provider does not support token refresh' });
+  }
+
+  try {
+    const newTokens = await provider.refreshToken(refreshToken);
+    res.json({ tokens: newTokens });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Token refresh failed';
+    res.status(401).json({ error: 'InvalidRefreshToken', message: msg });
+  }
+});
+
+// 2.5 Generate SSO Redirection URL for Third-Party Identity Providers (OIDC / SAML)
+app.get('/api/v1/auth/sso/login-url', async (req: Request, res: Response) => {
+  const providerId = (req.query.providerId as string) || 'azure-ad-oidc';
+  const provider = authRegistry.getProvider(providerId);
+
+  if (!provider) {
+    return res.status(404).json({ error: `Auth provider '${providerId}' not found` });
+  }
+
+  if (!provider.getLoginUrl) {
+    return res.status(400).json({ error: `Provider '${providerId}' does not support SSO redirection` });
+  }
+
+  try {
+    const url = await provider.getLoginUrl();
+    res.json({ providerId, redirectUrl: url });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: 'SSOUrlGenerationFailed', message: msg });
+  }
+});
+
+// 2.6 Tenant Auth Provider Override (Enterprise Multi-Tenant Policy)
+app.post('/api/v1/auth/tenants/:tenantId/provider', (req: Request, res: Response) => {
+  const tenantId = req.params.tenantId as string;
+  const { providerId } = req.body;
+
+  if (!providerId) {
+    return res.status(400).json({ error: 'providerId is required' });
+  }
+
+  try {
+    authRegistry.setTenantProvider(tenantId, providerId);
+    res.json({
+      message: `Tenant '${tenantId}' authentication strategy updated to '${providerId}'`,
+      tenantId,
+      activeProvider: providerId,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(400).json({ error: 'FailedToSetTenantProvider', message: msg });
+  }
+});
+
 
 // =================================================================
 // 2. India-First Compliance Endpoints (GST, E-Invoice, TDS)

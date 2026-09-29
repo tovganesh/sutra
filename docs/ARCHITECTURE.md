@@ -61,11 +61,18 @@ graph TD
 
 ### 3. Core Pillars & Design Principles
 
-#### 3.1 Security-First & Multi-Tenancy
+#### 3.1 Security-First, Pluggable Authentication & Multi-Tenancy
+* **Pluggable Authentication System (`AuthPluginRegistry`)**:
+  * Clean, extensible interface (`IAuthProvider`) allowing seamless switching between built-in JWT authentication and enterprise third-party identity providers without changing business logic.
+  * **Built-in JWT Provider (`LocalJwtAuthProvider`)**: bcrypt password hashing (`$2b$10$...`), cryptographically signed JWT access tokens (RS256/HS256) with 24-hour validity, refresh token rotation, and claims-based identity resolution.
+  * **Enterprise OIDC Plugin (`OidcAuthProvider`)**: Turnkey OpenID Connect federation for Microsoft Entra ID (Azure AD), Okta, Keycloak, and Google Workspace.
+  * **Enterprise SAML 2.0 Plugin (`SamlAuthProvider`)**: Standard Web Browser SSO profile for ADFS, Okta SAML, and Ping Identity.
+  * **Tenant-Level Auth Policies**: Different enterprise tenants within the same Sutra instance can enforce different identity providers (e.g. Tenant A uses local JWT, while Tenant B enforces corporate Azure AD SSO).
 * **Granular RBAC + ABAC**: Roles (`SuperAdmin`, `CFO`, `ProcurementOfficer`, `Auditor`) paired with Attribute-Based Access Control (e.g., restricting access by `company_id`, `branch_id`, or `amount_limit`).
 * **Multi-Tenant Architecture**: Schema-per-tenant or isolated tenant scoping with PostgreSQL Row-Level Security (RLS).
 * **Cryptographic Audit Trail**: Immutable append-only audit log tracking every data mutation, actor IP, user agent, previous state, and diff for statutory compliance (SOX, Indian Companies Act, GDPR).
 * **Data Encryption**: Transparent Data Encryption (TDE) compatibility, column-level tokenization for sensitive financial and identity records (PAN, GSTIN, Bank Accounts).
+
 
 #### 3.2 No-Code / Low-Code Extensibility ("Sutra Studio")
 * **Dynamic Entity Engine**: Define custom business entities, relations (One-to-Many, Many-to-Many), and validation constraints dynamically without writing database migrations.
