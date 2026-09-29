@@ -24,7 +24,8 @@ Traditional enterprise ERPs (like SAP S/4HANA) cost millions of dollars in licen
 
 **Sutra** reimagines the enterprise operating system from the ground up:
 * **Zero Vendor Lock-in**: 100% open source under the **Apache-2.0 License**.
-* **Modern Cloud-Native Tech Stack**: Built on TypeScript/Node.js, PostgreSQL (with pgvector), MinIO S3 object vault, and Docker.
+* **Modern Cloud-Native Tech Stack**: Built on TypeScript/Node.js, PostgreSQL (with pgvector), MinIO S3 object vault, Valkey in-memory cache, and Docker.
+* **Pluggable Identity & JWT Authentication**: Built-in **JWT-based login** with bcrypt password encryption, paired with a pluggable identity architecture supporting corporate **OIDC (Azure AD, Keycloak)** and **SAML 2.0 (Okta, ADFS)** with per-tenant SSO policies.
 * **Security & Multi-Tenancy First**: Granular Role-Based Access Control (RBAC), Attribute-Based Access Control (ABAC), and immutable tamper-evident audit logging for statutory compliance.
 * **No-Code / Low-Code Extensibility**: Build custom entities, business logic, and automated workflows via **Sutra Studio** without writing SQL or compiling code.
 * **Built for India First, Configurable for the World**: Out-of-the-box GSTIN Modulo-36 validation, Intra/Inter-state CGST/SGST/IGST tax calculation, NIC E-Invoicing (IRN Hash + QR payload), and Income Tax TDS (Sec 194C, 194J, 194Q).
@@ -40,9 +41,11 @@ Traditional enterprise ERPs (like SAP S/4HANA) cost millions of dollars in licen
 | **FI / CO** (Finance & Controlling) | **Sutra Ledger & Tax Engine** | Double-entry ledger, Indian GST/E-Invoicing natively integrated, open schema. |
 | **MM** (Materials Management) | **Sutra Supply & Inventory** | MinIO document storage, automated reorder triggers, batch tracking. |
 | **SD** (Sales & Distribution) | **Sutra Commerce** | Quotations, Sales Orders, E-Way Bill generation, real-time receivables. |
+| **SAP NetWeaver / IAS SSO** | **Sutra Pluggable Auth Core** | Standard JWT authentication + pluggable enterprise SSO (Azure AD OIDC / Okta SAML). |
 | **Z-Tables & ABAP Code** | **Sutra No-Code Studio** | Dynamic JSONB entities & drag-and-drop workflow state machines. |
 | **SAP BW / SAC** | **Sutra Embedded OLAP** | Real-time financial statement generator and executive KPI cockpit. |
 | **SAP Joule Copilot** | **Sutra Gen AI Core** | Bring-your-own-model (Ollama or Cloud), Text-to-ERP query engine, zero-shot IDP invoice extractor. |
+
 
 ---
 

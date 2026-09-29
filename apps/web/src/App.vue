@@ -81,7 +81,7 @@
             <component :is="isDark ? Sun : Moon" class="header-icon" />
           </button>
 
-          <div class="user-avatar" title="Chief Enterprise Architect (SuperAdmin)">
+          <div class="user-avatar" @click="currentTab = 'auth'" style="cursor: pointer;" title="Chief Enterprise Architect (SuperAdmin) - Manage JWT & Auth Strategy">
             GA
           </div>
         </div>
@@ -109,10 +109,12 @@ import {
   Menu,
   Sun,
   Moon,
+  Lock,
 } from 'lucide-vue-next';
 
 // Views
 import ExecutiveDashboard from './views/ExecutiveDashboard.vue';
+import EnterpriseAuth from './views/EnterpriseAuth.vue';
 import ComplianceIndia from './views/ComplianceIndia.vue';
 import NoCodeStudio from './views/NoCodeStudio.vue';
 import FinancialAnalytics from './views/FinancialAnalytics.vue';
@@ -125,6 +127,7 @@ const isDark = ref(true);
 
 const navItems = [
   { id: 'dashboard', label: 'Executive Cockpit', icon: LayoutDashboard },
+  { id: 'auth', label: 'Auth & Identity', icon: Lock, badge: 'JWT/SSO' },
   { id: 'compliance', label: 'India Compliance', icon: ShieldCheck, badge: 'GST' },
   { id: 'nocode', label: 'No-Code Studio', icon: Boxes },
   { id: 'analytics', label: 'Financial OLAP', icon: LineChart },
@@ -134,6 +137,7 @@ const navItems = [
 const currentViewTitle = computed(() => {
   const map: Record<string, string> = {
     dashboard: 'Executive Cockpit',
+    auth: 'Pluggable Enterprise Auth & JWT Console',
     compliance: 'India Statutory & GST Compliance',
     nocode: 'No-Code Entity & Workflow Studio',
     analytics: 'Financial Statements (P&L & Balance Sheet)',
@@ -146,6 +150,7 @@ const currentViewTitle = computed(() => {
 const currentViewComponent = computed(() => {
   const compMap: Record<string, any> = {
     dashboard: ExecutiveDashboard,
+    auth: EnterpriseAuth,
     compliance: ComplianceIndia,
     nocode: NoCodeStudio,
     analytics: FinancialAnalytics,
