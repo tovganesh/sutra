@@ -141,6 +141,24 @@
         <Briefcase class="tab-icon" />
         <span>Project Systems & CWIP (PS)</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'warehouse' }"
+        @click="activeTab = 'warehouse'"
+      >
+        <Boxes class="tab-icon" />
+        <span>Extended Warehouse (EWM)</span>
+      </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'multicurrency' }"
+        @click="activeTab = 'multicurrency'"
+      >
+        <Globe class="tab-icon" />
+        <span>Multi-Currency & Global (FI)</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -1772,6 +1790,324 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 13: Extended Warehouse Management (SAP EWM) -->
+    <div v-if="activeTab === 'warehouse'" class="tab-content">
+      <!-- Quick Warehouse KPI Strip -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Active Warehouse Facility</span>
+          <span class="kpi-value text-accent">Pune Central Hub</span>
+          <span class="kpi-trend positive">WH-PUNE-CENTRAL</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Storage Bin Capacity</span>
+          <span class="kpi-value">{{ warehouseBins.filter((b) => b.isOccupied).length }} / {{ warehouseBins.length }} Bins</span>
+          <span class="kpi-trend info">Dynamic Putaway Routing</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Wave Picking Strategy</span>
+          <span class="kpi-value text-cyan">FEFO / FIFO Active</span>
+          <span class="kpi-trend positive">Expiry Protected</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Physical Cycle Count</span>
+          <span class="kpi-value text-green">100% Reconciled</span>
+          <span class="kpi-trend positive">GL Shrinkage Auto-Post</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- Storage Bin Topology Map -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Storage Bin Topology & Real-time Allocation (SAP EWM)</h3>
+              <span class="panel-sub">Multi-Zone Racking, Max Weight/Volume & Stored Batches</span>
+            </div>
+            <button class="action-btn-sm" @click="executeSimulatedPutaway">
+              <Boxes class="btn-icon-sm" />
+              <span>Simulate Putaway (High-Bay Bin)</span>
+            </button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Bin ID</th>
+                <th>Zone / Type</th>
+                <th>Aisle / Rack / Shelf</th>
+                <th>Capacity (Weight)</th>
+                <th>Stored SKU / Batch</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="bin in warehouseBins" :key="bin.binId">
+                <td class="font-mono text-cyan">{{ bin.binId }}</td>
+                <td>
+                  <span class="badge blue">{{ bin.zone }}</span>
+                  <span class="sku-sub font-mono">{{ bin.binType }}</span>
+                </td>
+                <td class="font-mono">{{ bin.aisle }}-{{ bin.rack }}-{{ bin.shelf }}</td>
+                <td>
+                  <div class="calc-row" style="font-size: 11px;">
+                    <span>{{ bin.currentWeightKg }} / {{ bin.maxWeightKg }} KG</span>
+                    <span class="font-mono text-dim">{{ Math.round((bin.currentWeightKg / bin.maxWeightKg) * 100) }}%</span>
+                  </div>
+                </td>
+                <td>
+                  <div v-if="bin.items.length > 0" class="sku-cell">
+                    <strong class="font-mono text-accent">{{ bin.items[0].sku }}</strong>
+                    <span class="sku-sub">{{ bin.items[0].quantity }} {{ bin.items[0].baseUom }} ({{ bin.items[0].batchNumber }})</span>
+                  </div>
+                  <span v-else class="text-dim">Empty Bin</span>
+                </td>
+                <td>
+                  <span class="status-pill" :class="bin.isOccupied ? 'active' : 'info'">
+                    {{ bin.isOccupied ? 'OCCUPIED' : 'AVAILABLE' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Picking Waves & Cycle Count Reconcile -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>FIFO Wave Picking & Inventory Cycle Count</h3>
+              <span class="panel-sub">Warehouse Tasks & GL Variance Adjustment</span>
+            </div>
+            <button class="action-btn-sm primary" @click="executeSimulatedPick">
+              <CheckCircle2 class="btn-icon-sm" />
+              <span>Execute Wave Pick (FIFO)</span>
+            </button>
+          </div>
+
+          <div v-if="recentWarehouseTask" class="coa-card" style="margin-bottom: 16px;">
+            <div class="coa-header">
+              <CheckCircle2 class="coa-icon" style="color: #10b981;" />
+              <div>
+                <strong style="color: #10b981;">Warehouse Task Confirmed ({{ recentWarehouseTask.taskType }})</strong>
+                <p class="subtitle font-mono">{{ recentWarehouseTask.taskId }}</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <div class="calc-row">
+                <span>SKU & Batch:</span>
+                <span class="font-mono text-accent">{{ recentWarehouseTask.sku }} ({{ recentWarehouseTask.batchNumber }})</span>
+              </div>
+              <div class="calc-row">
+                <span>Quantity Picked:</span>
+                <span class="font-mono text-green">{{ recentWarehouseTask.quantity }} KG</span>
+              </div>
+              <div class="calc-row">
+                <span>Source Bin Location:</span>
+                <span class="font-mono text-cyan">{{ recentWarehouseTask.sourceBinId }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Physical Inventory Cycle Count Box -->
+          <div class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="calc-row">
+              <strong>Cycle Count Audit: BIN-PUN-ZA-01</strong>
+              <button class="action-btn-sm" @click="runCycleCountAudit">
+                <span>Record Audit</span>
+              </button>
+            </div>
+            <div class="calc-row" style="margin-top: 6px;">
+              <span class="text-dim">Book Quantity: {{ cycleCountState.bookQty }} KG</span>
+              <span class="font-mono text-danger">Physical Count: {{ cycleCountState.physicalQty }} KG</span>
+            </div>
+            <div class="calc-row" style="margin-top: 4px;">
+              <span class="text-dim">Shrinkage Variance: {{ cycleCountState.varianceQty }} KG</span>
+              <span class="font-mono text-danger">Value: -₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+            </div>
+
+            <div v-if="cycleCountState.glPosted" class="gl-lines-box" style="margin-top: 10px;">
+              <span class="gl-title">Automated Shrinkage GL Adjustment Voucher:</span>
+              <div class="gl-line">
+                <span class="font-mono text-dim">540100</span>
+                <span class="gl-acc-name">Inventory Shrinkage Expense</span>
+                <span class="font-mono text-green">Dr ₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="gl-line">
+                <span class="font-mono text-dim">120100</span>
+                <span class="gl-acc-name">Raw Materials Inventory Clearing</span>
+                <span class="font-mono text-cyan">Cr ₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 14: Multi-Currency & Global Parallel Ledgers (SAP FI-GL) -->
+    <div v-if="activeTab === 'multicurrency'" class="tab-content">
+      <!-- Quick Multi-Currency KPI Strip -->
+      <div class="kpi-strip" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Operating Company Currency</span>
+          <span class="kpi-value text-accent">INR (₹)</span>
+          <span class="kpi-trend positive">Leading Ledger 0L</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Group Consolidation Currency</span>
+          <span class="kpi-value text-cyan">USD ($)</span>
+          <span class="kpi-trend info">Non-Leading Ledger 2L (IFRS)</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Spot Exchange Rate (USD/INR)</span>
+          <span class="kpi-value">₹{{ (usdInrSpotRate).toFixed(2) }}</span>
+          <span class="kpi-trend positive">Closing Rate: ₹{{ (usdInrClosingRate).toFixed(2) }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">IAS 21 Net Forex Gain</span>
+          <span class="kpi-value text-green">+₹{{ (forexRevalSummary.netForexImpact).toLocaleString('en-IN') }}</span>
+          <span class="kpi-trend positive">Auto-Revalued</span>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <!-- Parallel Ledgers & Multi-Currency Journal -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Parallel Accounting Ledgers (SAP 0L vs 2L)</h3>
+              <span class="panel-sub">Dual-Valuation in Local Operating Currency & International Group Currency</span>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ledger Code</th>
+                <th>Ledger Name</th>
+                <th>Type</th>
+                <th>Base Currency</th>
+                <th>Reporting Standard</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in parallelLedgersList" :key="l.ledgerCode">
+                <td class="font-mono text-cyan">{{ l.ledgerCode }}</td>
+                <td><strong>{{ l.name }}</strong></td>
+                <td><span class="badge blue">{{ l.ledgerType }}</span></td>
+                <td class="font-mono text-accent">{{ l.baseCurrency }}</td>
+                <td>{{ l.description }}</td>
+                <td><span class="status-pill active">ACTIVE</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Multi-Currency Dual-Valuation Journal Entry -->
+          <div style="margin-top: 20px;">
+            <div class="panel-header" style="margin-bottom: 8px;">
+              <div>
+                <h4>Multi-Currency Dual-Valuation Journal (DOC-PAR-2026-001)</h4>
+                <span class="panel-sub">Transaction Currency: USD @ Spot Rate 83.50 INR</span>
+              </div>
+            </div>
+
+            <div class="gl-lines-box">
+              <div v-for="l in sampleParallelJournalLines" :key="l.accountCode" class="gl-line">
+                <span class="font-mono text-dim">{{ l.accountCode }}</span>
+                <span class="gl-acc-name">{{ l.accountName }}</span>
+                <span class="font-mono text-cyan">Group: ${{ l.amountGroup.toLocaleString('en-US') }}</span>
+                <span class="font-mono" :class="l.debit > 0 ? 'text-green' : 'text-cyan'">
+                  {{ l.debit > 0 ? `Local: Dr ₹${l.debit.toLocaleString('en-IN')}` : `Local: Cr ₹${l.credit.toLocaleString('en-IN')}` }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Month-End Forex Revaluation & Global Tax Calculator -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>IAS 21 / AS 11 Foreign Exchange Revaluation</h3>
+              <span class="panel-sub">Closing Rate Revaluation on Open AR/AP Monetary Items</span>
+            </div>
+            <button class="action-btn-sm primary" @click="runForexRevaluation">
+              <RefreshCw class="btn-icon-sm" />
+              <span>Run Month-End Revaluation</span>
+            </button>
+          </div>
+
+          <div class="coa-card" style="margin-bottom: 16px;">
+            <div class="coa-header">
+              <CheckCircle2 class="coa-icon" style="color: #10b981;" />
+              <div>
+                <strong style="color: #10b981;">Forex Valuation Reconciled (USD Closing Rate: ₹{{ usdInrClosingRate }})</strong>
+                <p class="subtitle font-mono">{{ forexRevalSummary.revaluationId }}</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+              <div class="calc-row">
+                <span>Unrealized Forex Gain (Export AR):</span>
+                <span class="font-mono text-green">+₹{{ forexRevalSummary.totalUnrealizedGain.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row">
+                <span>Unrealized Forex Loss (Import AP):</span>
+                <span class="font-mono text-danger">-₹{{ forexRevalSummary.totalUnrealizedLoss.toLocaleString('en-IN') }}</span>
+              </div>
+              <div class="calc-row total" style="border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 8px;">
+                <strong>Net P&amp;L Forex Gain:</strong>
+                <strong class="font-mono text-green">+₹{{ forexRevalSummary.netForexImpact.toLocaleString('en-IN') }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Jurisdiction Tax Plugin Calculator -->
+          <div class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="panel-header" style="padding: 0 0 10px 0; border: none;">
+              <div>
+                <h4>Global Jurisdiction Tax Engine</h4>
+                <span class="panel-sub">Pluggable Multi-Country Tax Rules</span>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <button
+                v-for="c in countryTaxOptions"
+                :key="c.code"
+                class="action-btn-sm"
+                :class="{ primary: selectedCountryCode === c.code }"
+                @click="selectTaxCountry(c.code)"
+              >
+                <span>{{ c.flag }} {{ c.name }}</span>
+              </button>
+            </div>
+
+            <div class="calc-row">
+              <span>Taxable Supply Value:</span>
+              <span class="font-mono">₹1,00,000</span>
+            </div>
+            <div class="calc-row">
+              <span>Jurisdiction Tax Rate:</span>
+              <span class="font-mono text-accent">{{ currentTaxResult.taxRatePercent }}%</span>
+            </div>
+            <div class="calc-row">
+              <span>Statutory Tax Amount:</span>
+              <span class="font-mono text-green">₹{{ currentTaxResult.taxAmount.toLocaleString('en-IN') }}</span>
+            </div>
+            <div class="calc-row">
+              <span>Reverse Charge Mechanism (RCM):</span>
+              <span class="badge" :class="currentTaxResult.isReverseCharge ? 'purple' : 'gray'">
+                {{ currentTaxResult.isReverseCharge ? 'APPLICABLE (Art 194)' : 'NOT APPLICABLE' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1796,9 +2132,11 @@ import {
   Landmark,
   Users,
   Briefcase,
+  Boxes,
+  Globe,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -2811,6 +3149,253 @@ function settleProjectCwip() {
     settlementDate: new Date().toISOString().split('T')[0],
   };
   currentProject.value.status = 'COMPLETED';
+}
+
+// =================================================================
+// Extended Warehouse Management (SAP EWM) State
+// =================================================================
+const warehouseBins = ref([
+  {
+    binId: 'BIN-PUN-ZA-01',
+    warehouseId: 'WH-PUNE-CENTRAL',
+    zone: 'ZONE-A-HEAVY',
+    aisle: 'A01',
+    rack: 'R01',
+    shelf: 'S01',
+    position: 'P01',
+    binType: 'HIGH_BAY',
+    maxWeightKg: 5000,
+    currentWeightKg: 1250,
+    maxVolumeCbm: 12.0,
+    currentVolumeCbm: 2.5,
+    isBlocked: false,
+    isOccupied: true,
+    items: [
+      {
+        sku: 'ROH-STEEL-001',
+        materialName: 'Cold-Rolled Steel Coils',
+        batchNumber: 'LOT-STL-2026-08',
+        quantity: 50,
+        baseUom: 'KG',
+        receiptDate: '2026-09-01',
+      },
+    ],
+  },
+  {
+    binId: 'BIN-PUN-ZA-02',
+    warehouseId: 'WH-PUNE-CENTRAL',
+    zone: 'ZONE-A-HEAVY',
+    aisle: 'A01',
+    rack: 'R01',
+    shelf: 'S02',
+    position: 'P01',
+    binType: 'HIGH_BAY',
+    maxWeightKg: 5000,
+    currentWeightKg: 0,
+    maxVolumeCbm: 12.0,
+    currentVolumeCbm: 0,
+    isBlocked: false,
+    isOccupied: false,
+    items: [],
+  },
+  {
+    binId: 'BIN-PUN-ZB-01',
+    warehouseId: 'WH-PUNE-CENTRAL',
+    zone: 'ZONE-B-STANDARD',
+    aisle: 'A02',
+    rack: 'R01',
+    shelf: 'S01',
+    position: 'P01',
+    binType: 'STANDARD',
+    maxWeightKg: 1000,
+    currentWeightKg: 350,
+    maxVolumeCbm: 4.0,
+    currentVolumeCbm: 1.2,
+    isBlocked: false,
+    isOccupied: true,
+    items: [
+      {
+        sku: 'HALB-AXLE-001',
+        materialName: 'Rear Axle Hub Sub-Assembly',
+        batchNumber: 'LOT-AXL-2026-04',
+        quantity: 14,
+        baseUom: 'EA',
+        receiptDate: '2026-09-10',
+      },
+    ],
+  },
+  {
+    binId: 'BIN-PUN-COLD-01',
+    warehouseId: 'WH-PUNE-CENTRAL',
+    zone: 'ZONE-COLD',
+    aisle: 'A03',
+    rack: 'R01',
+    shelf: 'S01',
+    position: 'P01',
+    binType: 'COLD_STORAGE',
+    maxWeightKg: 2000,
+    currentWeightKg: 0,
+    maxVolumeCbm: 8.0,
+    currentVolumeCbm: 0,
+    isBlocked: false,
+    isOccupied: false,
+    items: [],
+  },
+]);
+
+const recentWarehouseTask = ref<any>({
+  taskId: 'WT-PUT-0892',
+  taskType: 'PUTAWAY',
+  sourceBinId: 'STAGING-INBOUND',
+  targetBinId: 'BIN-PUN-ZA-01',
+  sku: 'ROH-STEEL-001',
+  batchNumber: 'LOT-STL-2026-08',
+  quantity: 50,
+  status: 'CONFIRMED',
+});
+
+const cycleCountState = ref({
+  bookQty: 50,
+  physicalQty: 48,
+  varianceQty: -2,
+  varianceVal: 130,
+  glPosted: false,
+});
+
+function executeSimulatedPutaway() {
+  const bin = warehouseBins.value.find((b) => b.binId === 'BIN-PUN-ZA-02');
+  if (bin) {
+    bin.isOccupied = true;
+    bin.currentWeightKg = 850;
+    bin.currentVolumeCbm = 1.8;
+    bin.items = [
+      {
+        sku: 'ROH-STEEL-001',
+        materialName: 'Cold-Rolled Steel Coils',
+        batchNumber: 'LOT-STL-2026-09',
+        quantity: 35,
+        baseUom: 'KG',
+        receiptDate: new Date().toISOString(),
+      },
+    ];
+  }
+  recentWarehouseTask.value = {
+    taskId: `WT-PUT-${Date.now().toString(36).toUpperCase()}`,
+    taskType: 'PUTAWAY',
+    sourceBinId: 'STAGING-INBOUND',
+    targetBinId: 'BIN-PUN-ZA-02',
+    sku: 'ROH-STEEL-001',
+    batchNumber: 'LOT-STL-2026-09',
+    quantity: 35,
+    status: 'CONFIRMED',
+  };
+}
+
+function executeSimulatedPick() {
+  const bin = warehouseBins.value.find((b) => b.binId === 'BIN-PUN-ZA-01');
+  if (bin && bin.items.length > 0) {
+    bin.items[0].quantity = Math.max(0, bin.items[0].quantity - 15);
+    bin.currentWeightKg = Math.max(0, bin.currentWeightKg - 375);
+    cycleCountState.value.bookQty = bin.items[0].quantity;
+  }
+  recentWarehouseTask.value = {
+    taskId: `WT-PICK-${Date.now().toString(36).toUpperCase()}`,
+    taskType: 'PICKING',
+    sourceBinId: 'BIN-PUN-ZA-01',
+    targetBinId: 'STAGING-OUTBOUND',
+    sku: 'ROH-STEEL-001',
+    batchNumber: 'LOT-STL-2026-08',
+    quantity: 15,
+    status: 'CONFIRMED',
+  };
+}
+
+function runCycleCountAudit() {
+  cycleCountState.value.glPosted = true;
+}
+
+// =================================================================
+// Multi-Currency & Global Parallel Ledgers (SAP FI-GL) State
+// =================================================================
+const usdInrSpotRate = ref(83.50);
+const usdInrClosingRate = ref(84.00);
+
+const parallelLedgersList = ref([
+  {
+    ledgerCode: '0L',
+    name: 'Leading Statutory Ledger (Indian AS / Companies Act)',
+    ledgerType: 'LEADING',
+    baseCurrency: 'INR',
+    description: 'Primary local statutory ledger for ROC & CBDT reporting',
+  },
+  {
+    ledgerCode: '2L',
+    name: 'Non-Leading Consolidation Ledger (IFRS & US GAAP)',
+    ledgerType: 'NON_LEADING',
+    baseCurrency: 'USD',
+    description: 'International group consolidation in USD',
+  },
+]);
+
+const sampleParallelJournalLines = ref([
+  {
+    accountCode: '110100',
+    accountName: 'Foreign Trade Accounts Receivable (USD)',
+    amountLocal: 835000,
+    amountGroup: 10000,
+    debit: 835000,
+    credit: 0,
+  },
+  {
+    accountCode: '410100',
+    accountName: 'Export Revenue - Technology & CleanTech Services',
+    amountLocal: 835000,
+    amountGroup: 10000,
+    debit: 0,
+    credit: 835000,
+  },
+]);
+
+const forexRevalSummary = ref({
+  revaluationId: 'FX-REV-20260930-USD',
+  totalUnrealizedGain: 150000,
+  totalUnrealizedLoss: 40000,
+  netForexImpact: 110000,
+});
+
+function runForexRevaluation() {
+  forexRevalSummary.value = {
+    revaluationId: `FX-REV-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-USD`,
+    totalUnrealizedGain: 150000,
+    totalUnrealizedLoss: 40000,
+    netForexImpact: 110000,
+  };
+}
+
+const countryTaxOptions = ref([
+  { code: 'IN', name: 'India (GST)', flag: '🇮🇳' },
+  { code: 'US', name: 'United States (Nexus)', flag: '🇺🇸' },
+  { code: 'EU', name: 'European Union (VIES)', flag: '🇪🇺' },
+  { code: 'AE', name: 'UAE (FTA)', flag: '🇦🇪' },
+]);
+
+const selectedCountryCode = ref('IN');
+
+const currentTaxResult = computed(() => {
+  const code = selectedCountryCode.value;
+  if (code === 'IN') {
+    return { taxRatePercent: 18, taxAmount: 18000, isReverseCharge: false };
+  } else if (code === 'US') {
+    return { taxRatePercent: 8.25, taxAmount: 8250, isReverseCharge: false };
+  } else if (code === 'EU') {
+    return { taxRatePercent: 0, taxAmount: 0, isReverseCharge: true };
+  } else {
+    return { taxRatePercent: 5, taxAmount: 5000, isReverseCharge: false };
+  }
+});
+
+function selectTaxCountry(code: string) {
+  selectedCountryCode.value = code;
 }
 </script>
 

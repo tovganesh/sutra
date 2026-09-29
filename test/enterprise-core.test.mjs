@@ -15,6 +15,8 @@ import {
   TreasuryEngine,
   HcmEngine,
   ProjectSystemsEngine,
+  WarehouseEngine,
+  MultiCurrencyEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -746,6 +748,201 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       assert.ok(asset);
       assert.equal(asset.currentBookValue, settlement.totalSettledCost);
       assert.equal(asset.assetClass, 'PLANT_MACHINERY');
+    });
+  });
+
+  describe('Extended Warehouse Management Engine (SAP EWM)', () => {
+    test('manages multi-zone warehouse topology, capacity checks, and automated putaway', () => {
+      const ewm = new WarehouseEngine();
+      const bins = ewm.getBins('WH-PUNE-CENTRAL');
+      assert.ok(bins.length >= 3);
+
+      // Register new cold storage bin
+      const coldBin = ewm.registerBin({
+        binId: 'BIN-PUN-COLD-01',
+        warehouseId: 'WH-PUNE-CENTRAL',
+        zone: 'ZONE-COLD',
+        aisle: 'A03',
+        rack: 'R01',
+        shelf: 'S01',
+        position: 'P01',
+        binType: 'COLD_STORAGE',
+        maxWeightKg: 2000,
+        maxVolumeCbm: 8.0,
+      });
+      assert.equal(coldBin.binType, 'COLD_STORAGE');
+
+      // Putaway into cold storage bin
+      const putaway = ewm.executePutaway({
+        warehouseId: 'WH-PUNE-CENTRAL',
+        sku: 'CHEM-COOLANT-001',
+        materialName: 'Battery Thermal Dielectric Coolant',
+        batchNumber: 'LOT-COOL-2026-01',
+        quantity: 20,
+        baseUom: 'L',
+        unitWeightKg: 1.1,
+        unitVolumeCbm: 0.005,
+        requiredBinType: 'COLD_STORAGE',
+        expiryDate: '2027-06-30',
+      });
+
+      assert.equal(putaway.targetBinId, 'BIN-PUN-COLD-01');
+      assert.equal(putaway.status, 'CONFIRMED');
+      assert.equal(putaway.quantity, 20);
+
+      const updatedBin = ewm.getBin('BIN-PUN-COLD-01');
+      assert.ok(updatedBin.isOccupied);
+      assert.equal(updatedBin.currentWeightKg, 22);
+    });
+
+    test('executes FIFO picking and physical inventory cycle counting with GL variance posting', () => {
+      const ewm = new WarehouseEngine();
+
+      // Execute FIFO picking for steel coils from BIN-PUN-ZA-01 (seeded with 50 KG)
+      const pick = ewm.executePicking({
+        warehouseId: 'WH-PUNE-CENTRAL',
+        sku: 'ROH-STEEL-001',
+        quantityRequested: 20,
+        strategy: 'FIFO',
+      });
+
+      assert.equal(pick.status, 'CONFIRMED');
+      assert.equal(pick.totalQuantityPicked, 20);
+      assert.equal(pick.allocations.length, 1);
+      assert.equal(pick.allocations[0].binId, 'BIN-PUN-ZA-01');
+
+      const binAfterPick = ewm.getBin('BIN-PUN-ZA-01');
+      assert.equal(binAfterPick.items[0].quantity, 30); // 50 - 20 = 30
+
+      // Execute Cycle Count recording shortage (physical 28 vs book 30)
+      const countRecord = ewm.recordCycleCount({
+        warehouseId: 'WH-PUNE-CENTRAL',
+        binId: 'BIN-PUN-ZA-01',
+        sku: 'ROH-STEEL-001',
+        batchNumber: 'LOT-STL-2026-08',
+        physicalCountedQuantity: 28,
+        unitCost: 65,
+      });
+
+      assert.equal(countRecord.bookQuantity, 30);
+      assert.equal(countRecord.physicalCountedQuantity, 28);
+      assert.equal(countRecord.varianceQuantity, -2);
+      assert.equal(countRecord.varianceValue, 130); // 2 * 65
+
+      // Balanced GL voucher for shrinkage: 540100 Dr, 120100 Cr
+      assert.ok(countRecord.glVoucherLines);
+      assert.equal(countRecord.glVoucherLines[0].accountCode, '540100');
+      assert.equal(countRecord.glVoucherLines[0].debit, 130);
+      assert.equal(countRecord.glVoucherLines[1].accountCode, '120100');
+      assert.equal(countRecord.glVoucherLines[1].credit, 130);
+    });
+  });
+
+  describe('Multi-Currency & Parallel Accounting Engine (SAP FI-GL Parallel Ledger)', () => {
+    test('converts currency and posts balanced parallel journal across Leading (0L) and Non-Leading (2L) ledgers', () => {
+      const mc = new MultiCurrencyEngine();
+
+      // Convert USD to INR
+      const converted = mc.convertAmount(1000, 'USD', 'INR', 'SPOT');
+      assert.equal(converted, 83500); // 1000 * 83.50
+
+      // Post parallel journal entry in group USD and operating INR
+      const journal = mc.postParallelJournal({
+        ledgerGroup: 'ALL',
+        postingDate: '2026-09-30',
+        reference: 'PAR-INV-001',
+        narrative: 'Software Export Revenue & Receivables',
+        transactionCurrency: 'USD',
+        exchangeRateUsed: 83.50,
+        lines: [
+          {
+            accountCode: '110100',
+            accountName: 'Foreign Accounts Receivable (USD)',
+            amountLocal: 835000,
+            amountGroup: 10000,
+            currency: 'USD',
+            debit: 835000,
+            credit: 0,
+          },
+          {
+            accountCode: '410100',
+            accountName: 'Export Revenue - Technology Services',
+            amountLocal: 835000,
+            amountGroup: 10000,
+            currency: 'USD',
+            debit: 0,
+            credit: 835000,
+          },
+        ],
+      });
+
+      assert.ok(journal.documentNumber.startsWith('DOC-PAR-'));
+      assert.equal(journal.lines[0].debit, journal.lines[1].credit);
+
+      const allJournals = mc.getParallelJournals();
+      assert.ok(allJournals.length >= 1);
+    });
+
+    test('executes IAS 21 / AS 11 Foreign Exchange revaluation with balanced GL gain/loss voucher', () => {
+      const mc = new MultiCurrencyEngine();
+
+      // Revalue open USD items at closing rate 84.00 (from original booking rate)
+      const result = mc.executeForexRevaluation('USD', 84.00, '2026-09-30');
+
+      assert.equal(result.currency, 'USD');
+      assert.equal(result.closingRate, 84.00);
+      assert.equal(result.itemsEvaluated, 2);
+
+      // Receivable: 100k USD @ 82.50 -> 84.00 = +150,000 gain
+      assert.equal(result.totalUnrealizedGain, 150000);
+
+      // Payable: 40k USD @ 83.00 -> 84.00 = +40,000 loss
+      assert.equal(result.totalUnrealizedLoss, 40000);
+      assert.equal(result.netForexImpact, 110000);
+
+      // Verify balanced GL voucher lines
+      assert.equal(result.glVoucherLines.length, 4);
+      const debitTotal = result.glVoucherLines.reduce((acc, l) => acc + l.debit, 0);
+      const creditTotal = result.glVoucherLines.reduce((acc, l) => acc + l.credit, 0);
+      assert.equal(debitTotal, creditTotal);
+      assert.equal(debitTotal, 190000);
+    });
+
+    test('calculates statutory taxes across global jurisdictions (India, US, EU, UAE)', () => {
+      const mc = new MultiCurrencyEngine();
+
+      // India Inter-State: 18% IGST
+      const inTax = mc.calculateJurisdictionTax('IN', {
+        taxableAmount: 100000,
+        customerStateOrRegion: '29-Karnataka',
+        companyStateOrRegion: '27-Maharashtra',
+      });
+      assert.equal(inTax.taxRatePercent, 18);
+      assert.equal(inTax.taxAmount, 18000);
+      assert.equal(inTax.taxBreakdown.IGST, 18000);
+
+      // US: California combined rate 8.25%
+      const usTax = mc.calculateJurisdictionTax('US', {
+        taxableAmount: 50000,
+        customerStateOrRegion: 'CA',
+      });
+      assert.equal(usTax.taxRatePercent, 8.25);
+      assert.equal(usTax.taxAmount, 4125);
+
+      // EU: Intra-community B2B with valid VIES VAT number -> 0% Reverse Charge
+      const euTax = mc.calculateJurisdictionTax('EU', {
+        taxableAmount: 80000,
+        taxRegistrationNumber: 'DE123456789',
+      });
+      assert.equal(euTax.taxRatePercent, 0);
+      assert.equal(euTax.isReverseChargeApplicable, true);
+
+      // UAE: 5% Federal VAT
+      const uaeTax = mc.calculateJurisdictionTax('AE', {
+        taxableAmount: 20000,
+      });
+      assert.equal(uaeTax.taxRatePercent, 5);
+      assert.equal(uaeTax.taxAmount, 1000);
     });
   });
 });

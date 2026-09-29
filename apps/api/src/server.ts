@@ -21,6 +21,8 @@ import {
   TreasuryEngine,
   HcmEngine,
   ProjectSystemsEngine,
+  WarehouseEngine,
+  MultiCurrencyEngine,
   HttpStatus,
 } from '@sutra/core';
 import {
@@ -173,6 +175,8 @@ const maintenanceEngine = new MaintenanceEngine(inventoryEngine);
 const treasuryEngine = new TreasuryEngine();
 const hcmEngine = new HcmEngine();
 const projectSystemsEngine = new ProjectSystemsEngine(fixedAssetEngine);
+const warehouseEngine = new WarehouseEngine();
+const multiCurrencyEngine = new MultiCurrencyEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -204,6 +208,8 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
       treasuryEngine: 'ONLINE (TRM/FI-BL)',
       humanCapitalManagement: 'ONLINE (HCM)',
       projectSystems: 'ONLINE (PS)',
+      warehouseEngine: 'ONLINE (EWM)',
+      multiCurrencyEngine: 'ONLINE (FI-GL Parallel)',
       noCodeStudio: 'READY',
       analyticsEngine: 'ONLINE',
       genAICore: {
@@ -1465,6 +1471,293 @@ app.post('/api/v1/projects/:id/settle-cwip', (req: Request, res: Response) => {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'CWIP settlement failed';
     res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CwipSettlementError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.12 Extended Warehouse Management (EWM) Endpoints
+// =================================================================
+app.get('/api/v1/warehouse/bins', (req: Request, res: Response) => {
+  const warehouseId = req.query.warehouseId as string | undefined;
+  const bins = warehouseEngine.getBins(warehouseId);
+  res.json({ warehouseId: warehouseId || 'ALL', count: bins.length, bins });
+});
+
+app.post('/api/v1/warehouse/bins', (req: Request, res: Response) => {
+  const { binId, warehouseId, zone, aisle, rack, shelf, position, binType, maxWeightKg, maxVolumeCbm } = req.body;
+  if (!binId || !warehouseId || !zone || !binType || !maxWeightKg || !maxVolumeCbm) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'binId, warehouseId, zone, binType, maxWeightKg, and maxVolumeCbm are required.',
+    });
+  }
+
+  try {
+    const bin = warehouseEngine.registerBin({
+      binId,
+      warehouseId,
+      zone,
+      aisle: aisle || 'A01',
+      rack: rack || 'R01',
+      shelf: shelf || 'S01',
+      position: position || 'P01',
+      binType,
+      maxWeightKg: Number(maxWeightKg),
+      maxVolumeCbm: Number(maxVolumeCbm),
+    });
+    res.status(HttpStatus.CREATED).json(bin);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Bin registration failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'BinRegistrationError', message: msg });
+  }
+});
+
+app.post('/api/v1/warehouse/putaway', (req: Request, res: Response) => {
+  const { warehouseId, sku, materialName, batchNumber, quantity, baseUom, unitWeightKg, unitVolumeCbm, requiredBinType, designatedBinId } = req.body;
+  if (!warehouseId || !sku || !quantity || !batchNumber) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'warehouseId, sku, batchNumber, and quantity are required.',
+    });
+  }
+
+  try {
+    const result = warehouseEngine.executePutaway({
+      warehouseId,
+      sku,
+      materialName: materialName || sku,
+      batchNumber,
+      quantity: Number(quantity),
+      baseUom: baseUom || 'EA',
+      unitWeightKg: Number(unitWeightKg || 1),
+      unitVolumeCbm: Number(unitVolumeCbm || 0.001),
+      requiredBinType,
+    }, designatedBinId);
+
+    res.status(HttpStatus.CREATED).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Putaway execution failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'PutawayError', message: msg });
+  }
+});
+
+app.post('/api/v1/warehouse/picking', (req: Request, res: Response) => {
+  const { warehouseId, sku, quantityRequested, strategy } = req.body;
+  if (!warehouseId || !sku || !quantityRequested) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'warehouseId, sku, and quantityRequested are required.',
+    });
+  }
+
+  try {
+    const result = warehouseEngine.executePicking({
+      warehouseId,
+      sku,
+      quantityRequested: Number(quantityRequested),
+      strategy: strategy || 'FIFO',
+    });
+
+    res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Picking execution failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'PickingError', message: msg });
+  }
+});
+
+app.post('/api/v1/warehouse/transfer', (req: Request, res: Response) => {
+  const { warehouseId, sourceBinId, targetBinId, sku, batchNumber, quantity } = req.body;
+  if (!warehouseId || !sourceBinId || !targetBinId || !sku || !quantity) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'warehouseId, sourceBinId, targetBinId, sku, and quantity are required.',
+    });
+  }
+
+  try {
+    const transfer = warehouseEngine.executeBinTransfer({
+      warehouseId,
+      sourceBinId,
+      targetBinId,
+      sku,
+      batchNumber: batchNumber || 'DEFAULT',
+      quantity: Number(quantity),
+    });
+    res.status(HttpStatus.CREATED).json(transfer);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Bin transfer failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'BinTransferError', message: msg });
+  }
+});
+
+app.post('/api/v1/warehouse/cycle-count', (req: Request, res: Response) => {
+  const { warehouseId, binId, sku, batchNumber, physicalCountedQuantity, unitCost } = req.body;
+  if (!warehouseId || !binId || !sku || physicalCountedQuantity === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'warehouseId, binId, sku, and physicalCountedQuantity are required.',
+    });
+  }
+
+  try {
+    const record = warehouseEngine.recordCycleCount({
+      warehouseId,
+      binId,
+      sku,
+      batchNumber: batchNumber || 'LOT-DEFAULT',
+      physicalCountedQuantity: Number(physicalCountedQuantity),
+      unitCost: Number(unitCost || 0),
+    });
+    res.status(HttpStatus.CREATED).json(record);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Cycle count failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CycleCountError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.13 Multi-Currency & Parallel Accounting Endpoints (SAP FI-GL)
+// =================================================================
+app.get('/api/v1/multicurrency/rates', (req: Request, res: Response) => {
+  const from = req.query.from as any;
+  const to = req.query.to as any;
+  if (from && to) {
+    try {
+      const rate = multiCurrencyEngine.getExchangeRate(from, to);
+      return res.json({ fromCurrency: from, toCurrency: to, rate });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Rate not found';
+      return res.status(HttpStatus.NOT_FOUND).json({ error: 'ExchangeRateNotFound', message: msg });
+    }
+  }
+
+  res.json({
+    baseCurrency: 'INR',
+    rates: [
+      { from: 'USD', to: 'INR', spotRate: multiCurrencyEngine.getExchangeRate('USD', 'INR', 'SPOT'), closingRate: multiCurrencyEngine.getExchangeRate('USD', 'INR', 'CLOSING') },
+      { from: 'EUR', to: 'INR', spotRate: multiCurrencyEngine.getExchangeRate('EUR', 'INR', 'SPOT') },
+      { from: 'GBP', to: 'INR', spotRate: multiCurrencyEngine.getExchangeRate('GBP', 'INR', 'SPOT') },
+      { from: 'AED', to: 'INR', spotRate: multiCurrencyEngine.getExchangeRate('AED', 'INR', 'SPOT') },
+    ],
+  });
+});
+
+app.post('/api/v1/multicurrency/rates', (req: Request, res: Response) => {
+  const { fromCurrency, toCurrency, rate, rateType } = req.body;
+  if (!fromCurrency || !toCurrency || !rate) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'fromCurrency, toCurrency, and rate are required.',
+    });
+  }
+
+  try {
+    const exRate = multiCurrencyEngine.setExchangeRate(fromCurrency, toCurrency, Number(rate), rateType);
+    res.status(HttpStatus.CREATED).json(exRate);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Invalid exchange rate';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ExchangeRateError', message: msg });
+  }
+});
+
+app.post('/api/v1/multicurrency/convert', (req: Request, res: Response) => {
+  const { amount, fromCurrency, toCurrency, rateType } = req.body;
+  if (!amount || !fromCurrency || !toCurrency) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'amount, fromCurrency, and toCurrency are required.',
+    });
+  }
+
+  try {
+    const converted = multiCurrencyEngine.convertAmount(Number(amount), fromCurrency, toCurrency, rateType);
+    res.json({
+      originalAmount: Number(amount),
+      fromCurrency,
+      toCurrency,
+      convertedAmount: converted,
+      exchangeRateUsed: multiCurrencyEngine.getExchangeRate(fromCurrency, toCurrency, rateType),
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Conversion failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ConversionError', message: msg });
+  }
+});
+
+app.get('/api/v1/multicurrency/ledgers', (req: Request, res: Response) => {
+  const ledgers = multiCurrencyEngine.getLedgers();
+  res.json({ count: ledgers.length, ledgers });
+});
+
+app.post('/api/v1/multicurrency/parallel-journal', (req: Request, res: Response) => {
+  const { ledgerGroup, postingDate, reference, narrative, transactionCurrency, exchangeRateUsed, lines } = req.body;
+  if (!lines || !Array.isArray(lines) || lines.length < 2) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'At least two parallel journal lines (debit & credit) are required.',
+    });
+  }
+
+  try {
+    const entry = multiCurrencyEngine.postParallelJournal({
+      ledgerGroup: ledgerGroup || 'ALL',
+      postingDate: postingDate || new Date().toISOString().split('T')[0],
+      reference: reference || 'PAR-REF',
+      narrative: narrative || 'Multi-currency parallel journal posting',
+      transactionCurrency: transactionCurrency || 'INR',
+      exchangeRateUsed: Number(exchangeRateUsed || 1),
+      lines,
+    });
+    res.status(HttpStatus.CREATED).json(entry);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Parallel journal posting failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ParallelJournalError', message: msg });
+  }
+});
+
+app.get('/api/v1/multicurrency/open-items', (req: Request, res: Response) => {
+  const items = multiCurrencyEngine.getOpenMonetaryItems();
+  res.json({ count: items.length, items });
+});
+
+app.post('/api/v1/multicurrency/forex-revaluation', (req: Request, res: Response) => {
+  const { currency, closingRate, valuationDate } = req.body;
+  if (!currency || !closingRate) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'currency and closingRate are required for IAS 21 revaluation.',
+    });
+  }
+
+  try {
+    const result = multiCurrencyEngine.executeForexRevaluation(currency, Number(closingRate), valuationDate);
+    res.status(HttpStatus.CREATED).json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Forex revaluation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ForexRevaluationError', message: msg });
+  }
+});
+
+app.post('/api/v1/compliance/calculate-jurisdiction-tax', (req: Request, res: Response) => {
+  const { countryCode, taxableAmount, customerStateOrRegion, companyStateOrRegion, taxRegistrationNumber } = req.body;
+  if (!countryCode || taxableAmount === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'countryCode and taxableAmount are required.',
+    });
+  }
+
+  try {
+    const result = multiCurrencyEngine.calculateJurisdictionTax(countryCode, {
+      taxableAmount: Number(taxableAmount),
+      customerStateOrRegion,
+      companyStateOrRegion,
+      taxRegistrationNumber,
+    });
+    res.json({ countryCode: countryCode.toUpperCase(), taxableAmount: Number(taxableAmount), ...result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Tax calculation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'JurisdictionTaxError', message: msg });
   }
 });
 
