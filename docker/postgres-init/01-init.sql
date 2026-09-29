@@ -540,3 +540,164 @@ CREATE TABLE IF NOT EXISTS cost_allocation_rules (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_tenant_alloc_rule UNIQUE (tenant_id, rule_id)
 );
+
+-- =================================================================
+-- 17. Plant Maintenance & Enterprise Asset Management (PM/EAM)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS pm_functional_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    location_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    plant_id VARCHAR(50) NOT NULL,
+    cost_center VARCHAR(100) NOT NULL,
+    parent_location_id VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_pm_floc UNIQUE (tenant_id, location_id)
+);
+
+CREATE TABLE IF NOT EXISTS pm_equipment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    equipment_number VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    functional_location_id VARCHAR(100) NOT NULL,
+    serial_number VARCHAR(100),
+    manufacturer VARCHAR(100),
+    model_year INT,
+    category VARCHAR(50) NOT NULL, -- MACHINERY, VEHICLE, TOOLING, ELECTRICAL, HVAC, INSTRUMENTATION
+    status VARCHAR(50) NOT NULL DEFAULT 'OPERATIONAL', -- OPERATIONAL, IN_MAINTENANCE, BREAKDOWN, DECOMMISSIONED
+    operating_hours NUMERIC(18, 2) NOT NULL DEFAULT 0,
+    fixed_asset_tag VARCHAR(100),
+    cost_center VARCHAR(100) NOT NULL,
+    last_maintenance_date DATE,
+    next_maintenance_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_pm_eq UNIQUE (tenant_id, equipment_number)
+);
+
+CREATE TABLE IF NOT EXISTS pm_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    notification_number VARCHAR(100) NOT NULL,
+    equipment_number VARCHAR(100) NOT NULL,
+    type VARCHAR(50) NOT NULL, -- BREAKDOWN, CORRECTIVE, PREVENTIVE, INSPECTION
+    priority VARCHAR(50) NOT NULL DEFAULT 'MEDIUM', -- VERY_HIGH, HIGH, MEDIUM, LOW
+    short_description VARCHAR(500) NOT NULL,
+    reported_by VARCHAR(100) NOT NULL,
+    reported_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'NEW', -- NEW, IN_PROCESS, ORDER_CREATED, COMPLETED
+    breakdown_duration_hours NUMERIC(10, 2),
+    work_order_number VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_pm_notif UNIQUE (tenant_id, notification_number)
+);
+
+CREATE TABLE IF NOT EXISTS pm_work_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    order_number VARCHAR(100) NOT NULL,
+    notification_number VARCHAR(100),
+    equipment_number VARCHAR(100) NOT NULL,
+    order_type VARCHAR(50) NOT NULL DEFAULT 'CORRECTIVE', -- CORRECTIVE, PREVENTIVE, OVERHAUL, CALIBRATION
+    status VARCHAR(50) NOT NULL DEFAULT 'CREATED', -- CREATED, RELEASED, TECHNICALLY_COMPLETED, CLOSED
+    scheduled_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    scheduled_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    assigned_technician VARCHAR(100) NOT NULL,
+    cost_center VARCHAR(100) NOT NULL,
+    estimated_labor_hours NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    actual_labor_hours NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    labor_hourly_rate NUMERIC(18, 4) NOT NULL DEFAULT 750,
+    total_labor_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_material_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_actual_cost NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    spare_parts JSONB NOT NULL DEFAULT '[]'::jsonb,
+    settled_cost_center VARCHAR(100),
+    gl_settlement JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_pm_wo UNIQUE (tenant_id, order_number)
+);
+
+CREATE TABLE IF NOT EXISTS pm_maintenance_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    plan_number VARCHAR(100) NOT NULL,
+    equipment_number VARCHAR(100) NOT NULL,
+    cycle_type VARCHAR(50) NOT NULL DEFAULT 'TIME_BASED', -- TIME_BASED, USAGE_BASED
+    cycle_interval_days INT,
+    cycle_interval_hours NUMERIC(10, 2),
+    task_description TEXT NOT NULL,
+    estimated_hours NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    last_triggered_date DATE,
+    last_triggered_hours NUMERIC(10, 2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_pm_plan UNIQUE (tenant_id, plan_number)
+);
+
+-- =================================================================
+-- 18. Treasury & Bank Statement Reconciliation (TRM / FI-BL)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS trm_house_banks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    bank_id VARCHAR(50) NOT NULL,
+    bank_name VARCHAR(255) NOT NULL,
+    branch_name VARCHAR(255) NOT NULL,
+    ifsc_code VARCHAR(20) NOT NULL,
+    swift_code VARCHAR(20),
+    country VARCHAR(10) NOT NULL DEFAULT 'IN',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_trm_bank UNIQUE (tenant_id, bank_id)
+);
+
+CREATE TABLE IF NOT EXISTS trm_bank_accounts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    account_id VARCHAR(100) NOT NULL,
+    bank_id VARCHAR(50) NOT NULL,
+    account_number VARCHAR(50) NOT NULL,
+    account_type VARCHAR(50) NOT NULL DEFAULT 'CURRENT', -- CURRENT, SAVINGS, CASH_CREDIT, ESCROW
+    currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+    gl_account VARCHAR(50) NOT NULL,
+    gl_clearing_account VARCHAR(50) NOT NULL,
+    current_book_balance NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    reconciled_bank_balance NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    last_reconciliation_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_trm_acc UNIQUE (tenant_id, account_id)
+);
+
+CREATE TABLE IF NOT EXISTS trm_bank_statements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    statement_id VARCHAR(100) NOT NULL,
+    account_id VARCHAR(100) NOT NULL,
+    statement_number VARCHAR(50) NOT NULL,
+    opening_date DATE NOT NULL,
+    closing_date DATE NOT NULL,
+    opening_balance NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    closing_balance NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    format VARCHAR(20) NOT NULL DEFAULT 'MT940',
+    status VARCHAR(50) NOT NULL DEFAULT 'IMPORTED', -- IMPORTED, PARTIALLY_RECONCILED, RECONCILED
+    lines JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_trm_stmt UNIQUE (tenant_id, statement_id)
+);
+
+CREATE TABLE IF NOT EXISTS trm_gl_clearing_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    account_id VARCHAR(100) NOT NULL,
+    entry_number VARCHAR(100) NOT NULL,
+    date DATE NOT NULL,
+    reference VARCHAR(100) NOT NULL,
+    direction VARCHAR(10) NOT NULL, -- DEBIT, CREDIT
+    amount NUMERIC(18, 4) NOT NULL,
+    account_code VARCHAR(50) NOT NULL,
+    description VARCHAR(255),
+    is_cleared BOOLEAN NOT NULL DEFAULT false,
+    cleared_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_trm_clr UNIQUE (tenant_id, account_id, entry_number)
+);

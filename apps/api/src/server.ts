@@ -17,6 +17,8 @@ import {
   FixedAssetEngine,
   QualityEngine,
   ControllingEngine,
+  MaintenanceEngine,
+  TreasuryEngine,
   HttpStatus,
 } from '@sutra/core';
 import {
@@ -165,6 +167,8 @@ const manufacturingEngine = new ManufacturingEngine(inventoryEngine);
 const fixedAssetEngine = new FixedAssetEngine();
 const qualityEngine = new QualityEngine(inventoryEngine);
 const controllingEngine = new ControllingEngine();
+const maintenanceEngine = new MaintenanceEngine(inventoryEngine);
+const treasuryEngine = new TreasuryEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -185,6 +189,15 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
         plugins: authRegistry.listProviders().map((p) => ({ id: p.id, name: p.name, type: p.type })),
       },
       complianceEngine: 'READY (GST, E-Invoice, TDS)',
+      inventoryEngine: 'ONLINE (MM)',
+      orderToCashEngine: 'ONLINE (SD)',
+      procureToPayEngine: 'ONLINE (P2P)',
+      manufacturingEngine: 'ONLINE (PP)',
+      fixedAssetEngine: 'ONLINE (FI-AA)',
+      qualityEngine: 'ONLINE (QM)',
+      controllingEngine: 'ONLINE (CO)',
+      plantMaintenance: 'ONLINE (PM/EAM)',
+      treasuryEngine: 'ONLINE (TRM/FI-BL)',
       noCodeStudio: 'READY',
       analyticsEngine: 'ONLINE',
       genAICore: {
@@ -952,6 +965,267 @@ app.get('/api/v1/controlling/cost-centers/:code/variance', (req: Request, res: R
     res.status(HttpStatus.NOT_FOUND).json({ error: 'VarianceAnalysisError', message: msg });
   }
 });
+
+// =================================================================
+// 2.13 Plant Maintenance & Enterprise Asset Management (SAP PM/EAM)
+// =================================================================
+app.get('/api/v1/pm/functional-locations', (req: Request, res: Response) => {
+  res.json(maintenanceEngine.listFunctionalLocations());
+});
+
+app.post('/api/v1/pm/functional-locations', (req: Request, res: Response) => {
+  const { id, name, plantId, costCenter } = req.body;
+  if (!id || !name || !plantId || !costCenter) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'id, name, plantId, and costCenter are required' });
+  }
+  const loc = maintenanceEngine.registerFunctionalLocation(req.body);
+  res.status(HttpStatus.CREATED).json(loc);
+});
+
+app.get('/api/v1/pm/equipment', (req: Request, res: Response) => {
+  res.json(maintenanceEngine.listEquipment());
+});
+
+app.post('/api/v1/pm/equipment', (req: Request, res: Response) => {
+  const { equipmentNumber, name, functionalLocationId, category, costCenter } = req.body;
+  if (!equipmentNumber || !name || !functionalLocationId || !category || !costCenter) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory equipment master fields' });
+  }
+  const eq = maintenanceEngine.registerEquipment({
+    ...req.body,
+    status: req.body.status || 'OPERATIONAL',
+    operatingHours: req.body.operatingHours || 0,
+    modelYear: req.body.modelYear || new Date().getFullYear(),
+  });
+  res.status(HttpStatus.CREATED).json(eq);
+});
+
+app.get('/api/v1/pm/equipment/:equipmentNumber/reliability', (req: Request, res: Response) => {
+  const eqNum = String(req.params.equipmentNumber);
+  try {
+    const reliability = maintenanceEngine.calculateEquipmentReliability(eqNum);
+    res.json(reliability);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Reliability calculation failed';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'EquipmentNotFoundError', message: msg });
+  }
+});
+
+app.get('/api/v1/pm/notifications', (req: Request, res: Response) => {
+  res.json(maintenanceEngine.listNotifications());
+});
+
+app.post('/api/v1/pm/notifications', (req: Request, res: Response) => {
+  const { equipmentNumber, type, priority, shortDescription, reportedBy } = req.body;
+  if (!equipmentNumber || !type || !priority || !shortDescription || !reportedBy) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory maintenance notification fields' });
+  }
+  try {
+    const notif = maintenanceEngine.createNotification(req.body);
+    res.status(HttpStatus.CREATED).json(notif);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Notification creation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'NotificationCreationError', message: msg });
+  }
+});
+
+app.get('/api/v1/pm/work-orders', (req: Request, res: Response) => {
+  res.json(maintenanceEngine.listWorkOrders());
+});
+
+app.post('/api/v1/pm/work-orders', (req: Request, res: Response) => {
+  const { equipmentNumber, orderType, scheduledStart, scheduledEnd, assignedTechnician, estimatedLaborHours } = req.body;
+  if (!equipmentNumber || !orderType || !scheduledStart || !scheduledEnd || !assignedTechnician || estimatedLaborHours === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory maintenance work order fields' });
+  }
+  try {
+    const wo = maintenanceEngine.createWorkOrder(req.body);
+    res.status(HttpStatus.CREATED).json(wo);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Work order creation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'WorkOrderCreationError', message: msg });
+  }
+});
+
+app.post('/api/v1/pm/work-orders/:orderNumber/release', (req: Request, res: Response) => {
+  const orderNumber = String(req.params.orderNumber);
+  try {
+    const wo = maintenanceEngine.releaseWorkOrder(orderNumber);
+    res.json(wo);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to release work order';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'WorkOrderReleaseError', message: msg });
+  }
+});
+
+app.post('/api/v1/pm/work-orders/:orderNumber/spare-parts', (req: Request, res: Response) => {
+  const orderNumber = String(req.params.orderNumber);
+  const { sku, quantity } = req.body;
+  if (!sku || !quantity) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'sku and quantity are required' });
+  }
+  try {
+    const result = maintenanceEngine.issueSpareParts(orderNumber, sku, Number(quantity));
+    res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Spare parts issue failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'SparePartIssueError', message: msg });
+  }
+});
+
+app.post('/api/v1/pm/work-orders/:orderNumber/complete', (req: Request, res: Response) => {
+  const orderNumber = String(req.params.orderNumber);
+  const { actualLaborHours, downtimeDurationHours } = req.body;
+  if (actualLaborHours === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'actualLaborHours is required' });
+  }
+  try {
+    const wo = maintenanceEngine.completeWorkOrder(
+      orderNumber,
+      Number(actualLaborHours),
+      downtimeDurationHours !== undefined ? Number(downtimeDurationHours) : undefined
+    );
+    res.json(wo);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to complete work order';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'WorkOrderCompletionError', message: msg });
+  }
+});
+
+app.post('/api/v1/pm/work-orders/:orderNumber/settle', (req: Request, res: Response) => {
+  const orderNumber = String(req.params.orderNumber);
+  try {
+    const result = maintenanceEngine.settleWorkOrder(orderNumber);
+    res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to settle work order';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'WorkOrderSettlementError', message: msg });
+  }
+});
+
+app.get('/api/v1/pm/maintenance-plans', (req: Request, res: Response) => {
+  res.json(maintenanceEngine.listMaintenancePlans());
+});
+
+app.post('/api/v1/pm/maintenance-plans/evaluate', (req: Request, res: Response) => {
+  const generated = maintenanceEngine.evaluatePreventiveSchedules();
+  res.json({ generatedCount: generated.length, orders: generated });
+});
+
+// =================================================================
+// 2.14 Treasury & Bank Statement Reconciliation (SAP TRM / FI-BL)
+// =================================================================
+app.get('/api/v1/trm/house-banks', (req: Request, res: Response) => {
+  res.json(treasuryEngine.listHouseBanks());
+});
+
+app.post('/api/v1/trm/house-banks', (req: Request, res: Response) => {
+  const { bankId, bankName, branchName, ifscCode, country } = req.body;
+  if (!bankId || !bankName || !ifscCode || !country) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'bankId, bankName, ifscCode, and country are required' });
+  }
+  const bank = treasuryEngine.registerHouseBank(req.body);
+  res.status(HttpStatus.CREATED).json(bank);
+});
+
+app.get('/api/v1/trm/bank-accounts', (req: Request, res: Response) => {
+  res.json(treasuryEngine.listBankAccounts());
+});
+
+app.post('/api/v1/trm/bank-accounts', (req: Request, res: Response) => {
+  const { accountId, bankId, accountNumber, accountType, currency, glAccount, glClearingAccount } = req.body;
+  if (!accountId || !bankId || !accountNumber || !currency || !glAccount || !glClearingAccount) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'Missing mandatory company bank account fields' });
+  }
+  const account = treasuryEngine.registerBankAccount({
+    ...req.body,
+    currentBookBalance: req.body.currentBookBalance || 0,
+    reconciledBankBalance: req.body.reconciledBankBalance || 0,
+  });
+  res.status(HttpStatus.CREATED).json(account);
+});
+
+app.get('/api/v1/trm/bank-accounts/:accountId/clearing-items', (req: Request, res: Response) => {
+  const accountId = String(req.params.accountId);
+  res.json(treasuryEngine.listGLClearingItems(accountId));
+});
+
+app.post('/api/v1/trm/bank-accounts/:accountId/clearing-items', (req: Request, res: Response) => {
+  const accountId = String(req.params.accountId);
+  const { entryNumber, reference, direction, amount, accountCode, description } = req.body;
+  if (!entryNumber || !reference || !direction || !amount) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'entryNumber, reference, direction, and amount are required' });
+  }
+  const item = treasuryEngine.addGLClearingItem(accountId, {
+    entryNumber,
+    date: req.body.date || new Date().toISOString().split('T')[0],
+    reference,
+    direction,
+    amount: Number(amount),
+    accountCode: accountCode || '100101',
+    description: description || 'Bank transaction clearing',
+    isCleared: false,
+  });
+  res.status(HttpStatus.CREATED).json(item);
+});
+
+app.get('/api/v1/trm/statements', (req: Request, res: Response) => {
+  const accountId = req.query.accountId ? String(req.query.accountId) : undefined;
+  res.json(treasuryEngine.listStatements(accountId));
+});
+
+app.post('/api/v1/trm/statements/import-mt940', (req: Request, res: Response) => {
+  const { accountId, rawMT940Text } = req.body;
+  if (!accountId || !rawMT940Text) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'accountId and rawMT940Text are required' });
+  }
+  try {
+    const statement = treasuryEngine.parseMT940Statement(accountId, rawMT940Text);
+    res.status(HttpStatus.CREATED).json(statement);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'MT940 import failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'MT940ImportError', message: msg });
+  }
+});
+
+app.post('/api/v1/trm/statements/:statementId/reconcile', (req: Request, res: Response) => {
+  const statementId = String(req.params.statementId);
+  try {
+    const result = treasuryEngine.executeAutoReconciliation(statementId);
+    res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Reconciliation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'ReconciliationError', message: msg });
+  }
+});
+
+app.get('/api/v1/trm/bank-accounts/:accountId/brs', (req: Request, res: Response) => {
+  const accountId = String(req.params.accountId);
+  const asOfDate = (req.query.asOfDate as string) || new Date().toISOString().split('T')[0];
+  try {
+    const brs = treasuryEngine.generateBRS(accountId, asOfDate);
+    res.json(brs);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'BRS generation failed';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'BRSGenerationError', message: msg });
+  }
+});
+
+app.get('/api/v1/trm/bank-accounts/:accountId/cash-forecast', (req: Request, res: Response) => {
+  const accountId = String(req.params.accountId);
+  const openRec = req.query.openReceivables ? Number(req.query.openReceivables) : undefined;
+  const openPay = req.query.openPayables ? Number(req.query.openPayables) : undefined;
+  try {
+    const forecast = treasuryEngine.forecastCashLiquidity(accountId, openRec, openPay);
+    res.json(forecast);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Cash forecast failed';
+    res.status(HttpStatus.NOT_FOUND).json({ error: 'CashForecastError', message: msg });
+  }
+});
+
+// =================================================================
+// 3. No-Code Dynamic Entity & Schema Management Studio
 // =================================================================
 app.get('/api/v1/nocode/schemas', (req: Request, res: Response) => {
   res.json(Array.from(inMemoryEntities.values()));
