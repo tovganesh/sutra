@@ -13,7 +13,7 @@ const initialCurrency = (typeof window !== 'undefined' && localStorage.getItem(S
 
 const currentLocale = ref<string>(SUPPORTED_LOCALES[initialLocale] ? initialLocale : DEFAULT_LOCALE);
 const currentCurrency = ref<string>(SUPPORTED_CURRENCIES[initialCurrency] ? initialCurrency : DEFAULT_CURRENCY);
-const convertFx = ref<boolean>(false);
+const convertFx = ref<boolean>(true);
 
 const currencyConfig = computed<CurrencyConfig>(() => {
   return SUPPORTED_CURRENCIES[currentCurrency.value] || SUPPORTED_CURRENCIES[DEFAULT_CURRENCY];

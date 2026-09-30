@@ -1,0 +1,167 @@
+import { test, describe } from 'node:test';
+import assert from 'node:assert/strict';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '../apps/web/src/i18n/currencies.ts';
+import { messages, SUPPORTED_LOCALES, DEFAULT_LOCALE } from '../apps/web/src/locales/index.ts';
+
+describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
+  describe('Locale Dictionaries & Symmetry', () => {
+    test('defines required supported locales: en-IN, en-US, hi-IN', () => {
+      assert.ok(SUPPORTED_LOCALES['en-IN']);
+      assert.ok(SUPPORTED_LOCALES['en-US']);
+      assert.ok(SUPPORTED_LOCALES['hi-IN']);
+      assert.equal(DEFAULT_LOCALE, 'en-IN');
+    });
+
+    test('verifies all 11 core module sections exist in en-IN, en-US, and hi-IN', () => {
+      const requiredSections = [
+        'common',
+        'nav',
+        'header',
+        'dashboard',
+        'financial',
+        'compliance',
+        'supplyChain',
+        'nocode',
+        'copilot',
+        'vault',
+        'auth',
+      ];
+
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const msg = messages[locale];
+        assert.ok(msg, `Locale messages for ${locale} must exist`);
+        for (const sec of requiredSections) {
+          assert.ok(msg[sec], `Section "${sec}" must exist in ${locale}`);
+          assert.equal(typeof msg[sec], 'object', `Section "${sec}" must be an object`);
+        }
+      }
+    });
+
+    test('deeply validates key symmetry between en-IN and hi-IN', () => {
+      function validateKeys(sourceObj, targetObj, path = '') {
+        for (const [key, value] of Object.entries(sourceObj)) {
+          const currentPath = path ? `${path}.${key}` : key;
+          assert.ok(
+            key in targetObj,
+            `Missing translation key in target: ${currentPath}`
+          );
+          if (typeof value === 'object' && value !== null) {
+            assert.equal(
+              typeof targetObj[key],
+              'object',
+              `Type mismatch for ${currentPath}`
+            );
+            validateKeys(value, targetObj[key], currentPath);
+          } else {
+            assert.equal(
+              typeof targetObj[key],
+              'string',
+              `Target key ${currentPath} must be a string`
+            );
+            assert.ok(
+              targetObj[key].length > 0,
+              `Target key ${currentPath} must not be empty`
+            );
+          }
+        }
+      }
+
+      validateKeys(messages['en-IN'], messages['hi-IN'], 'root');
+      validateKeys(messages['en-IN'], messages['en-US'], 'root');
+    });
+
+    test('verifies all 15 ERP cockpit submodules are localized in SupplyChain', () => {
+      const requiredTabs = [
+        'inventory',
+        'o2c',
+        'p2p',
+        'subledger',
+        'mfg',
+        'assets',
+        'quality',
+        'controlling',
+        'maintenance',
+        'treasury',
+        'hcm',
+        'projects',
+        'warehouse',
+        'multicurrency',
+        'transportation',
+      ];
+
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const tabs = messages[locale].supplyChain.tabs;
+        for (const tab of requiredTabs) {
+          assert.ok(tabs[tab], `SupplyChain tab "${tab}" must exist in ${locale}`);
+        }
+      }
+    });
+
+    test('verifies SupplyChain ERP panels, columns, labels, and buttons are fully populated', () => {
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const sc = messages[locale].supplyChain;
+        assert.ok(Object.keys(sc.panels).length >= 35, `Panels in ${locale} must be >= 35`);
+        assert.ok(Object.keys(sc.panelSubs).length >= 30, `PanelSubs in ${locale} must be >= 30`);
+        assert.ok(Object.keys(sc.cols).length >= 80, `Cols in ${locale} must be >= 80`);
+        assert.ok(Object.keys(sc.labels).length >= 8, `Labels in ${locale} must be >= 8`);
+        assert.ok(Object.keys(sc.buttons).length >= 30, `Buttons in ${locale} must be >= 30`);
+        assert.ok(Object.keys(sc.badges).length >= 5, `Badges in ${locale} must be >= 5`);
+      }
+    });
+  });
+
+  describe('Multi-Currency Configuration & Live FX Engine', () => {
+    test('configures all 6 enterprise currencies with proper symbols and exchange rates', () => {
+      const expectedCurrencies = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'];
+      for (const code of expectedCurrencies) {
+        const config = SUPPORTED_CURRENCIES[code];
+        assert.ok(config, `Currency config for ${code} must exist`);
+        assert.equal(config.code, code);
+        assert.ok(config.symbol, `Currency ${code} must have a symbol`);
+        assert.ok(config.rateAgainstINR > 0, `Currency ${code} rate must be > 0`);
+        assert.ok(config.locale, `Currency ${code} must have a locale`);
+      }
+      assert.equal(DEFAULT_CURRENCY, 'INR');
+    });
+
+    test('validates INR base rate is exactly 1.0', () => {
+      assert.equal(SUPPORTED_CURRENCIES.INR.rateAgainstINR, 1.0);
+      assert.equal(SUPPORTED_CURRENCIES.INR.symbol, '₹');
+      assert.equal(SUPPORTED_CURRENCIES.INR.decimalPlaces, 0);
+    });
+
+    test('verifies FX conversion calculations against INR for foreign currencies', () => {
+      const inrAmount = 12000000; // 1.2 Crore INR
+
+      // USD conversion at rate 0.0116
+      const usdConverted = inrAmount * SUPPORTED_CURRENCIES.USD.rateAgainstINR;
+      assert.equal(usdConverted, 139200);
+
+      // EUR conversion at rate 0.0108
+      const eurConverted = inrAmount * SUPPORTED_CURRENCIES.EUR.rateAgainstINR;
+      assert.equal(eurConverted, 129600);
+
+      // GBP conversion at rate 0.0092
+      const gbpConverted = inrAmount * SUPPORTED_CURRENCIES.GBP.rateAgainstINR;
+      assert.equal(gbpConverted, 110400);
+
+      // AED conversion at rate 0.0426
+      const aedConverted = inrAmount * SUPPORTED_CURRENCIES.AED.rateAgainstINR;
+      assert.equal(aedConverted, 511200);
+
+      // SGD conversion at rate 0.0154
+      const sgdConverted = inrAmount * SUPPORTED_CURRENCIES.SGD.rateAgainstINR;
+      assert.equal(sgdConverted, 184800);
+    });
+
+    test('verifies dynamic string parameter interpolation', () => {
+      const template = messages['en-IN'].financial.currencyBadge;
+      const interpolated = template.replace('{code}', 'USD').replace('{symbol}', '$');
+      assert.equal(interpolated, 'Currency: USD ($)');
+
+      const hiTemplate = messages['hi-IN'].financial.currencyBadge;
+      const hiInterpolated = hiTemplate.replace('{code}', 'USD').replace('{symbol}', '$');
+      assert.equal(hiInterpolated, 'मुद्रा: USD ($)');
+    });
+  });
+});

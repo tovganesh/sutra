@@ -1,9 +1,9 @@
-import { enIN } from './en-IN';
-import { enUS } from './en-US';
-import { hiIN } from './hi-IN';
-import type { LocaleMessage } from './types';
+import { enIN } from './en-IN.ts';
+import { enUS } from './en-US.ts';
+import { hiIN } from './hi-IN.ts';
+import type { LocaleMessage } from './types.ts';
 
-export * from './types';
+export * from './types.ts';
 
 export interface LocaleConfig {
   code: string;
