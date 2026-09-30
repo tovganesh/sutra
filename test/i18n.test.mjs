@@ -108,6 +108,16 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         assert.ok(Object.keys(sc.badges).length >= 5, `Badges in ${locale} must be >= 5`);
       }
     });
+
+    test('verifies compliance module dropdown states, TDS, jurisdictions, and results dictionaries', () => {
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const comp = messages[locale].compliance;
+        assert.ok(comp.states && Object.keys(comp.states).length === 6, `States in ${locale} must have 6 keys`);
+        assert.ok(comp.tdsSections && Object.keys(comp.tdsSections).length === 4, `TDS sections in ${locale} must have 4 keys`);
+        assert.ok(comp.jurisdictions && Object.keys(comp.jurisdictions).length === 4, `Jurisdictions in ${locale} must have 4 keys`);
+        assert.ok(comp.results && Object.keys(comp.results).length >= 18, `Results in ${locale} must have >= 18 keys`);
+      }
+    });
   });
 
   describe('Multi-Currency Configuration & Live FX Engine', () => {

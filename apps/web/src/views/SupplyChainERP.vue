@@ -2027,7 +2027,7 @@
               <div v-for="l in sampleParallelJournalLines" :key="l.accountCode" class="gl-line">
                 <span class="font-mono text-dim">{{ l.accountCode }}</span>
                 <span class="gl-acc-name">{{ l.accountName }}</span>
-                <span class="font-mono text-cyan">Group: ${{ formatNumber(l.amountGroup) }}</span>
+                <span class="font-mono text-cyan">Group: USD {{ formatNumber(l.amountGroup) }}</span>
                 <span class="font-mono" :class="l.debit > 0 ? 'text-green' : 'text-cyan'">
                   {{ l.debit > 0 ? `Local: Dr ${formatCurrency(l.debit)}` : `Local: Cr ${formatCurrency(l.credit)}` }}
                 </span>

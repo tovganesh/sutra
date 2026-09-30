@@ -224,6 +224,49 @@ export interface LocaleMessage {
     simulateTaxBtn: string;
     auditTitle: string;
     auditDesc: string;
+    states: {
+      mh: string;
+      ka: string;
+      ts: string;
+      tn: string;
+      wb: string;
+      dl: string;
+    };
+    tdsSections: {
+      tech: string;
+      prof: string;
+      contractor: string;
+      goods: string;
+    };
+    jurisdictions: {
+      us: string;
+      eu: string;
+      ae: string;
+      in: string;
+    };
+    results: {
+      grossSalary: string;
+      employeePf: string;
+      professionalTax: string;
+      netTakeHome: string;
+      employerPf: string;
+      totalCtc: string;
+      applicable: string;
+      notApplicable: string;
+      tdsWithheld: string;
+      netPayable: string;
+      cifValue: string;
+      bcd: string;
+      sws: string;
+      igst: string;
+      totalDuty: string;
+      totalLandedCost: string;
+      creditableItc: string;
+      taxAmount: string;
+      totalPayable: string;
+      rawJson: string;
+      hideJson: string;
+    };
   };
   supplyChain: {
     headerTitle: string;

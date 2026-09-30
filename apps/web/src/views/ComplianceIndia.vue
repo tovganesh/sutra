@@ -247,19 +247,55 @@
           <div class="form-group">
             <label>{{ $t('compliance.statePt') }}</label>
             <select v-model="payrollState" class="input-control">
-              <option value="MH">Maharashtra (MH)</option>
-              <option value="KA">Karnataka (KA)</option>
-              <option value="TS">Telangana (TS)</option>
-              <option value="TN">Tamil Nadu (TN)</option>
-              <option value="WB">West Bengal (WB)</option>
-              <option value="DL">Delhi (No PT)</option>
+              <option value="MH">{{ $t('compliance.states.mh') }}</option>
+              <option value="KA">{{ $t('compliance.states.ka') }}</option>
+              <option value="TS">{{ $t('compliance.states.ts') }}</option>
+              <option value="TN">{{ $t('compliance.states.tn') }}</option>
+              <option value="WB">{{ $t('compliance.states.wb') }}</option>
+              <option value="DL">{{ $t('compliance.states.dl') }}</option>
             </select>
           </div>
         </div>
 
         <button class="btn btn-primary" @click="computePayroll">{{ $t('compliance.calculatePayrollBtn') }}</button>
 
-        <div v-if="payrollResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+        <div v-if="parsedPayroll" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.netTakeHome') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedPayroll.netTakeHome) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.totalCtc') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedPayroll.ctc) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.grossSalary') }}:</span>
+              <strong>{{ formatCurrency(parsedPayroll.grossSalary) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.employeePf') }}:</span>
+              <strong class="deduction">-{{ formatCurrency(parsedPayroll.employeePF) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.professionalTax') }}:</span>
+              <strong class="deduction">-{{ formatCurrency(parsedPayroll.professionalTax) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.employerPf') }}:</span>
+              <strong>{{ formatCurrency(parsedPayroll.employerPF) }}</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showPayrollJson = !showPayrollJson">
+              {{ showPayrollJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="payrollResult && showPayrollJson" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ payrollResult }}
         </div>
       </div>
@@ -279,10 +315,10 @@
           <div class="form-group">
             <label>{{ $t('compliance.tdsSection') }}</label>
             <select v-model="tdsSection" class="input-control">
-              <option value="194J_TECH">Sec 194J(a) - Tech Services (2%)</option>
-              <option value="194J_PROF">Sec 194J(b) - Professional Services (10%)</option>
-              <option value="194C">Sec 194C - Contractor (1% / 2%)</option>
-              <option value="194Q">Sec 194Q - Purchase of Goods (0.1%)</option>
+              <option value="194J_TECH">{{ $t('compliance.tdsSections.tech') }}</option>
+              <option value="194J_PROF">{{ $t('compliance.tdsSections.prof') }}</option>
+              <option value="194C">{{ $t('compliance.tdsSections.contractor') }}</option>
+              <option value="194Q">{{ $t('compliance.tdsSections.goods') }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -293,7 +329,37 @@
 
         <button class="btn btn-secondary" @click="evaluateTds">{{ $t('compliance.calculateTdsBtn') }}</button>
 
-        <div v-if="tdsResult" class="code-preview" style="margin-top: 14px;">
+        <div v-if="parsedTds" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.tdsWithheld') }} ({{ parsedTds.appliedRate }}%)</span>
+              <span class="kpi-val deduction">-{{ formatCurrency(parsedTds.tdsAmount) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.netPayable') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedTds.netPayableAmount) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>Status:</span>
+              <span :class="parsedTds.applicable ? 'badge-warning' : 'badge-success'">
+                {{ parsedTds.applicable ? $t('compliance.results.applicable') : $t('compliance.results.notApplicable') }}
+              </span>
+            </div>
+            <div class="detail-row">
+              <span>Section:</span>
+              <strong>{{ parsedTds.section }}</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showTdsJson = !showTdsJson">
+              {{ showTdsJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="tdsResult && showTdsJson" class="code-preview" style="margin-top: 14px;">
           {{ tdsResult }}
         </div>
       </div>
@@ -347,7 +413,47 @@
 
         <button class="btn btn-primary" @click="calculateCustomsDuty">{{ $t('compliance.calculateCustomsBtn') }}</button>
 
-        <div v-if="customsResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+        <div v-if="parsedCustoms" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.totalDuty') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedCustoms.totalCustomsDuty) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.totalLandedCost') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedCustoms.totalLandedCost) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.cifValue') }}:</span>
+              <strong>{{ formatCurrency(parsedCustoms.assessableValue) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.bcd') }}:</span>
+              <strong>{{ formatCurrency(parsedCustoms.bcdAmount) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.sws') }}:</span>
+              <strong>{{ formatCurrency(parsedCustoms.swsAmount) }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.igst') }}:</span>
+              <strong>{{ formatCurrency(parsedCustoms.igstAmount) }}</strong>
+            </div>
+            <div class="detail-row highlight-itc">
+              <span>{{ $t('compliance.results.creditableItc') }}:</span>
+              <strong class="credit-val">+{{ formatCurrency(parsedCustoms.creditableItc) }}</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showCustomsJson = !showCustomsJson">
+              {{ showCustomsJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="customsResult && showCustomsJson" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ customsResult }}
         </div>
       </div>
@@ -402,10 +508,10 @@
           <div class="form-group">
             <label>{{ $t('compliance.selectJurisdiction') }}</label>
             <select v-model="globalTaxCountry" class="input-control">
-              <option value="US">United States (US Nexus & Local Surcharges)</option>
-              <option value="EU">European Union (VIES Cross-Border B2B / B2C)</option>
-              <option value="AE">United Arab Emirates (UAE Federal Tax Authority 5%)</option>
-              <option value="IN">India (GST Council Dual GST)</option>
+              <option value="US">{{ $t('compliance.jurisdictions.us') }}</option>
+              <option value="EU">{{ $t('compliance.jurisdictions.eu') }}</option>
+              <option value="AE">{{ $t('compliance.jurisdictions.ae') }}</option>
+              <option value="IN">{{ $t('compliance.jurisdictions.in') }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -427,7 +533,37 @@
 
         <button class="btn btn-primary" @click="runGlobalTaxSim">{{ $t('compliance.simulateTaxBtn') }}</button>
 
-        <div v-if="globalTaxResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+        <div v-if="parsedGlobalTax" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.taxAmount') }} ({{ parsedGlobalTax.taxRatePercent }}%)</span>
+              <span class="kpi-val">{{ formatCurrency(parsedGlobalTax.taxAmount) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.totalPayable') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedGlobalTax.totalPayableAmount || (parsedGlobalTax.taxableAmount + parsedGlobalTax.taxAmount)) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>Jurisdiction:</span>
+              <strong>{{ parsedGlobalTax.countryCode }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Reverse Charge (Art 194 / Cross-Border):</span>
+              <span :class="parsedGlobalTax.isReverseChargeApplicable ? 'badge-success' : 'badge-neutral'">
+                {{ parsedGlobalTax.isReverseChargeApplicable ? 'Active (Self-Assessment)' : 'Standard Tax Charge' }}
+              </span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showGlobalTaxJson = !showGlobalTaxJson">
+              {{ showGlobalTaxJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="globalTaxResult && showGlobalTaxJson" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ globalTaxResult }}
         </div>
       </div>
@@ -705,6 +841,89 @@ async function computeGstr3b() {
   }
 }
 
+// Executive KPI Result Interfaces & State
+interface PayrollData {
+  grossSalary: number;
+  employeePF: number;
+  professionalTax: number;
+  netTakeHome: number;
+  employerPF: number;
+  ctc: number;
+}
+
+interface TdsData {
+  applicable: boolean;
+  section: string;
+  appliedRate: number;
+  tdsAmount: number;
+  netPayableAmount: number;
+}
+
+interface CustomsData {
+  assessableValue: number;
+  bcdAmount: number;
+  swsAmount: number;
+  igstAmount: number;
+  totalCustomsDuty: number;
+  totalLandedCost: number;
+  creditableItc: number;
+  nonCreditableDutyCost: number;
+}
+
+interface GlobalTaxData {
+  countryCode: string;
+  taxableAmount: number;
+  taxRatePercent: number;
+  taxAmount: number;
+  totalPayableAmount?: number;
+  isReverseChargeApplicable?: boolean;
+}
+
+const showPayrollJson = ref(false);
+const showTdsJson = ref(false);
+const showCustomsJson = ref(false);
+const showGlobalTaxJson = ref(false);
+
+const parsedPayroll = computed<PayrollData | null>(() => {
+  if (!payrollResult.value) return null;
+  try {
+    return JSON.parse(payrollResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedTds = computed<TdsData | null>(() => {
+  if (!tdsResult.value) return null;
+  try {
+    return JSON.parse(tdsResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedCustoms = computed<CustomsData | null>(() => {
+  if (!customsResult.value) return null;
+  try {
+    return JSON.parse(customsResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedGlobalTax = computed<GlobalTaxData | null>(() => {
+  if (!globalTaxResult.value) return null;
+  try {
+    const data = JSON.parse(globalTaxResult.value);
+    if (!data.totalPayableAmount && data.taxableAmount !== undefined && data.taxAmount !== undefined) {
+      data.totalPayableAmount = data.taxableAmount + data.taxAmount;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+});
+
 // 7. Statutory Payroll State
 const payrollBasic = ref(50000);
 const payrollDa = ref(10000);
@@ -727,13 +946,43 @@ async function computePayroll() {
     const data = await res.json();
     payrollResult.value = JSON.stringify(data, null, 2);
   } catch {
+    const basic = payrollBasic.value || 0;
+    const da = payrollDa.value || 0;
+    const allowances = payrollAllowances.value || 0;
+    const grossSalary = basic + da + allowances;
+
+    // Statutory EPF: 12% on (Basic + DA), statutory ceiling ₹15,000 base -> ₹1,800
+    const epfBase = basic + da;
+    const employeePF = epfBase > 15000 ? 1800 : Math.round(epfBase * 0.12);
+    const employerPF = employeePF;
+
+    // State Professional Tax
+    let pt = 0;
+    const state = payrollState.value;
+    if (state === 'MH') {
+      pt = grossSalary > 10000 ? 200 : (grossSalary > 7500 ? 175 : 0);
+    } else if (state === 'KA') {
+      pt = grossSalary > 15000 ? 200 : 0;
+    } else if (state === 'TS') {
+      pt = grossSalary > 20000 ? 200 : (grossSalary > 15000 ? 150 : 0);
+    } else if (state === 'TN') {
+      pt = grossSalary > 12500 ? 208 : (grossSalary > 10000 ? 150 : 0);
+    } else if (state === 'WB') {
+      pt = grossSalary > 40000 ? 200 : (grossSalary > 25000 ? 150 : 130);
+    } else if (state === 'DL') {
+      pt = 0; // Delhi has no Professional Tax
+    }
+
+    const netTakeHome = grossSalary - employeePF - pt;
+    const ctc = grossSalary + employerPF;
+
     payrollResult.value = JSON.stringify({
-      grossSalary: 85000,
-      employeePF: 1800,
-      professionalTax: 200,
-      netTakeHome: 83000,
-      employerPF: 1800,
-      ctc: 86800,
+      grossSalary,
+      employeePF,
+      professionalTax: pt,
+      netTakeHome,
+      employerPF,
+      ctc,
     }, null, 2);
   }
 }
@@ -758,12 +1007,41 @@ async function evaluateTds() {
     const data = await res.json();
     tdsResult.value = JSON.stringify(data, null, 2);
   } catch {
+    const amount = tdsAmount.value || 0;
+    const sec = tdsSection.value;
+    let rate = 2.0;
+    let sectionName = '194J(a)';
+    let threshold = 30000;
+
+    if (sec === '194J_TECH') {
+      rate = 2.0;
+      sectionName = '194J(a) - Fees for Technical Services';
+      threshold = 30000;
+    } else if (sec === '194J_PROF') {
+      rate = 10.0;
+      sectionName = '194J(b) - Professional Services';
+      threshold = 30000;
+    } else if (sec === '194C') {
+      rate = 2.0;
+      sectionName = '194C - Contractor Payments (Company/Firm)';
+      threshold = 30000;
+    } else if (sec === '194Q') {
+      rate = 0.1;
+      sectionName = '194Q - Purchase of Goods exceeding 50L';
+      threshold = 5000000;
+    }
+
+    const applicable = amount >= threshold || sec !== '194Q';
+    const appliedRate = applicable ? rate : 0;
+    const tdsVal = applicable ? Math.round(amount * (rate / 100)) : 0;
+    const netPayable = amount - tdsVal;
+
     tdsResult.value = JSON.stringify({
-      applicable: true,
-      section: '194J(a)',
-      appliedRate: 2.0,
-      tdsAmount: (tdsAmount.value * 0.02),
-      netPayableAmount: (tdsAmount.value * 0.98),
+      applicable,
+      section: sectionName,
+      appliedRate,
+      tdsAmount: tdsVal,
+      netPayableAmount: netPayable,
     }, null, 2);
   }
 }
@@ -794,19 +1072,24 @@ async function calculateCustomsDuty() {
     const data = await res.json();
     customsResult.value = JSON.stringify(data, null, 2);
   } catch {
-    const bcd = customsCif.value * (customsBcdRate.value / 100);
-    const sws = bcd * (customsSwsRate.value / 100);
-    const igstBase = customsCif.value + bcd + sws + customsAntiDumping.value;
-    const igst = igstBase * (customsIgstRate.value / 100);
+    const cif = customsCif.value || 0;
+    const bcd = Math.round(cif * ((customsBcdRate.value || 0) / 100));
+    const sws = Math.round(bcd * ((customsSwsRate.value || 0) / 100));
+    const antiDumping = customsAntiDumping.value || 0;
+    const igstBase = cif + bcd + sws + antiDumping;
+    const igst = Math.round(igstBase * ((customsIgstRate.value || 0) / 100));
+    const totalDuty = bcd + sws + antiDumping + igst;
+    const landedCost = cif + totalDuty;
+
     customsResult.value = JSON.stringify({
-      assessableValue: customsCif.value,
+      assessableValue: cif,
       bcdAmount: bcd,
       swsAmount: sws,
       igstAmount: igst,
-      totalCustomsDuty: bcd + sws + igst,
-      totalLandedCost: customsCif.value + bcd + sws + igst,
+      totalCustomsDuty: totalDuty,
+      totalLandedCost: landedCost,
       creditableItc: igst,
-      nonCreditableDutyCost: bcd + sws,
+      nonCreditableDutyCost: bcd + sws + antiDumping,
       status: 'CALCULATED_LOCAL_FALLBACK',
     }, null, 2);
   }
@@ -866,12 +1149,37 @@ async function runGlobalTaxSim() {
     const data = await res.json();
     globalTaxResult.value = JSON.stringify(data, null, 2);
   } catch {
+    const country = globalTaxCountry.value;
+    const amount = globalTaxAmount.value || 0;
+    let rate = 8.25;
+    let isReverseCharge = false;
+
+    if (country === 'US') {
+      rate = 8.25;
+    } else if (country === 'EU') {
+      // If VAT ID present, intra-community B2B reverse charge
+      if (globalTaxRegId.value && globalTaxRegId.value.trim().length > 3) {
+        rate = 0.0;
+        isReverseCharge = true;
+      } else {
+        rate = 20.0;
+      }
+    } else if (country === 'AE') {
+      rate = 5.0;
+    } else if (country === 'IN') {
+      rate = 18.0;
+    }
+
+    const tax = Math.round(amount * (rate / 100));
+    const total = amount + tax;
+
     globalTaxResult.value = JSON.stringify({
-      countryCode: globalTaxCountry.value,
-      taxableAmount: globalTaxAmount.value,
-      taxRatePercent: globalTaxCountry.value === 'US' ? 8.25 : 20.0,
-      taxAmount: globalTaxAmount.value * 0.0825,
-      isReverseChargeApplicable: false,
+      countryCode: country,
+      taxableAmount: amount,
+      taxRatePercent: rate,
+      taxAmount: tax,
+      totalPayableAmount: total,
+      isReverseChargeApplicable: isReverseCharge,
     }, null, 2);
   }
 }
@@ -986,5 +1294,149 @@ async function runGlobalTaxSim() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.result-summary-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.1);
+}
+
+.summary-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.kpi-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.kpi-block.highlight {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpi-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.kpi-val.deduction {
+  color: #f87171;
+}
+
+.summary-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.detail-row strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.detail-row strong.deduction {
+  color: #f87171;
+}
+
+.detail-row strong.credit-val {
+  color: #34d399;
+}
+
+.detail-row.highlight-itc {
+  background: rgba(16, 185, 129, 0.08);
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.badge-neutral {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.btn-xs {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 </style>
