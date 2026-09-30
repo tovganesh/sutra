@@ -16,7 +16,7 @@
         <div class="card-header">
           <div>
             <h3>{{ $t('nocode.activeSchema', { name: activeEntity.name }) }}</h3>
-            <span class="card-subtitle">Slug: <code>{{ activeEntity.slug }}</code> • PostgreSQL JSONB</span>
+            <span class="card-subtitle">{{ $t('nocode.entitySlugSub', { slug: activeEntity.slug }) }}</span>
           </div>
           <span class="badge badge-info">{{ $t('nocode.fieldsCount', { count: activeEntity.fields.length }) }}</span>
         </div>
@@ -134,43 +134,56 @@ const { t, formatCurrency, currencySymbol } = useI18n();
 const showNewEntityModal = ref(false);
 const showNewRecordModal = ref(false);
 
-const activeEntity = ref({
-  name: 'Plant & Heavy Machinery',
+const customFields = ref<Array<{ name: string; label: string; type: string; required: boolean }>>([]);
+
+const activeEntity = computed(() => ({
+  name: t('nocode.fields.description'),
   slug: 'plant_machinery',
   fields: [
-    { name: 'assetTag', label: 'Asset Serial Tag', type: 'text', required: true },
-    { name: 'description', label: 'Machine Description', type: 'text', required: true },
-    { name: 'purchaseCost', label: 'Purchase Cost', type: 'currency', required: true },
-    { name: 'operationalStatus', label: 'Operational Status', type: 'select', required: true },
-    { name: 'locationSite', label: 'Manufacturing Plant Location', type: 'text', required: true },
+    { name: 'assetTag', label: t('nocode.fields.assetTag'), type: 'text', required: true },
+    { name: 'description', label: t('nocode.fields.description'), type: 'text', required: true },
+    { name: 'purchaseCost', label: t('nocode.fields.purchaseCost'), type: 'currency', required: true },
+    { name: 'operationalStatus', label: t('nocode.fields.operationalStatus'), type: 'select', required: true },
+    { name: 'locationSite', label: t('nocode.fields.locationSite'), type: 'text', required: true },
+    ...customFields.value,
   ],
-});
+}));
 
-const records = ref([
+const customRecords = ref<Array<{
+  id: string;
+  assetTag: string;
+  description: string;
+  purchaseCost: number;
+  operationalStatus: string;
+  locationSite: string;
+}>>([]);
+
+const records = computed(() => [
   {
     id: 'asset-001',
     assetTag: 'CNC-MUM-4401',
-    description: '5-Axis High Precision CNC Milling Center',
+    description: t('nocode.records.asset1Desc'),
     purchaseCost: 8500000,
     operationalStatus: 'ACTIVE',
-    locationSite: 'Plant 2 - Chakan, Pune, Maharashtra',
+    locationSite: t('nocode.records.asset1Loc'),
   },
   {
     id: 'asset-002',
     assetTag: 'HYD-BLR-1209',
-    description: '200-Ton Hydraulic Stamping Press',
+    description: t('nocode.records.asset2Desc'),
     purchaseCost: 4200000,
     operationalStatus: 'MAINTENANCE',
-    locationSite: 'Plant 1 - Peenya, Bengaluru, Karnataka',
+    locationSite: t('nocode.records.asset2Loc'),
   },
   {
     id: 'asset-003',
     assetTag: 'SMT-NOI-0081',
-    description: 'High-Speed Automated SMT Pick & Place Line',
+    description: t('nocode.records.asset3Desc'),
     purchaseCost: 11500000,
     operationalStatus: 'ACTIVE',
-    locationSite: 'Plant 3 - Sector 62, Noida, Uttar Pradesh',
+    locationSite: t('nocode.records.asset3Loc'),
   },
+  ...customRecords.value,
 ]);
 
 const newRecord = ref({
@@ -186,7 +199,7 @@ function saveRecord() {
     alert(t('nocode.validationAlert'));
     return;
   }
-  records.value.push({
+  customRecords.value.push({
     id: `asset-${Date.now()}`,
     ...newRecord.value,
   });
@@ -204,7 +217,7 @@ function addFieldPrompt() {
   const label = prompt(t('nocode.enterFieldPrompt'));
   if (!label) return;
   const name = label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-  activeEntity.value.fields.push({
+  customFields.value.push({
     label,
     name,
     type: 'text',

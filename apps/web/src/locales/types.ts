@@ -88,6 +88,23 @@ export interface LocaleMessage {
       colCapability: string;
       colSap: string;
       colSutra: string;
+      rows: {
+        fiCo: { sap: string; sutra: string };
+        mmSd: { sap: string; sutra: string };
+        pp: { sap: string; sutra: string };
+        fiAa: { sap: string; sutra: string };
+        qm: { sap: string; sutra: string };
+        coCca: { sap: string; sutra: string };
+        pmEam: { sap: string; sutra: string };
+        trmFiBl: { sap: string; sutra: string };
+        hcm: { sap: string; sutra: string };
+        ps: { sap: string; sutra: string };
+        ewm: { sap: string; sutra: string };
+        parallelLedger: { sap: string; sutra: string };
+        tm: { sap: string; sutra: string };
+        abap: { sap: string; sutra: string };
+        joule: { sap: string; sutra: string };
+      };
     };
   };
   financial: {
@@ -127,6 +144,39 @@ export interface LocaleMessage {
     equityRetained: string;
     totalEquity: string;
     totalLiabEquity: string;
+    kpis: {
+      revenue: string;
+      revenueSubtitle: string;
+      revenueTrend: string;
+      grossMargin: string;
+      grossMarginSubtitle: string;
+      grossProfitAmount: string;
+      ebitda: string;
+      ebitdaSubtitle: string;
+      workingCapital: string;
+      workingCapitalSubtitle: string;
+      currentRatio: string;
+    };
+    simulator: {
+      title: string;
+      subtitle: string;
+      modeBaseline: string;
+      modeScenario: string;
+      revVarianceLabel: string;
+      cogsVarianceLabel: string;
+      opexVarianceLabel: string;
+      presetConservative: string;
+      presetBaseline: string;
+      presetGrowth: string;
+      resetBtn: string;
+      varianceImpact: string;
+      projectedNetDelta: string;
+      positiveDelta: string;
+      negativeDelta: string;
+      neutralDelta: string;
+      pnlSimulatedSubtitle: string;
+      balanceSheetSimulatedSubtitle: string;
+    };
   };
   compliance: {
     heroTitle: string;
@@ -611,6 +661,22 @@ export interface LocaleMessage {
     };
     validationAlert: string;
     enterFieldPrompt: string;
+    entitySlugSub: string;
+    fields: {
+      assetTag: string;
+      description: string;
+      purchaseCost: string;
+      operationalStatus: string;
+      locationSite: string;
+    };
+    records: {
+      asset1Desc: string;
+      asset1Loc: string;
+      asset2Desc: string;
+      asset2Loc: string;
+      asset3Desc: string;
+      asset3Loc: string;
+    };
   };
   copilot: {
     heroTitle: string;
@@ -655,6 +721,8 @@ export interface LocaleMessage {
       rawJson: string;
       hideJson: string;
     };
+    fallbackExecutionAnswer: string;
+    fallbackEngineMeta: string;
   };
   vault: {
     heroTitle: string;
