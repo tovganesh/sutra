@@ -985,3 +985,77 @@ CREATE TABLE IF NOT EXISTS export_lut_filings (
     CONSTRAINT uq_tenant_lut UNIQUE (tenant_id, lut_arn)
 );
 
+-- =================================================================
+-- 24. Transportation Management & Fleet Logistics (SAP TM)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS tm_carriers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    carrier_id VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    gstin VARCHAR(15) NOT NULL,
+    pan VARCHAR(10) NOT NULL,
+    is_company BOOLEAN NOT NULL DEFAULT true,
+    vehicle_fleet_count INT NOT NULL DEFAULT 1,
+    rating_score NUMERIC(3, 2) NOT NULL DEFAULT 5.0,
+    rate_model VARCHAR(50) NOT NULL DEFAULT 'PER_KM', -- PER_KM, PER_KG, FLAT_TRIP
+    base_rate_per_unit NUMERIC(18, 4) NOT NULL,
+    has_sec_194c_declaration BOOLEAN NOT NULL DEFAULT false,
+    contact_email VARCHAR(255),
+    contact_phone VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_carrier UNIQUE (tenant_id, carrier_id)
+);
+
+CREATE TABLE IF NOT EXISTS tm_vehicles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    vehicle_number VARCHAR(50) NOT NULL,
+    carrier_id VARCHAR(50) NOT NULL,
+    vehicle_type VARCHAR(50) NOT NULL, -- CONTAINER_32FT, TRUCK_20FT, LIGHT_COMMERCIAL_14FT, COLD_CHAIN_REEFER, FLATBED_TRAILER
+    max_payload_kg NUMERIC(18, 2) NOT NULL,
+    max_volume_cbm NUMERIC(18, 2) NOT NULL DEFAULT 0,
+    driver_name VARCHAR(100) NOT NULL,
+    driver_phone VARCHAR(50) NOT NULL,
+    driver_license_number VARCHAR(100),
+    gps_tracking_imei VARCHAR(100),
+    status VARCHAR(50) NOT NULL DEFAULT 'AVAILABLE', -- AVAILABLE, IN_TRANSIT, MAINTENANCE
+    current_location_city VARCHAR(100) NOT NULL DEFAULT 'Pune',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_vehicle UNIQUE (tenant_id, vehicle_number)
+);
+
+CREATE TABLE IF NOT EXISTS tm_freight_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    order_number VARCHAR(100) NOT NULL,
+    lorry_receipt_number VARCHAR(100) NOT NULL,
+    order_type VARCHAR(50) NOT NULL, -- OUTBOUND_SALES, INBOUND_PURCHASE, INTER_PLANT_TRANSFER
+    carrier_id VARCHAR(50) NOT NULL,
+    vehicle_number VARCHAR(50) NOT NULL,
+    source_location VARCHAR(100) NOT NULL,
+    destination_location VARCHAR(100) NOT NULL,
+    distance_km NUMERIC(10, 2) NOT NULL,
+    chargeable_weight_kg NUMERIC(18, 2) NOT NULL,
+    cargo_description VARCHAR(500) NOT NULL,
+    associated_doc_type VARCHAR(50) NOT NULL,
+    associated_doc_number VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PLANNED', -- PLANNED, DISPATCHED, IN_TRANSIT, ARRIVED, DELIVERED
+    base_freight_cost NUMERIC(18, 4) NOT NULL,
+    fuel_surcharge NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    toll_charges NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    total_freight_cost NUMERIC(18, 4) NOT NULL,
+    tds_rate_percent NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    tds_withheld NUMERIC(18, 4) NOT NULL DEFAULT 0,
+    net_payable_to_carrier NUMERIC(18, 4) NOT NULL,
+    pod_otp VARCHAR(10),
+    recipient_name VARCHAR(100),
+    signature_token VARCHAR(255),
+    gl_voucher_lines JSONB,
+    dispatched_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_tm_fo UNIQUE (tenant_id, order_number),
+    CONSTRAINT uq_tenant_tm_lr UNIQUE (tenant_id, lorry_receipt_number)
+);
+

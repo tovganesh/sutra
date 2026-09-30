@@ -204,4 +204,19 @@ graph TD
   * Verification of official 14-character GSTN ARN syntax (`AD{StateCode}{MM}{YY}{6Digits}{Alphanumeric}`) for zero-rated export of goods and services without payment of integrated tax under bond/LUT.
   * Ensures zero-rated export invoice generation without payment of IGST, with full tracking of LUT validity dates and GSTN filing records.
 
+#### 3.19 Transportation Management (SAP TM) & Fleet Logistics
+* **Carrier Master & Multi-Modal Tariff Agreements**: Rate matrix models supporting Distance-based (`₹/KM`), Weight-based (`₹/KG`), or Flat Trip pricing with transporter GSTIN and PAN validation.
+* **Dynamic Fuel Surcharge Indexation**: Real-time road transport diesel surcharge indexing referencing base benchmarks (e.g. ₹90.00/L) with 30% fuel operating expense weightage.
+* **Statutory Withholding under Section 194C of Indian Income Tax Act**:
+  * Transporters owning $\le 10$ goods carriages submitting PAN declaration qualify for 0% TDS under Section 194C(6).
+  * Company / Firm contractors subject to 2% TDS withholding.
+  * Individual / HUF contractors subject to 1% TDS withholding.
+* **Consignment Execution & Electronic Proof of Delivery (e-POD)**:
+  * Automated Lorry Receipt (LR / Bilty) generation and dispatch workflow with vehicle telematics.
+  * Secure 6-digit OTP delivery verification with digital signature audit token.
+  * Automated double-entry GL settlement voucher generation upon confirmed delivery:
+    * `520100 Dr Freight Outward & Distribution Logistics Expense` (or Inward Freight capitalized if purchase)
+    * `210400 Cr Accounts Payable - Freight Transporter` (Net payable)
+    * `210600 Cr TDS Payable on Transporters & Contractors (Sec 194C)` (where applicable)
+
 

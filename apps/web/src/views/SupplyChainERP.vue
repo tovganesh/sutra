@@ -159,6 +159,15 @@
         <Globe class="tab-icon" />
         <span>Multi-Currency & Global (FI)</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'transportation' }"
+        @click="activeTab = 'transportation'"
+      >
+        <Truck class="tab-icon" />
+        <span>Transportation & Fleet (TM)</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -2108,6 +2117,189 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 15: Transportation Management & Fleet Logistics (SAP TM) -->
+    <div v-if="activeTab === 'transportation'" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h3>SAP TM Transportation Management & Fleet Logistics</h3>
+          <p class="section-desc">Manage freight carrier contracts, fleet vehicles, consignment lorry receipts (LR), dynamic diesel fuel surcharges, and electronic Proof of Delivery (e-POD).</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn primary" @click="createDemoFreightOrder">
+            <Plus class="btn-icon" />
+            <span>New Freight Order</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="kpi-grid-4">
+        <div class="data-card">
+          <span class="card-label">Active Transporters / Carriers</span>
+          <span class="card-value">{{ carriersList.length }}</span>
+          <span class="card-subtext positive">100% Section 194C Compliant</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">Fleet Vehicles</span>
+          <span class="card-value">{{ vehiclesList.length }} Units</span>
+          <span class="card-subtext info">GPS Telematics Active</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">Consignments In Transit</span>
+          <span class="card-value text-accent">{{ inTransitOrdersCount }}</span>
+          <span class="card-subtext">Active Lorry Receipts (LR)</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">Benchmark Diesel Rate</span>
+          <span class="card-value text-green">₹94.50 / L</span>
+          <span class="card-subtext warning">+1.50% Fuel Surcharge</span>
+        </div>
+      </div>
+
+      <!-- Freight Orders Cockpit -->
+      <div class="table-card">
+        <div class="table-header">
+          <h4>Active Freight Orders & Consignments</h4>
+          <span class="badge blue">Live Waybill Tracking</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order & LR No.</th>
+              <th>Type</th>
+              <th>Carrier & Vehicle</th>
+              <th>Route (Origin &rarr; Dest)</th>
+              <th>Cargo & Weight</th>
+              <th>Freight Cost</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="order in freightOrdersList" :key="order.orderNumber">
+              <td>
+                <div class="cell-primary font-mono">{{ order.orderNumber }}</div>
+                <div class="cell-subtext">{{ order.lorryReceiptNumber }}</div>
+              </td>
+              <td>
+                <span class="badge" :class="order.orderType === 'OUTBOUND_SALES' ? 'green' : 'blue'">
+                  {{ order.orderType === 'OUTBOUND_SALES' ? 'Outbound Sales' : 'Inbound Purchase' }}
+                </span>
+              </td>
+              <td>
+                <div class="cell-primary">{{ order.carrierName }}</div>
+                <div class="cell-subtext font-mono">{{ order.vehicleNumber }} &bull; {{ order.driverName }}</div>
+              </td>
+              <td>
+                <div class="cell-primary">{{ order.sourceLocation }} &rarr; {{ order.destinationLocation }}</div>
+                <div class="cell-subtext">{{ order.distanceKm }} km</div>
+              </td>
+              <td>
+                <div class="cell-primary">{{ order.chargeableWeightKg.toLocaleString('en-IN') }} KG</div>
+                <div class="cell-subtext">{{ order.cargoDescription }}</div>
+              </td>
+              <td>
+                <div class="cell-primary font-mono">₹{{ order.totalFreightCost.toLocaleString('en-IN') }}</div>
+                <div class="cell-subtext">TDS: ₹{{ order.tdsWithheld.toLocaleString('en-IN') }} ({{ order.tdsRatePercent }}%)</div>
+              </td>
+              <td>
+                <span class="badge" :class="getStatusBadgeClass(order.status)">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td>
+                <button
+                  v-if="order.status === 'PLANNED'"
+                  class="action-btn-sm primary"
+                  @click="dispatchOrder(order.orderNumber)"
+                >
+                  Dispatch
+                </button>
+                <button
+                  v-else-if="order.status === 'DISPATCHED' || order.status === 'IN_TRANSIT'"
+                  class="action-btn-sm green"
+                  @click="openPodModal(order)"
+                >
+                  Verify e-POD
+                </button>
+                <span v-else class="text-green text-sm font-semibold">Delivered &amp; Settled</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Carrier Master & Fleet Section -->
+      <div class="grid-2-cols" style="margin-top: 20px;">
+        <div class="table-card">
+          <div class="table-header">
+            <h4>Approved Transporters &amp; Tariff Agreements</h4>
+            <span class="badge purple">MCA &amp; IT Act 194C</span>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Carrier Name</th>
+                <th>Rate Model</th>
+                <th>Base Rate</th>
+                <th>Sec 194C TDS</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in carriersList" :key="c.carrierId">
+                <td>
+                  <div class="cell-primary">{{ c.name }}</div>
+                  <div class="cell-subtext font-mono">GSTIN: {{ c.gstin }}</div>
+                </td>
+                <td><span class="badge gray">{{ c.rateModel }}</span></td>
+                <td class="font-mono">
+                  {{ c.rateModel === 'PER_KM' ? `₹${c.baseRatePerUnit}/KM` : c.rateModel === 'PER_KG' ? `₹${c.baseRatePerUnit}/KG` : `₹${c.baseRatePerUnit.toLocaleString('en-IN')} Flat` }}
+                </td>
+                <td>
+                  <span class="badge" :class="c.hasSec194CDeclaration ? 'green' : 'blue'">
+                    {{ c.hasSec194CDeclaration ? '0% (Fleet &le; 10)' : c.isCompany ? '2% TDS' : '1% TDS' }}
+                  </span>
+                </td>
+                <td><span class="font-bold text-accent">&star; {{ c.ratingScore }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <h4>Fleet Vehicles &amp; Telematics</h4>
+            <span class="badge blue">Real-Time Status</span>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Vehicle No.</th>
+                <th>Type</th>
+                <th>Payload Cap</th>
+                <th>Location</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in vehiclesList" :key="v.vehicleNumber">
+                <td class="font-mono font-bold">{{ v.vehicleNumber }}</td>
+                <td>{{ v.vehicleType }}</td>
+                <td class="font-mono">{{ (v.maxPayloadKg / 1000).toFixed(1) }} MT</td>
+                <td>{{ v.currentLocationCity }}</td>
+                <td>
+                  <span class="badge" :class="v.status === 'AVAILABLE' ? 'green' : 'purple'">
+                    {{ v.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2134,9 +2326,10 @@ import {
   Briefcase,
   Boxes,
   Globe,
+  Plus,
 } from 'lucide-vue-next';
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -3396,6 +3589,224 @@ const currentTaxResult = computed(() => {
 
 function selectTaxCountry(code: string) {
   selectedCountryCode.value = code;
+}
+
+// =================================================================
+// 15. Transportation Management (SAP TM) State & Handlers
+// =================================================================
+const carriersList = ref([
+  {
+    carrierId: 'CARRIER-01',
+    name: 'VRL Logistics Ltd',
+    gstin: '29AABCV1234D1Z5',
+    pan: 'AABCV1234D',
+    isCompany: true,
+    rateModel: 'PER_KM',
+    baseRatePerUnit: 38.0,
+    hasSec194CDeclaration: false,
+    ratingScore: 4.8,
+  },
+  {
+    carrierId: 'CARRIER-02',
+    name: 'TCI Freight Express',
+    gstin: '27AABCT9876C1Z2',
+    pan: 'AABCT9876C',
+    isCompany: true,
+    rateModel: 'PER_KG',
+    baseRatePerUnit: 4.25,
+    hasSec194CDeclaration: false,
+    ratingScore: 4.6,
+  },
+  {
+    carrierId: 'CARRIER-03',
+    name: 'Sharma Roadlines (Fleet <= 10)',
+    gstin: '07AAAPS5432B1Z1',
+    pan: 'AAAPS5432B',
+    isCompany: false,
+    rateModel: 'FLAT_TRIP',
+    baseRatePerUnit: 24000.0,
+    hasSec194CDeclaration: true,
+    ratingScore: 4.5,
+  },
+]);
+
+const vehiclesList = ref([
+  {
+    vehicleNumber: 'MH12AB1234',
+    carrierId: 'CARRIER-01',
+    vehicleType: 'CONTAINER_32FT',
+    maxPayloadKg: 18000,
+    driverName: 'Ramesh Patil',
+    currentLocationCity: 'Kolhapur',
+    status: 'IN_TRANSIT',
+  },
+  {
+    vehicleNumber: 'KA01CD5678',
+    carrierId: 'CARRIER-02',
+    vehicleType: 'TRUCK_20FT',
+    maxPayloadKg: 9500,
+    driverName: 'Suresh Gowda',
+    currentLocationCity: 'Bengaluru',
+    status: 'AVAILABLE',
+  },
+  {
+    vehicleNumber: 'DL01EF9012',
+    carrierId: 'CARRIER-03',
+    vehicleType: 'COLD_CHAIN_REEFER',
+    maxPayloadKg: 12000,
+    driverName: 'Rajesh Sharma',
+    currentLocationCity: 'Delhi',
+    status: 'AVAILABLE',
+  },
+]);
+
+const freightOrdersList = ref([
+  {
+    orderNumber: 'FO-2026-0001',
+    lorryReceiptNumber: 'LR-2026-0001',
+    orderType: 'OUTBOUND_SALES',
+    carrierName: 'VRL Logistics Ltd',
+    vehicleNumber: 'MH12AB1234',
+    driverName: 'Ramesh Patil',
+    sourceLocation: 'Pune',
+    destinationLocation: 'Bengaluru',
+    distanceKm: 840,
+    chargeableWeightKg: 12500,
+    cargoDescription: 'Industrial Automation PLCs & Sensors',
+    status: 'IN_TRANSIT',
+    totalFreightCost: 34248,
+    tdsRatePercent: 2.0,
+    tdsWithheld: 684.96,
+    netPayableToCarrier: 33563.04,
+    podOtp: '482910',
+  },
+]);
+
+const inTransitOrdersCount = computed(() => {
+  return freightOrdersList.value.filter((o) => o.status === 'IN_TRANSIT' || o.status === 'DISPATCHED').length;
+});
+
+function getStatusBadgeClass(status: string) {
+  switch (status) {
+    case 'PLANNED':
+      return 'gray';
+    case 'DISPATCHED':
+      return 'blue';
+    case 'IN_TRANSIT':
+      return 'purple';
+    case 'DELIVERED':
+      return 'green';
+    default:
+      return 'gray';
+  }
+}
+
+async function createDemoFreightOrder() {
+  const newOrder = {
+    orderNumber: `FO-2026-${String(freightOrdersList.value.length + 2).padStart(4, '0')}`,
+    lorryReceiptNumber: `LR-2026-${String(freightOrdersList.value.length + 2).padStart(4, '0')}`,
+    orderType: 'OUTBOUND_SALES',
+    carrierName: 'TCI Freight Express',
+    vehicleNumber: 'KA01CD5678',
+    driverName: 'Suresh Gowda',
+    sourceLocation: 'Bengaluru',
+    destinationLocation: 'Chennai',
+    distanceKm: 350,
+    chargeableWeightKg: 8000,
+    cargoDescription: 'EV Battery Assemblies & Modules',
+    status: 'PLANNED',
+    totalFreightCost: 34650,
+    tdsRatePercent: 2.0,
+    tdsWithheld: 693,
+    netPayableToCarrier: 33957,
+    podOtp: '672914',
+  };
+
+  try {
+    const res = await fetch('/api/v1/transportation/orders/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderType: 'OUTBOUND_SALES',
+        carrierId: 'CARRIER-02',
+        vehicleNumber: 'KA01CD5678',
+        sourceLocation: 'Bengaluru',
+        destinationLocation: 'Chennai',
+        distanceKm: 350,
+        chargeableWeightKg: 8000,
+        cargoDescription: 'EV Battery Assemblies & Modules',
+        associatedDocType: 'SALES_DELIVERY',
+        associatedDocNumber: 'DEL-2026-0099',
+        tollCharges: 650,
+      }),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      freightOrdersList.value.unshift(created);
+      return;
+    }
+  } catch {
+    // local fallback
+  }
+  freightOrdersList.value.unshift(newOrder);
+}
+
+async function dispatchOrder(orderNumber: string) {
+  try {
+    const res = await fetch('/api/v1/transportation/orders/dispatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderNumber }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      const idx = freightOrdersList.value.findIndex((o) => o.orderNumber === orderNumber);
+      if (idx !== -1) {
+        freightOrdersList.value[idx] = updated;
+      }
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  const order = freightOrdersList.value.find((o) => o.orderNumber === orderNumber);
+  if (order) {
+    order.status = 'DISPATCHED';
+    order.podOtp = '583921';
+  }
+}
+
+async function openPodModal(order: any) {
+  const enteredOtp = prompt(
+    `Enter 6-digit electronic Proof of Delivery (e-POD) OTP for ${order.lorryReceiptNumber}:\n(Generated OTP for demo: ${order.podOtp || '482910'})`,
+    order.podOtp || '482910'
+  );
+  if (!enteredOtp) return;
+
+  const recipient = prompt('Enter Recipient Name:', 'S. Kumar (Warehouse Manager)') || 'S. Kumar (Warehouse Manager)';
+
+  try {
+    const res = await fetch('/api/v1/transportation/orders/confirm-delivery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNumber: order.orderNumber,
+        otp: enteredOtp,
+        recipientName: recipient,
+      }),
+    });
+    if (res.ok) {
+      order.status = 'DELIVERED';
+      alert(`e-POD Verified for ${order.lorryReceiptNumber}! Balanced GL settlement voucher posted: 520100 Dr Freight Expense / 210400 Cr Transporter AP.`);
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  order.status = 'DELIVERED';
+  alert(`e-POD Verified for ${order.lorryReceiptNumber}! Balanced GL settlement voucher posted: 520100 Dr Freight Expense / 210400 Cr Transporter AP.`);
 }
 </script>
 

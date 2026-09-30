@@ -23,6 +23,7 @@ import {
   ProjectSystemsEngine,
   WarehouseEngine,
   MultiCurrencyEngine,
+  TransportationEngine,
   HttpStatus,
 } from '@sutra/core';
 import {
@@ -178,6 +179,7 @@ const hcmEngine = new HcmEngine();
 const projectSystemsEngine = new ProjectSystemsEngine(fixedAssetEngine);
 const warehouseEngine = new WarehouseEngine();
 const multiCurrencyEngine = new MultiCurrencyEngine();
+const transportationEngine = new TransportationEngine();
 
 // =================================================================
 // 1. Health & Platform Status
@@ -211,6 +213,7 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
       projectSystems: 'ONLINE (PS)',
       warehouseEngine: 'ONLINE (EWM)',
       multiCurrencyEngine: 'ONLINE (FI-GL Parallel)',
+      transportationEngine: 'ONLINE (SAP TM & Fleet Logistics)',
       noCodeStudio: 'READY',
       analyticsEngine: 'ONLINE',
       genAICore: {
@@ -1809,6 +1812,177 @@ app.post('/api/v1/compliance/calculate-jurisdiction-tax', (req: Request, res: Re
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Tax calculation failed';
     res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'JurisdictionTaxError', message: msg });
+  }
+});
+
+// =================================================================
+// 2.19 Transportation Management & Fleet Logistics (SAP TM)
+// =================================================================
+app.get('/api/v1/transportation/carriers', (req: Request, res: Response) => {
+  res.json(transportationEngine.getCarriers());
+});
+
+app.get('/api/v1/transportation/vehicles', (req: Request, res: Response) => {
+  res.json(transportationEngine.getVehicles());
+});
+
+app.get('/api/v1/transportation/orders', (req: Request, res: Response) => {
+  res.json(transportationEngine.getFreightOrders());
+});
+
+app.get('/api/v1/transportation/orders/:orderNumber', (req: Request, res: Response) => {
+  const orderNumber = String(req.params.orderNumber);
+  const order = transportationEngine.getFreightOrder(orderNumber);
+  if (!order) {
+    return res.status(HttpStatus.NOT_FOUND).json({
+      error: 'OrderNotFound',
+      message: `Freight order ${orderNumber} not found`,
+    });
+  }
+  res.json(order);
+});
+
+app.post('/api/v1/transportation/freight/calculate', (req: Request, res: Response) => {
+  const { carrierId, distanceKm, chargeableWeightKg, currentDieselPrice, tollCharges } = req.body;
+  if (!carrierId || distanceKm === undefined || chargeableWeightKg === undefined) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message: 'carrierId, distanceKm, and chargeableWeightKg are required.',
+    });
+  }
+
+  try {
+    const cost = transportationEngine.calculateFreightCost(
+      String(carrierId),
+      Number(distanceKm),
+      Number(chargeableWeightKg),
+      currentDieselPrice !== undefined ? Number(currentDieselPrice) : 90.0,
+      tollCharges !== undefined ? Number(tollCharges) : 0
+    );
+    res.json(cost);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Freight calculation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'FreightCalculationError', message: msg });
+  }
+});
+
+app.post('/api/v1/transportation/orders/create', (req: Request, res: Response) => {
+  const {
+    orderType,
+    carrierId,
+    vehicleNumber,
+    sourceLocation,
+    destinationLocation,
+    distanceKm,
+    chargeableWeightKg,
+    volumeCbm,
+    cargoDescription,
+    associatedDocType,
+    associatedDocNumber,
+    currentDieselPricePerLitre,
+    tollCharges,
+  } = req.body;
+
+  if (
+    !orderType ||
+    !carrierId ||
+    !vehicleNumber ||
+    !sourceLocation ||
+    !destinationLocation ||
+    distanceKm === undefined ||
+    chargeableWeightKg === undefined
+  ) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingRequiredFields',
+      message:
+        'orderType, carrierId, vehicleNumber, sourceLocation, destinationLocation, distanceKm, and chargeableWeightKg are required.',
+    });
+  }
+
+  try {
+    const order = transportationEngine.createFreightOrder({
+      orderType,
+      carrierId,
+      vehicleNumber,
+      sourceLocation,
+      destinationLocation,
+      distanceKm: Number(distanceKm),
+      chargeableWeightKg: Number(chargeableWeightKg),
+      volumeCbm: volumeCbm !== undefined ? Number(volumeCbm) : undefined,
+      cargoDescription: cargoDescription || 'General Cargo',
+      associatedDocType: associatedDocType || 'SALES_DELIVERY',
+      associatedDocNumber: associatedDocNumber || `DOC-${Date.now()}`,
+      currentDieselPricePerLitre: currentDieselPricePerLitre !== undefined ? Number(currentDieselPricePerLitre) : undefined,
+      tollCharges: tollCharges !== undefined ? Number(tollCharges) : undefined,
+    });
+    res.status(HttpStatus.CREATED).json(order);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to create freight order';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'CreateFreightOrderError', message: msg });
+  }
+});
+
+app.post('/api/v1/transportation/orders/dispatch', (req: Request, res: Response) => {
+  const { orderNumber } = req.body;
+  if (!orderNumber) {
+    return res.status(HttpStatus.BAD_REQUEST).json({ error: 'MissingOrderNumber', message: 'orderNumber is required.' });
+  }
+
+  try {
+    const order = transportationEngine.dispatchFreightOrder(String(orderNumber));
+    res.json(order);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Dispatch failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'DispatchError', message: msg });
+  }
+});
+
+app.post('/api/v1/transportation/orders/milestone', (req: Request, res: Response) => {
+  const { orderNumber, city, statusNote, latitude, longitude } = req.body;
+  if (!orderNumber || !city || !statusNote) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingFields',
+      message: 'orderNumber, city, and statusNote are required.',
+    });
+  }
+
+  try {
+    const order = transportationEngine.addMilestone(
+      String(orderNumber),
+      String(city),
+      String(statusNote),
+      latitude !== undefined ? Number(latitude) : undefined,
+      longitude !== undefined ? Number(longitude) : undefined
+    );
+    res.json(order);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to add milestone';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'MilestoneError', message: msg });
+  }
+});
+
+app.post('/api/v1/transportation/orders/confirm-delivery', (req: Request, res: Response) => {
+  const { orderNumber, otp, recipientName, signatureToken, damagedPackagesCount, remarks } = req.body;
+  if (!orderNumber || !otp || !recipientName) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingFields',
+      message: 'orderNumber, otp, and recipientName are required for Proof of Delivery.',
+    });
+  }
+
+  try {
+    const result = transportationEngine.confirmDelivery({
+      orderNumber: String(orderNumber),
+      otp: String(otp),
+      recipientName: String(recipientName),
+      signatureToken: signatureToken ? String(signatureToken) : undefined,
+      damagedPackagesCount: damagedPackagesCount !== undefined ? Number(damagedPackagesCount) : undefined,
+      remarks: remarks ? String(remarks) : undefined,
+    });
+    res.json(result);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Delivery confirmation failed';
+    res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({ error: 'DeliveryConfirmationError', message: msg });
   }
 });
 

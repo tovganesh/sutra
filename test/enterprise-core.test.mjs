@@ -17,6 +17,7 @@ import {
   ProjectSystemsEngine,
   WarehouseEngine,
   MultiCurrencyEngine,
+  TransportationEngine,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Enterprise Core Platform Suite', () => {
@@ -945,5 +946,137 @@ describe('Sutra Enterprise Core Platform Suite', () => {
       assert.equal(uaeTax.taxAmount, 1000);
     });
   });
+
+  describe('Transportation Management & Fleet Logistics Engine (SAP TM)', () => {
+    test('calculates freight tariff with dynamic diesel fuel surcharge and Section 194C TDS withholding', () => {
+      const tm = new TransportationEngine();
+
+      // Test Carrier 1: VRL Logistics (₹38/km, Company -> 2% TDS)
+      // Distance: 500 km, base diesel: 90.0, current diesel: 94.50 (5% increase * 30% weight = 1.5% fuel surcharge)
+      const cost1 = tm.calculateFreightCost('CARRIER-01', 500, 10000, 94.50, 500);
+      assert.equal(cost1.baseFreightCost, 19000); // 500 * 38
+      assert.equal(cost1.fuelSurcharge, 285);     // 19000 * 0.015
+      assert.equal(cost1.tollCharges, 500);
+      assert.equal(cost1.totalFreightCost, 19785);
+      assert.equal(cost1.tdsRatePercent, 2.0);
+      assert.equal(cost1.tdsWithheld, 395.70);
+      assert.equal(cost1.netPayableToCarrier, 19389.30);
+
+      // Test Carrier 3: Sharma Roadlines (Flat trip ₹24,000, Fleet <= 10 declaration -> 0% TDS)
+      const cost3 = tm.calculateFreightCost('CARRIER-03', 1200, 8000, 90.00, 0);
+      assert.equal(cost3.baseFreightCost, 24000);
+      assert.equal(cost3.fuelSurcharge, 0);
+      assert.equal(cost3.tdsRatePercent, 0.0);
+      assert.equal(cost3.tdsWithheld, 0);
+      assert.equal(cost3.netPayableToCarrier, 24000);
+    });
+
+    test('creates freight order, dispatches vehicle, and updates transit milestones', () => {
+      const tm = new TransportationEngine();
+
+      // Create new freight order
+      const order = tm.createFreightOrder({
+        orderType: 'OUTBOUND_SALES',
+        carrierId: 'CARRIER-02',
+        vehicleNumber: 'KA01CD5678',
+        sourceLocation: 'Bengaluru',
+        destinationLocation: 'Chennai',
+        distanceKm: 350,
+        chargeableWeightKg: 8000,
+        cargoDescription: 'Precision CNC Machined Parts',
+        associatedDocType: 'SALES_DELIVERY',
+        associatedDocNumber: 'DEL-2026-0099',
+        tollCharges: 650,
+      });
+
+      assert.ok(order.orderNumber.startsWith('FO-2026-'));
+      assert.ok(order.lorryReceiptNumber.startsWith('LR-2026-'));
+      assert.equal(order.status, 'PLANNED');
+      assert.equal(order.totalFreightCost, 34650); // 8000 * 4.25 (34,000) + 650
+
+      // Dispatch order
+      const dispatched = tm.dispatchFreightOrder(order.orderNumber);
+      assert.equal(dispatched.status, 'DISPATCHED');
+      assert.ok(dispatched.podOtp && dispatched.podOtp.length === 6);
+
+      const vehicle = tm.getVehicle('KA01CD5678');
+      assert.equal(vehicle?.status, 'IN_TRANSIT');
+
+      // Add waypoint milestone
+      const inTransit = tm.addMilestone(order.orderNumber, 'Vellore', 'Crossed Vellore checkpost on NH48.');
+      assert.equal(inTransit.status, 'IN_TRANSIT');
+      assert.equal(inTransit.milestones.length, 3);
+      assert.equal(vehicle?.currentLocationCity, 'Vellore');
+    });
+
+    test('confirms electronic Proof of Delivery (e-POD) with OTP and posts balanced GL settlement voucher', () => {
+      const tm = new TransportationEngine();
+
+      tm.registerVehicle({
+        vehicleNumber: 'MH12ZZ9999',
+        carrierId: 'CARRIER-01',
+        carrierName: 'VRL Logistics Ltd',
+        vehicleType: 'CONTAINER_32FT',
+        maxPayloadKg: 18000,
+        maxVolumeCbm: 65,
+        driverName: 'Anil Kumar',
+        driverPhone: '+91 98220 99999',
+        driverLicenseNumber: 'MH12 20140099999',
+        status: 'AVAILABLE',
+        currentLocationCity: 'Pune',
+      });
+
+      // Create and dispatch
+      const order = tm.createFreightOrder({
+        orderType: 'OUTBOUND_SALES',
+        carrierId: 'CARRIER-01',
+        vehicleNumber: 'MH12ZZ9999',
+        sourceLocation: 'Pune',
+        destinationLocation: 'Hyderabad',
+        distanceKm: 560,
+        chargeableWeightKg: 10000,
+        cargoDescription: 'Automotive Electric Drive Units',
+        associatedDocType: 'SALES_DELIVERY',
+        associatedDocNumber: 'DEL-2026-0105',
+        tollCharges: 950,
+      });
+
+      const dispatched = tm.dispatchFreightOrder(order.orderNumber);
+      const validOtp = dispatched.podOtp;
+
+      // Reject invalid OTP
+      assert.throws(() => {
+        tm.confirmDelivery({
+          orderNumber: order.orderNumber,
+          otp: '999999',
+          recipientName: 'K. Rao (Store Manager)',
+        });
+      }, /Invalid Proof-of-Delivery OTP/);
+
+      // Confirm with valid OTP
+      const podResult = tm.confirmDelivery({
+        orderNumber: order.orderNumber,
+        otp: validOtp,
+        recipientName: 'K. Rao (Store Manager)',
+        signatureToken: 'SIG-TOKEN-HYD-042',
+      });
+
+      assert.equal(podResult.status, 'DELIVERED');
+      assert.equal(podResult.recipientName, 'K. Rao (Store Manager)');
+
+      // Verify vehicle is released back to AVAILABLE at destination
+      const vehicle = tm.getVehicle('MH12ZZ9999');
+      assert.equal(vehicle?.status, 'AVAILABLE');
+      assert.equal(vehicle?.currentLocationCity, 'Hyderabad');
+
+      // Verify balanced double-entry GL voucher
+      assert.ok(podResult.glVoucherLines.length >= 2);
+      const totalDebits = podResult.glVoucherLines.reduce((sum, line) => sum + line.debit, 0);
+      const totalCredits = podResult.glVoucherLines.reduce((sum, line) => sum + line.credit, 0);
+      assert.equal(totalDebits, totalCredits);
+      assert.equal(totalDebits, order.totalFreightCost);
+    });
+  });
 });
+
 
