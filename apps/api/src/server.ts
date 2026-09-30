@@ -34,6 +34,7 @@ import {
   GSTR3BEngine,
   EWayBillGenerator,
   IndianPayrollEngine,
+  CustomsEngine,
 } from '@sutra/compliance-india';
 import {
   EntitySchemaDefinition,
@@ -196,7 +197,7 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
         defaultProvider: authRegistry.getDefaultProvider().name,
         plugins: authRegistry.listProviders().map((p) => ({ id: p.id, name: p.name, type: p.type })),
       },
-      complianceEngine: 'READY (GST, E-Invoice, TDS)',
+      complianceEngine: 'READY (GST, E-Invoice, TDS, Customs, LUT)',
       inventoryEngine: 'ONLINE (MM)',
       orderToCashEngine: 'ONLINE (SD)',
       procureToPayEngine: 'ONLINE (P2P)',
@@ -504,6 +505,56 @@ app.post('/api/v1/compliance/payroll/calculate', (req: Request, res: Response) =
   });
 
   res.json(breakdown);
+});
+
+app.post('/api/v1/compliance/customs/import-duty', (req: Request, res: Response) => {
+  const {
+    cifValueInr,
+    hsnCode,
+    basicCustomsDutyPercent,
+    swsPercent,
+    igstPercent,
+    compensationCessPercent,
+    antiDumpingDuty,
+  } = req.body;
+
+  if (cifValueInr === undefined || !hsnCode) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingMandatoryFields',
+      message: 'cifValueInr and hsnCode are required for Customs Import Duty calculation.',
+    });
+  }
+
+  const result = CustomsEngine.calculateImportDuty({
+    cifValueInr: Number(cifValueInr),
+    hsnCode: String(hsnCode),
+    basicCustomsDutyPercent: basicCustomsDutyPercent !== undefined ? Number(basicCustomsDutyPercent) : undefined,
+    swsPercent: swsPercent !== undefined ? Number(swsPercent) : undefined,
+    igstPercent: igstPercent !== undefined ? Number(igstPercent) : undefined,
+    compensationCessPercent: compensationCessPercent !== undefined ? Number(compensationCessPercent) : undefined,
+    antiDumpingDuty: antiDumpingDuty !== undefined ? Number(antiDumpingDuty) : undefined,
+  });
+
+  res.json(result);
+});
+
+app.post('/api/v1/compliance/export/lut-verification', (req: Request, res: Response) => {
+  const { lutArn, financialYear, exporterGstin } = req.body;
+
+  if (!lutArn || !financialYear || !exporterGstin) {
+    return res.status(HttpStatus.BAD_REQUEST).json({
+      error: 'MissingMandatoryFields',
+      message: 'lutArn, financialYear, and exporterGstin are required for Rule 96A LUT verification.',
+    });
+  }
+
+  const result = CustomsEngine.verifyLut({
+    lutArn: String(lutArn),
+    financialYear: String(financialYear),
+    exporterGstin: String(exporterGstin),
+  });
+
+  res.json(result);
 });
 
 // =================================================================

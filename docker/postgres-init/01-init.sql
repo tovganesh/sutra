@@ -945,3 +945,43 @@ CREATE TABLE IF NOT EXISTS gl_forex_revaluations (
     CONSTRAINT uq_tenant_gl_fx_rev UNIQUE (tenant_id, revaluation_id)
 );
 
+-- =================================================================
+-- 23. Indian Customs & Cross-Border Trade Compliance (Customs Act 1962, Rule 96A LUT)
+-- =================================================================
+CREATE TABLE IF NOT EXISTS customs_import_declarations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    bill_of_entry_number VARCHAR(100) NOT NULL,
+    port_code VARCHAR(10) NOT NULL, -- e.g. INNSA1 (Nhava Sheva Sea), INBOM4 (Sahar Air Cargo)
+    hsn_code VARCHAR(20) NOT NULL,
+    cif_value_inr NUMERIC(18, 4) NOT NULL,
+    bcd_rate_percent NUMERIC(5, 2) NOT NULL DEFAULT 10.0,
+    bcd_amount NUMERIC(18, 4) NOT NULL,
+    sws_rate_percent NUMERIC(5, 2) NOT NULL DEFAULT 10.0,
+    sws_amount NUMERIC(18, 4) NOT NULL,
+    igst_rate_percent NUMERIC(5, 2) NOT NULL DEFAULT 18.0,
+    igst_amount NUMERIC(18, 4) NOT NULL,
+    anti_dumping_duty NUMERIC(18, 4) NOT NULL DEFAULT 0.0,
+    total_customs_duty NUMERIC(18, 4) NOT NULL,
+    creditable_itc NUMERIC(18, 4) NOT NULL,
+    non_creditable_duty_cost NUMERIC(18, 4) NOT NULL,
+    gl_voucher_lines JSONB,
+    clearance_status VARCHAR(50) NOT NULL DEFAULT 'ASSESSED', -- FILED, ASSESSED, DUTY_PAID, OUT_OF_CHARGE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_boe UNIQUE (tenant_id, bill_of_entry_number)
+);
+
+CREATE TABLE IF NOT EXISTS export_lut_filings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    lut_arn VARCHAR(50) NOT NULL,
+    exporter_gstin VARCHAR(15) NOT NULL,
+    financial_year VARCHAR(10) NOT NULL, -- e.g. 2026-27
+    filing_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    valid_until DATE NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE_VALID_LUT', -- ACTIVE_VALID_LUT, EXPIRED, REVOKED
+    governing_rule VARCHAR(100) NOT NULL DEFAULT 'Rule 96A of CGST Rules 2017',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_tenant_lut UNIQUE (tenant_id, lut_arn)
+);
+

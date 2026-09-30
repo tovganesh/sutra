@@ -8,6 +8,7 @@ import {
   EWayBillGenerator,
   IndianPayrollEngine,
   TDSEngine,
+  CustomsEngine,
 } from '../packages/compliance-india/dist/index.js';
 
 describe('Sutra India Compliance Suite', () => {
@@ -169,4 +170,49 @@ describe('Sutra India Compliance Suite', () => {
       assert.equal(tds.tdsAmount, 20000);
     });
   });
+
+  describe('Indian Customs & Cross-Border Trade Engine', () => {
+    test('calculates BCD, SWS, and creditable IGST on imported goods (CIF valuation)', () => {
+      const result = CustomsEngine.calculateImportDuty({
+        cifValueInr: 1000000,
+        hsnCode: '84715000',
+        basicCustomsDutyPercent: 7.5,
+        swsPercent: 10,
+        igstPercent: 18,
+      });
+
+      assert.equal(result.assessableValue, 1000000);
+      assert.equal(result.bcdAmount, 75000);
+      assert.equal(result.swsAmount, 7500);
+      assert.equal(result.igstAmount, 194850);
+      assert.equal(result.creditableItc, 194850);
+      assert.equal(result.nonCreditableDutyCost, 82500);
+      assert.equal(result.totalCustomsDuty, 277350);
+      assert.equal(result.totalLandedCost, 1277350);
+
+      assert.equal(result.glVoucherLines.length, 4);
+      const totalDr = result.glVoucherLines.reduce((acc, l) => acc + l.debit, 0);
+      const totalCr = result.glVoucherLines.reduce((acc, l) => acc + l.credit, 0);
+      assert.equal(totalDr, totalCr);
+    });
+
+    test('validates Letter of Undertaking (LUT) under Rule 96A for zero-rated exports', () => {
+      const validLut = CustomsEngine.verifyLut({
+        lutArn: 'AD270326001234F',
+        financialYear: '2026-27',
+        exporterGstin: '27AABCS1429B1ZU',
+      });
+      assert.equal(validLut.isValid, true);
+      assert.equal(validLut.status, 'ACTIVE_VALID_LUT');
+
+      const invalidLut = CustomsEngine.verifyLut({
+        lutArn: 'INVALID_ARN_999',
+        financialYear: '2026-27',
+        exporterGstin: '27AABCS1429B1ZU',
+      });
+      assert.equal(invalidLut.isValid, false);
+      assert.equal(invalidLut.status, 'INVALID_SYNTAX');
+    });
+  });
 });
+

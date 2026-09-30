@@ -185,4 +185,23 @@ graph TD
   * **European Union (`EU`)**: Cross-border B2B intra-community VAT exemption with Article 194 Reverse Charge Mechanism and VIES validation.
   * **United Arab Emirates (`AE`)**: Federal Tax Authority 5% standard VAT calculation.
 
+#### 3.18 Indian Customs, Landed Cost CIF Valuation & Cross-Border Export LUT (Rule 96A)
+* **CIF Assessable Valuation (Customs Act 1962, Sec 14)**: Automated valuation of Cost, Insurance, and Freight (CIF) landed base converted into Indian Rupees (INR) at CBIC exchange rates.
+* **Statutory Duty Cascade Calculation**:
+  * **Basic Customs Duty (BCD)**: Assessed as statutory tariff percentage on CIF Assessable Value.
+  * **Social Welfare Surcharge (SWS)**: Assessed at 10% on the aggregate BCD amount under Finance Act 2018.
+  * **Integrated GST (IGST)**: Computed under Section 3(7) of Customs Tariff Act 1975 on the aggregated base: `(CIF Assessable Value + BCD + SWS + Anti-Dumping Duty)`.
+  * **Compensation Cess & Anti-Dumping**: Evaluated per HSN classification on the aggregated customs base.
+* **Creditable ITC vs Capitalized Landed Cost Accounting Split**:
+  * Under Section 16 of CGST Act 2017, IGST and Compensation Cess paid on import of goods are 100% creditable as Input Tax Credit (ITC) in GSTR-3B Table 4(A)(1).
+  * Non-creditable duties (BCD, SWS, Anti-Dumping) are capitalized directly into inventory asset valuation (Moving Average Price / Standard Cost).
+  * Automated double-entry GL voucher generation:
+    * `120100 Dr Raw Materials Landed Cost` (CIF + Non-creditable duties)
+    * `130100 Dr Input Tax Credit (ITC) - IGST Paid on Import of Goods`
+    * `210500 Cr Customs Duties Payable / Clearing`
+    * `210100 Cr Foreign Trade Accounts Payable (Supplier CIF)`
+* **Rule 96A Letter of Undertaking (LUT) Export Engine**:
+  * Verification of official 14-character GSTN ARN syntax (`AD{StateCode}{MM}{YY}{6Digits}{Alphanumeric}`) for zero-rated export of goods and services without payment of integrated tax under bond/LUT.
+  * Ensures zero-rated export invoice generation without payment of IGST, with full tracking of LUT validity dates and GSTN filing records.
+
 
