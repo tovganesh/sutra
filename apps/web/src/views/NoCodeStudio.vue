@@ -71,7 +71,7 @@
                 <td>{{ formatCurrency(r.purchaseCost) }}</td>
                 <td>
                   <span class="badge" :class="r.operationalStatus === 'ACTIVE' ? 'badge-success' : 'badge-warning'">
-                    {{ r.operationalStatus }}
+                    {{ $t(`nocode.statusOptions.${r.operationalStatus.toLowerCase()}`) }}
                   </span>
                 </td>
                 <td>{{ r.locationSite }}</td>
@@ -105,9 +105,9 @@
           <div class="form-group">
             <label>{{ $t('nocode.modalStatusLabel') }}</label>
             <select v-model="newRecord.operationalStatus" class="input-control">
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="MAINTENANCE">MAINTENANCE</option>
-              <option value="DECOMMISSIONED">DECOMMISSIONED</option>
+              <option value="ACTIVE">{{ $t('nocode.statusOptions.active') }}</option>
+              <option value="MAINTENANCE">{{ $t('nocode.statusOptions.maintenance') }}</option>
+              <option value="DECOMMISSIONED">{{ $t('nocode.statusOptions.decommissioned') }}</option>
             </select>
           </div>
         </div>
@@ -183,7 +183,7 @@ const newRecord = ref({
 
 function saveRecord() {
   if (!newRecord.value.assetTag || !newRecord.value.description) {
-    alert(t('common.error') + ': Please complete mandatory fields');
+    alert(t('nocode.validationAlert'));
     return;
   }
   records.value.push({
@@ -201,7 +201,7 @@ function saveRecord() {
 }
 
 function addFieldPrompt() {
-  const label = prompt('Enter field label (e.g. "Calibration Certificate Number"):');
+  const label = prompt(t('nocode.enterFieldPrompt'));
   if (!label) return;
   const name = label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
   activeEntity.value.fields.push({

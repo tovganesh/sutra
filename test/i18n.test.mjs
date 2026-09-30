@@ -118,6 +118,22 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         assert.ok(comp.results && Object.keys(comp.results).length >= 18, `Results in ${locale} must have >= 18 keys`);
       }
     });
+
+    test('verifies copilot providers/results, nocode status options, and header userAvatarTitle dictionaries', () => {
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const copilot = messages[locale].copilot;
+        assert.ok(copilot.providers && Object.keys(copilot.providers).length === 3, `Copilot providers in ${locale} must have 3 keys`);
+        assert.ok(copilot.results && Object.keys(copilot.results).length >= 12, `Copilot results in ${locale} must have >= 12 keys`);
+
+        const nocode = messages[locale].nocode;
+        assert.ok(nocode.statusOptions && Object.keys(nocode.statusOptions).length === 3, `NoCode statusOptions in ${locale} must have 3 keys`);
+        assert.ok(nocode.validationAlert && nocode.validationAlert.length > 0);
+        assert.ok(nocode.enterFieldPrompt && nocode.enterFieldPrompt.length > 0);
+
+        const header = messages[locale].header;
+        assert.ok(header.userAvatarTitle && header.userAvatarTitle.length > 0);
+      }
+    });
   });
 
   describe('Multi-Currency Configuration & Live FX Engine', () => {
