@@ -72,16 +72,18 @@
             <circle cx="570" cy="80" r="4.5" fill="#3b82f6" />
             <circle cx="750" cy="45" r="6" fill="#06b6d4" />
 
-            <!-- Month Axis Labels -->
-            <text x="50" y="215" fill="#64748b" font-size="12">Apr</text>
-            <text x="120" y="215" fill="#64748b" font-size="12">May</text>
-            <text x="210" y="215" fill="#64748b" font-size="12">Jun</text>
-            <text x="300" y="215" fill="#64748b" font-size="12">Jul</text>
-            <text x="390" y="215" fill="#64748b" font-size="12">Aug</text>
-            <text x="480" y="215" fill="#64748b" font-size="12">Sep</text>
-            <text x="570" y="215" fill="#64748b" font-size="12">Oct</text>
-            <text x="660" y="215" fill="#64748b" font-size="12">Nov</text>
-            <text x="750" y="215" fill="#64748b" font-size="12">Dec</text>
+            <!-- Month Axis Labels (Locale-Aware Dynamic Formatting) -->
+            <text
+              v-for="m in chartMonths"
+              :key="m.name + m.x"
+              :x="m.x"
+              y="215"
+              fill="#64748b"
+              font-size="11"
+              text-anchor="middle"
+            >
+              {{ m.name }}
+            </text>
           </svg>
         </div>
       </div>
@@ -106,30 +108,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td><strong>FI / CO</strong></td>
-                <td>Sutra Ledger &amp; Tax Core</td>
-                <td>Double-entry, India GST/TDS native, PostgreSQL</td>
-              </tr>
-              <tr>
-                <td><strong>MM / SD</strong></td>
-                <td>Sutra Supply &amp; Commerce</td>
-                <td>MinIO S3 document vault, Valkey queues</td>
-              </tr>
-              <tr>
-                <td><strong>Z-Tables &amp; ABAP</strong></td>
-                <td>Sutra No-Code Studio</td>
-                <td>Dynamic JSONB entities &amp; visual state machines</td>
-              </tr>
-              <tr>
-                <td><strong>SAP SAC / BW</strong></td>
-                <td>Sutra Embedded OLAP</td>
-                <td>Zero-ETL real-time P&amp;L, Balance Sheet</td>
-              </tr>
-              <tr>
-                <td><strong>SAP Joule AI</strong></td>
-                <td>Sutra Gen AI Core</td>
-                <td>Local Ollama or Cloud (OpenAI/Gemini), Text-to-ERP</td>
+              <tr v-for="row in parityRows" :key="row.tcode">
+                <td>
+                  <strong>{{ row.tcode }}</strong>
+                  <div style="font-size: 0.74rem; color: var(--text-dim);">{{ row.capability }}</div>
+                </td>
+                <td style="font-size: 0.82rem;">{{ row.sap }}</td>
+                <td style="font-size: 0.82rem; color: var(--brand-blue);">{{ row.sutra }}</td>
               </tr>
             </tbody>
           </table>
@@ -144,7 +129,7 @@ import { computed } from 'vue';
 import { TrendingUp, Clock, Scale, Sparkles } from 'lucide-vue-next';
 import { useI18n } from '../i18n';
 
-const { t, formatCurrency } = useI18n();
+const { t, formatCurrency, localeConfig } = useI18n();
 
 const kpis = computed(() => [
   {
@@ -188,6 +173,112 @@ const kpis = computed(() => [
     trendText: t('dashboard.kpis.netProfitTrend', { amount: formatCurrency(3500000) }),
   },
 ]);
+const chartMonths = computed(() => {
+  const months = [3, 4, 5, 6, 7, 8, 9, 10, 11]; // Apr - Dec
+  const locale = localeConfig.value?.code || 'en-IN';
+  const formatter = new Intl.DateTimeFormat(locale, { month: 'short' });
+  return months.map((m, idx) => {
+    const d = new Date(2026, m, 1);
+    return {
+      name: formatter.format(d),
+      x: 50 + idx * ((750 - 50) / (months.length - 1)),
+    };
+  });
+});
+
+const parityRows = computed(() => [
+  {
+    tcode: 'FI / CO',
+    capability: t('supplyChain.tabs.subledger'),
+    sap: 'S/4HANA FI-GL / CO-OM',
+    sutra: 'Double-entry, India GST/TDS native, PostgreSQL',
+  },
+  {
+    tcode: 'MM / SD',
+    capability: t('supplyChain.tabs.inventory'),
+    sap: 'S/4HANA MM-IM / SD-SLS',
+    sutra: 'MinIO S3 document vault, Valkey queues, Moving Avg Price',
+  },
+  {
+    tcode: 'PP',
+    capability: t('supplyChain.tabs.mfg'),
+    sap: 'S/4HANA PP (BOM & Routing)',
+    sutra: 'Multi-level BOM explosion, Work Center capacity, WIP tracking',
+  },
+  {
+    tcode: 'FI-AA',
+    capability: t('supplyChain.tabs.assets'),
+    sap: 'S/4HANA Asset Accounting',
+    sutra: 'Companies Act 2013 SLM/WDV depreciation, Asset register',
+  },
+  {
+    tcode: 'QM',
+    capability: t('supplyChain.tabs.quality'),
+    sap: 'S/4HANA Quality Management',
+    sutra: 'Inspection lots, Certificate of Analysis (CoA), Bidirectional batch genealogy',
+  },
+  {
+    tcode: 'CO-CCA',
+    capability: t('supplyChain.tabs.controlling'),
+    sap: 'S/4HANA Overhead Cost Allocation',
+    sutra: 'Secondary cost assessment cycles, Headcount/Sqft driver allocation',
+  },
+  {
+    tcode: 'PM / EAM',
+    capability: t('supplyChain.tabs.maintenance'),
+    sap: 'S/4HANA Plant Maintenance',
+    sutra: 'Preventive schedules, MTBF & MTTR tracking, Breakdown settlement',
+  },
+  {
+    tcode: 'TRM / FI-BL',
+    capability: t('supplyChain.tabs.treasury'),
+    sap: 'S/4HANA Bank Ledger & Cash Mgmt',
+    sutra: 'MT940 parser, 2-way automated reconciliation, 90-day cash liquidity forecast',
+  },
+  {
+    tcode: 'HCM',
+    capability: t('supplyChain.tabs.hcm'),
+    sap: 'S/4HANA SuccessFactors / Core HR',
+    sutra: 'Statutory Payroll (PF/ESI/PT), Loss-of-Pay deductions, GL voucher',
+  },
+  {
+    tcode: 'PS',
+    capability: t('supplyChain.tabs.projects'),
+    sap: 'S/4HANA Project Systems',
+    sutra: 'WBS hierarchy, CWIP tracking, Capitalization into Fixed Assets',
+  },
+  {
+    tcode: 'EWM',
+    capability: t('supplyChain.tabs.warehouse'),
+    sap: 'S/4HANA Extended Warehouse',
+    sutra: 'Multi-bin storage topology, FIFO wave picking, Physical inventory cycle count',
+  },
+  {
+    tcode: '0L / 2L',
+    capability: t('supplyChain.tabs.multicurrency'),
+    sap: 'S/4HANA Parallel Accounting Ledgers',
+    sutra: 'Leading & Non-Leading ledgers, IAS 21 Forex revaluation, Multi-jurisdiction tax',
+  },
+  {
+    tcode: 'TM',
+    capability: t('supplyChain.tabs.transportation'),
+    sap: 'S/4HANA Transportation Management',
+    sutra: 'Freight calculation, Dynamic fuel surcharge, e-POD confirmation with OTP',
+  },
+  {
+    tcode: 'Z-Tables & ABAP',
+    capability: t('nocode.heroTitle'),
+    sap: 'SAP ABAP Dictionary / NetWeaver',
+    sutra: 'Dynamic JSONB entities, Visual state machines, Zero-migration schemas',
+  },
+  {
+    tcode: 'Joule AI',
+    capability: t('copilot.heroTitle'),
+    sap: 'SAP Joule Generative AI',
+    sutra: 'Air-gapped private LLMs (Ollama) + Cloud fallback, Zero-Data Leakage',
+  },
+]);
+
 </script>
 
 <style scoped>
