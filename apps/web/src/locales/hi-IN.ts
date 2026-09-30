@@ -34,6 +34,8 @@ export const hiIN: LocaleMessage = {
     subtotal: 'उप-योग',
     enabled: 'सक्रिय',
     disabled: 'निष्क्रिय',
+    required: 'आवश्यक',
+    optimal: 'अनुकूल',
   },
   nav: {
     brandTitle: 'सूत्र (SUTRA)',

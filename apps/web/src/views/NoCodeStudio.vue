@@ -29,7 +29,7 @@
             </div>
             <div class="field-tags">
               <span class="field-type-tag">{{ f.type }}</span>
-              <span v-if="f.required" class="required-tag">Required</span>
+              <span v-if="f.required" class="required-tag">{{ $t('common.required') }}</span>
             </div>
           </div>
         </div>

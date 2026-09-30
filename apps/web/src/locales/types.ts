@@ -32,6 +32,8 @@ export interface LocaleMessage {
     subtotal: string;
     enabled: string;
     disabled: string;
+    required: string;
+    optimal: string;
   };
   nav: {
     brandTitle: string;

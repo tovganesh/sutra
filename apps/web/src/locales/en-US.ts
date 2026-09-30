@@ -34,6 +34,8 @@ export const enUS: LocaleMessage = {
     subtotal: 'Subtotal',
     enabled: 'Enabled',
     disabled: 'Disabled',
+    required: 'Required',
+    optimal: 'Optimal',
   },
   nav: {
     brandTitle: 'SUTRA',

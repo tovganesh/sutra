@@ -21,7 +21,7 @@
         </div>
         <div class="kpi-card">
           <span class="kpi-label">{{ $t('supplyChain.kpiDso') }}</span>
-          <span class="kpi-value">{{ agingData.receivables.dsoDays }} Days</span>
+          <span class="kpi-value">{{ agingData.receivables.dsoDays }} {{ $t('common.days') }}</span>
           <span class="kpi-trend info">AR Benchmark: &lt; 45d</span>
         </div>
         <div class="kpi-card">
@@ -197,7 +197,7 @@
                   <th>HSN</th>
                   <th>Stock Qty</th>
                   <th>Moving Avg Price</th>
-                  <th>Valuation (INR)</th>
+                  <th>Valuation ({{ currencySymbol }})</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -258,7 +258,7 @@
                 <input v-model.number="movementForm.quantity" type="number" min="1" class="form-input" required />
               </div>
               <div class="form-group" v-if="movementForm.movementType === '101'">
-                <label>Inbound Unit Cost (INR)</label>
+                <label>Inbound Unit Cost ({{ currencySymbol }})</label>
                 <input v-model.number="movementForm.unitCost" type="number" step="0.01" class="form-input" required />
               </div>
               <div class="form-group" v-if="movementForm.movementType === '201'">
@@ -379,7 +379,7 @@
                   <input v-model.number="orderForm.quantity" type="number" min="1" class="form-input" />
                 </div>
                 <div class="form-group">
-                  <label>Unit Price (INR)</label>
+                  <label>Unit Price ({{ currencySymbol }})</label>
                   <input v-model.number="orderForm.unitPrice" type="number" class="form-input" />
                 </div>
               </div>
@@ -504,7 +504,7 @@
                     <span v-else class="badge gray">Corporate Non-MSME</span>
                   </td>
                   <td class="font-mono text-dim">{{ vend.udyamRegistrationNumber || 'N/A' }}</td>
-                  <td class="font-mono font-bold">{{ vend.paymentTermsDays }} Days</td>
+                  <td class="font-mono font-bold">{{ vend.paymentTermsDays }} {{ $t('common.days') }}</td>
                   <td>
                     <button class="action-btn-sm" @click="selectVendorForPo(vend)">
                       <span>Create PO</span>
@@ -652,12 +652,12 @@
             <div class="wc-item">
               <span class="wc-label">Total Trade Receivables (AR)</span>
               <span class="wc-val text-green">{{ formatCurrency(agingData.receivables.summary.totalOutstanding) }}</span>
-              <span class="wc-sub">DSO: {{ agingData.receivables.dsoDays }} Days</span>
+              <span class="wc-sub">DSO: {{ agingData.receivables.dsoDays }} {{ $t('common.days') }}</span>
             </div>
             <div class="wc-item">
               <span class="wc-label">Total Trade Payables (AP)</span>
               <span class="wc-val text-cyan">{{ formatCurrency(agingData.payables.summary.totalOutstanding) }}</span>
-              <span class="wc-sub">DPO: {{ agingData.payables.dpoDays }} Days</span>
+              <span class="wc-sub">DPO: {{ agingData.payables.dpoDays }} {{ $t('common.days') }}</span>
             </div>
             <div class="wc-item">
               <span class="wc-label">Net Working Capital Exposure</span>
@@ -1369,7 +1369,7 @@
                 <th>Reference / UTR</th>
                 <th>Counterparty</th>
                 <th>Type</th>
-                <th>Amount (INR)</th>
+                <th>Amount ({{ currencySymbol }})</th>
                 <th>Recon Status</th>
               </tr>
             </thead>
