@@ -177,12 +177,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Material Master (SKU Catalog)</h3>
-              <span class="panel-sub">Raw Materials (ROH), Semi-Finished (HALB), Finished Goods (FERT)</span>
+              <h3>{{ $t('supplyChain.panels.materialMaster') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.materialMaster') }}</span>
             </div>
             <button class="action-btn-sm" @click="refreshMaterials">
               <RefreshCw class="btn-icon-sm" />
-              <span>Refresh Stock</span>
+              <span>{{ $t('supplyChain.buttons.refreshStock') }}</span>
             </button>
           </div>
 
@@ -190,15 +190,15 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>SKU</th>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>UoM</th>
-                  <th>HSN</th>
-                  <th>Stock Qty</th>
-                  <th>Moving Avg Price</th>
+                  <th>{{ $t('supplyChain.cols.sku') }}</th>
+                  <th>{{ $t('supplyChain.cols.description') }}</th>
+                  <th>{{ $t('supplyChain.cols.type') }}</th>
+                  <th>{{ $t('supplyChain.cols.uom') }}</th>
+                  <th>{{ $t('supplyChain.cols.hsn') }}</th>
+                  <th>{{ $t('supplyChain.cols.stockQty') }}</th>
+                  <th>{{ $t('supplyChain.cols.movingAvgPrice') }}</th>
                   <th>Valuation ({{ currencySymbol }})</th>
-                  <th>Status</th>
+                  <th>{{ $t('supplyChain.cols.status') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,13 +228,13 @@
         <!-- Inventory Movement Simulator -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Execute Stock Movement</h3>
-            <span class="panel-sub">SAP Movement Types (101, 201, 311, 601)</span>
+            <h3>{{ $t('supplyChain.panels.stockMovement') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.stockMovement') }}</span>
           </div>
 
           <form @submit.prevent="executeMovement" class="movement-form">
             <div class="form-group">
-              <label>Movement Type</label>
+              <label>{{ $t('supplyChain.labels.mvtType') }}</label>
               <select v-model="movementForm.movementType" class="form-select">
                 <option value="101">101 - Goods Receipt from Purchase Order (Increases Stock + MAP)</option>
                 <option value="201">201 - Goods Issue to Cost Center / Consumption</option>
@@ -244,7 +244,7 @@
             </div>
 
             <div class="form-group">
-              <label>Target Material (SKU)</label>
+              <label>{{ $t('supplyChain.labels.targetMaterial') }}</label>
               <select v-model="movementForm.sku" class="form-select">
                 <option v-for="m in materials" :key="m.sku" :value="m.sku">
                   {{ m.sku }} — {{ m.name }}
@@ -254,7 +254,7 @@
 
             <div class="form-row">
               <div class="form-group">
-                <label>Quantity</label>
+                <label>{{ $t('supplyChain.labels.quantity') }}</label>
                 <input v-model.number="movementForm.quantity" type="number" min="1" class="form-input" required />
               </div>
               <div class="form-group" v-if="movementForm.movementType === '101'">
@@ -262,14 +262,14 @@
                 <input v-model.number="movementForm.unitCost" type="number" step="0.01" class="form-input" required />
               </div>
               <div class="form-group" v-if="movementForm.movementType === '201'">
-                <label>Cost Center</label>
+                <label>{{ $t('supplyChain.labels.costCenter') }}</label>
                 <input v-model="movementForm.costCenter" type="text" class="form-input" />
               </div>
             </div>
 
             <button type="submit" class="submit-btn" :disabled="isMoving">
               <Layers class="btn-icon" />
-              <span>{{ isMoving ? 'Executing & Posting to GL...' : 'Post Inventory Movement' }}</span>
+              <span>{{ isMoving ? $t('supplyChain.buttons.executingMvt') : $t('supplyChain.buttons.postMvt') }}</span>
             </button>
           </form>
 
@@ -319,8 +319,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Customer Master & Credit Exposure</h3>
-              <span class="panel-sub">Real-time Available-to-Promise (ATP) & Credit Limit Verification</span>
+              <h3>{{ $t('supplyChain.panels.customerMaster') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.customerMaster') }}</span>
             </div>
           </div>
 
@@ -328,13 +328,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Customer ID</th>
-                  <th>Company Name</th>
-                  <th>GSTIN</th>
-                  <th>State</th>
-                  <th>Credit Limit</th>
-                  <th>Current Exposure</th>
-                  <th>Credit Utilization</th>
+                  <th>{{ $t('supplyChain.cols.customerId') }}</th>
+                  <th>{{ $t('supplyChain.cols.companyName') }}</th>
+                  <th>{{ $t('supplyChain.cols.gstin') }}</th>
+                  <th>{{ $t('supplyChain.cols.state') }}</th>
+                  <th>{{ $t('supplyChain.cols.creditLimit') }}</th>
+                  <th>{{ $t('supplyChain.cols.currentExposure') }}</th>
+                  <th>{{ $t('supplyChain.cols.creditUtilization') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -357,11 +357,11 @@
 
           <!-- Order Creation Simulator -->
           <div style="margin-top: 24px;">
-            <h4>Create New Sales Order (O2C)</h4>
+            <h4>{{ $t('supplyChain.panels.createSalesOrder') }}</h4>
             <div class="sales-form">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Select Customer</label>
+                  <label>{{ $t('supplyChain.labels.selectCustomer') }}</label>
                   <select v-model="orderForm.customerId" class="form-select">
                     <option v-for="c in customers" :key="c.customerId" :value="c.customerId">
                       {{ c.name }} ({{ c.stateCode === '27' ? 'Intra-State MH' : 'Inter-State KA' }})
@@ -369,13 +369,13 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Finished Good SKU</label>
+                  <label>{{ $t('supplyChain.labels.finishedGoodSku') }}</label>
                   <select v-model="orderForm.sku" class="form-select">
                     <option value="FERT-EVTRK-001">FERT-EVTRK-001 (Sutra E-Titan 1.5T EV)</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Order Qty</label>
+                  <label>{{ $t('supplyChain.labels.orderQty') }}</label>
                   <input v-model.number="orderForm.quantity" type="number" min="1" class="form-input" />
                 </div>
                 <div class="form-group">
@@ -386,7 +386,7 @@
 
               <button class="action-btn" @click="createSalesOrder">
                 <FileText class="btn-icon" />
-                <span>Validate & Confirm Sales Order</span>
+                <span>{{ $t('supplyChain.buttons.validateConfirmSo') }}</span>
               </button>
             </div>
           </div>
@@ -395,8 +395,8 @@
         <!-- Order Workflow & Billing Generator -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Active Sales Order Workflow</h3>
-            <span class="panel-sub">SO -> Post Goods Issue (PGI) -> E-Invoice Billing</span>
+            <h3>{{ $t('supplyChain.panels.salesOrderWorkflow') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.salesOrderWorkflow') }}</span>
           </div>
 
           <div v-if="activeSalesOrder" class="workflow-card">
@@ -432,12 +432,12 @@
             <div class="workflow-actions">
               <button class="workflow-btn" :disabled="pgiCompleted" @click="executePgi">
                 <Truck class="btn-icon-sm" />
-                <span>{{ pgiCompleted ? 'PGI Delivered (Mvt 601 Done)' : '1. Post Goods Issue (PGI Mvt 601)' }}</span>
+                <span>{{ pgiCompleted ? $t('supplyChain.buttons.pgiDone') : $t('supplyChain.buttons.postGoodsIssue') }}</span>
               </button>
 
               <button class="workflow-btn primary" :disabled="!pgiCompleted || invoiceGenerated" @click="generateBilling">
                 <ShieldCheck class="btn-icon-sm" />
-                <span>{{ invoiceGenerated ? 'Billed with E-Invoice & E-Way' : '2. Generate Billing Invoice + E-Invoice' }}</span>
+                <span>{{ invoiceGenerated ? $t('supplyChain.buttons.billedDone') : $t('supplyChain.buttons.generateBilling') }}</span>
               </button>
             </div>
 
@@ -476,8 +476,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Vendor Master & MSME Section 43B(h) Compliance</h3>
-              <span class="panel-sub">Automatic 45-day payment tracking for registered Micro & Small enterprises</span>
+              <h3>{{ $t('supplyChain.panels.vendorMaster') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.vendorMaster') }}</span>
             </div>
           </div>
 
@@ -485,13 +485,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Vendor ID</th>
-                  <th>Name</th>
-                  <th>GSTIN</th>
-                  <th>Classification</th>
-                  <th>Udyam Reg #</th>
-                  <th>Max Pay Terms</th>
-                  <th>Action</th>
+                  <th>{{ $t('supplyChain.cols.vendorId') }}</th>
+                  <th>{{ $t('supplyChain.cols.name') }}</th>
+                  <th>{{ $t('supplyChain.cols.gstin') }}</th>
+                  <th>{{ $t('supplyChain.cols.classification') }}</th>
+                  <th>{{ $t('supplyChain.cols.udyamReg') }}</th>
+                  <th>{{ $t('supplyChain.cols.maxPayTerms') }}</th>
+                  <th>{{ $t('supplyChain.cols.action') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -507,7 +507,7 @@
                   <td class="font-mono font-bold">{{ vend.paymentTermsDays }} {{ $t('common.days') }}</td>
                   <td>
                     <button class="action-btn-sm" @click="selectVendorForPo(vend)">
-                      <span>Create PO</span>
+                      <span>{{ $t('supplyChain.buttons.createPo') }}</span>
                     </button>
                   </td>
                 </tr>
@@ -517,7 +517,7 @@
 
           <!-- Active Purchase Order Simulator -->
           <div style="margin-top: 24px;">
-            <h4>Execute 3-Way Match Verification (PO vs GRN vs Vendor Invoice)</h4>
+            <h4>{{ $t('supplyChain.panels.execThreeWayMatch') }}</h4>
             <div class="p2p-simulation-box">
               <div class="steps-row">
                 <div class="step-card" :class="{ completed: p2pState.poCreated }">
@@ -542,12 +542,12 @@
               <div class="p2p-actions">
                 <button class="workflow-btn" :disabled="p2pState.grnDone" @click="receiveP2pGrn">
                   <CheckCircle2 class="btn-icon-sm" />
-                  <span>Receive Dock Goods (GRN Mvt 101)</span>
+                  <span>{{ $t('supplyChain.buttons.receiveDockGoods') }}</span>
                 </button>
 
                 <button class="workflow-btn primary" :disabled="!p2pState.grnDone || p2pState.verified" @click="verifyP2pInvoice">
                   <ShieldCheck class="btn-icon-sm" />
-                  <span>Verify Invoice & Withhold Sec 194Q TDS</span>
+                  <span>{{ $t('supplyChain.buttons.verifyInvoiceTds') }}</span>
                 </button>
               </div>
             </div>
@@ -557,8 +557,8 @@
         <!-- 3-Way Match Audit Panel -->
         <div class="panel">
           <div class="panel-header">
-            <h3>3-Way Match Verification Audit</h3>
-            <span class="panel-sub">Price Variance & Quantity Discrepancy Gate</span>
+            <h3>{{ $t('supplyChain.panels.threeWayMatch') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.threeWayMatch') }}</span>
           </div>
 
           <div v-if="p2pVerificationResult" class="audit-card">
@@ -608,8 +608,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Working Capital Subledger Aging (0-30, 31-60, 61-90, 90+ Days)</h3>
-              <span class="panel-sub">Real-time Accounts Receivable (AR) & Accounts Payable (AP)</span>
+              <h3>{{ $t('supplyChain.panels.subledgerAging') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.subledgerAging') }}</span>
             </div>
           </div>
 
@@ -670,8 +670,8 @@
         <!-- Overdue Debtors & Priority Collections -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Top Overdue Debtors (Priority Recovery)</h3>
-            <span class="panel-sub">Automated dunning & payment reminder triggers</span>
+            <h3>{{ $t('supplyChain.panels.topDebtors') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.topDebtors') }}</span>
           </div>
 
           <div class="debtors-list">
@@ -696,8 +696,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Bill of Materials (BOM) & Work Centers</h3>
-              <span class="panel-sub">Multi-level component explosion & machine routing</span>
+              <h3>{{ $t('supplyChain.panels.bomWorkCenters') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.bomWorkCenters') }}</span>
             </div>
           </div>
 
@@ -710,11 +710,11 @@
             <table class="data-table" style="margin-top: 12px;">
               <thead>
                 <tr>
-                  <th>Component SKU</th>
-                  <th>Quantity / Unit</th>
-                  <th>UoM</th>
-                  <th>Scrap %</th>
-                  <th>Component Type</th>
+                  <th>{{ $t('supplyChain.cols.componentSku') }}</th>
+                  <th>{{ $t('supplyChain.cols.qtyUnit') }}</th>
+                  <th>{{ $t('supplyChain.cols.uom') }}</th>
+                  <th>{{ $t('supplyChain.cols.scrapPct') }}</th>
+                  <th>{{ $t('supplyChain.cols.componentType') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -735,7 +735,7 @@
 
           <!-- Work Centers & Routing Operations -->
           <div style="margin-top: 20px;">
-            <h4>Manufacturing Work Centers & Routings</h4>
+            <h4>{{ $t('supplyChain.panels.workCentersRouting') }}</h4>
             <div class="wc-grid">
               <div v-for="wc in workCenters" :key="wc.workCenterId" class="wc-card">
                 <div class="wc-head">
@@ -755,19 +755,19 @@
         <!-- Production Order Simulator -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Production Order Execution</h3>
-            <span class="panel-sub">Release -> Consume WIP (Mvt 261) -> Confirm FG (Mvt 131)</span>
+            <h3>{{ $t('supplyChain.panels.productionOrder') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.productionOrder') }}</span>
           </div>
 
           <div class="mfg-order-box">
             <div class="form-group">
-              <label>Target Quantity to Manufacture</label>
+              <label>{{ $t('supplyChain.labels.targetQtyMfg') }}</label>
               <input v-model.number="mfgOrderQty" type="number" min="1" class="form-input" />
             </div>
 
             <button class="workflow-btn primary" :disabled="mfgPlanning" @click="planProductionOrder" style="margin-top: 10px;">
               <Layers class="btn-icon-sm" />
-              <span>1. Plan Order & Explode BOM</span>
+              <span>{{ $t('supplyChain.buttons.planOrderExplodeBom') }}</span>
             </button>
           </div>
 
@@ -798,7 +798,7 @@
 
             <button class="workflow-btn" :disabled="mfgConfirmed" @click="confirmProductionOrder" style="margin-top: 14px; width: 100%;">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>{{ mfgConfirmed ? 'Confirmed & Inventory Updated' : '2. Confirm Batch & Post WIP to GL' }}</span>
+              <span>{{ mfgConfirmed ? $t('supplyChain.buttons.confirmedInventoryUpdated') : $t('supplyChain.buttons.confirmBatchWip') }}</span>
             </button>
           </div>
         </div>
@@ -812,12 +812,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Capital Fixed Asset Register (FI-AA)</h3>
-              <span class="panel-sub">Indian Companies Act 2013 Schedule II Useful Life & Salvage Cap (5%)</span>
+              <h3>{{ $t('supplyChain.panels.assetRegister') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.assetRegister') }}</span>
             </div>
             <button class="action-btn-sm" @click="executeDepreciationRun">
               <RefreshCw class="btn-icon-sm" />
-              <span>Run Monthly Depreciation</span>
+              <span>{{ $t('supplyChain.buttons.runMonthlyDepr') }}</span>
             </button>
           </div>
 
@@ -825,14 +825,14 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Asset ID</th>
-                  <th>Description</th>
-                  <th>Class</th>
-                  <th>Useful Life</th>
-                  <th>Method</th>
-                  <th>Original Cost</th>
-                  <th>Acc. Depreciation</th>
-                  <th>Net Book Value</th>
+                  <th>{{ $t('supplyChain.cols.assetId') }}</th>
+                  <th>{{ $t('supplyChain.cols.description') }}</th>
+                  <th>{{ $t('supplyChain.cols.class') }}</th>
+                  <th>{{ $t('supplyChain.cols.usefulLife') }}</th>
+                  <th>{{ $t('supplyChain.cols.method') }}</th>
+                  <th>{{ $t('supplyChain.cols.originalCost') }}</th>
+                  <th>{{ $t('supplyChain.cols.accDepreciation') }}</th>
+                  <th>{{ $t('supplyChain.cols.netBookValue') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -854,8 +854,8 @@
         <!-- Monthly Depreciation Run Audit -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Depreciation Run Audit</h3>
-            <span class="panel-sub">Automated GL Expense & Contra-Asset Posting</span>
+            <h3>{{ $t('supplyChain.panels.depreciationRun') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.depreciationRun') }}</span>
           </div>
 
           <div v-if="deprRunResult" class="depr-audit-card">
@@ -901,12 +901,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Quality Inspection Lots (SAP QM)</h3>
-              <span class="panel-sub">Goods Receipt (01), In-Process Production (04), Stock Transfers</span>
+              <h3>{{ $t('supplyChain.panels.inspectionLots') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.inspectionLots') }}</span>
             </div>
             <button class="action-btn-sm" @click="createDemoInspectionLot">
               <RefreshCw class="btn-icon-sm" />
-              <span>Simulate GR Inspection</span>
+              <span>{{ $t('supplyChain.buttons.simulateGrInspection') }}</span>
             </button>
           </div>
 
@@ -914,13 +914,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Lot ID</th>
-                  <th>Origin</th>
-                  <th>Material SKU</th>
-                  <th>Batch #</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Decision</th>
+                  <th>{{ $t('supplyChain.cols.lotId') }}</th>
+                  <th>{{ $t('supplyChain.cols.origin') }}</th>
+                  <th>{{ $t('supplyChain.cols.materialSku') }}</th>
+                  <th>{{ $t('supplyChain.cols.batchNo') }}</th>
+                  <th>{{ $t('supplyChain.cols.qty') }}</th>
+                  <th>{{ $t('supplyChain.cols.status') }}</th>
+                  <th>{{ $t('supplyChain.cols.decision') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -954,8 +954,8 @@
 
           <!-- Batch Genealogy Trace View -->
           <div style="margin-top: 24px;">
-            <h4>End-to-End Batch Genealogy Traceability</h4>
-            <span class="panel-sub">Full upstream supplier origin to downstream vehicle & customer sales order</span>
+            <h4>{{ $t('supplyChain.panels.batchGenealogy') }}</h4>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.batchGenealogy') }}</span>
             <div class="genealogy-card" style="margin-top: 10px;">
               <div class="trace-step">
                 <span class="trace-label">1. Supplier Raw Material Batch</span>
@@ -987,8 +987,8 @@
         <!-- Lot Inspection & Usage Decision Cockpit -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Usage Decision & CoA</h3>
-            <span class="panel-sub">Results recording, tolerance validation & digital signature</span>
+            <h3>{{ $t('supplyChain.panels.usageDecision') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.usageDecision') }}</span>
           </div>
 
           <div v-if="selectedLot" class="inspection-detail-box">
@@ -1018,10 +1018,10 @@
             <div v-if="!selectedLot.usageDecision" class="qm-actions" style="margin-top: 16px; display: flex; gap: 10px;">
               <button class="workflow-btn primary" @click="postUsageDecision(selectedLot, 'ACCEPTED')">
                 <CheckCircle2 class="btn-icon-sm" />
-                <span>Accept (Mvt 321)</span>
+                <span>{{ $t('supplyChain.buttons.acceptMvt321') }}</span>
               </button>
               <button class="workflow-btn" style="border-color: #ef4444; color: #f87171;" @click="postUsageDecision(selectedLot, 'REJECTED')">
-                <span>Reject (Mvt 350)</span>
+                <span>{{ $t('supplyChain.buttons.rejectMvt350') }}</span>
               </button>
             </div>
 
@@ -1053,12 +1053,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Cost Center Accounting (SAP CO-CCA)</h3>
-              <span class="panel-sub">Operating cost centers, profit centers, and annual budget absorption</span>
+              <h3>{{ $t('supplyChain.panels.costCenterAccounting') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.costCenterAccounting') }}</span>
             </div>
             <button class="action-btn-sm" @click="runAssessmentCycle">
               <RefreshCw class="btn-icon-sm" />
-              <span>Run Assessment Cycle</span>
+              <span>{{ $t('supplyChain.buttons.runAssessmentCycle') }}</span>
             </button>
           </div>
 
@@ -1066,13 +1066,13 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Cost Center</th>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Profit Center</th>
-                  <th>Annual Budget</th>
-                  <th>Actual Incurred</th>
-                  <th>Utilization</th>
+                  <th>{{ $t('supplyChain.cols.costCenter') }}</th>
+                  <th>{{ $t('supplyChain.cols.name') }}</th>
+                  <th>{{ $t('supplyChain.cols.category') }}</th>
+                  <th>{{ $t('supplyChain.cols.profitCenter') }}</th>
+                  <th>{{ $t('supplyChain.cols.annualBudget') }}</th>
+                  <th>{{ $t('supplyChain.cols.actualIncurred') }}</th>
+                  <th>{{ $t('supplyChain.cols.utilization') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1097,8 +1097,8 @@
         <!-- Overhead Assessment Cycle Audit -->
         <div class="panel">
           <div class="panel-header">
-            <h3>Secondary Cost Allocation</h3>
-            <span class="panel-sub">Periodic distribution of IT & Facility shared services</span>
+            <h3>{{ $t('supplyChain.panels.secondaryCost') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.secondaryCost') }}</span>
           </div>
 
           <div v-if="assessmentResult" class="audit-card">
@@ -1171,25 +1171,25 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Equipment Master & Reliability KPIs (SAP PM)</h3>
-              <span class="panel-sub">Functional Locations, Operating Hours & Predictive Cycles</span>
+              <h3>{{ $t('supplyChain.panels.equipmentMaster') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.equipmentMaster') }}</span>
             </div>
             <button class="action-btn-sm" @click="runPreventiveEvaluation">
               <RefreshCw class="btn-icon-sm" />
-              <span>Evaluate Preventive Cycles</span>
+              <span>{{ $t('supplyChain.buttons.evaluatePreventiveCycles') }}</span>
             </button>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Equipment No</th>
-                <th>Name / Description</th>
-                <th>Category</th>
-                <th>Location / Cost Center</th>
-                <th>Operating Hours</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{{ $t('supplyChain.cols.equipmentNo') }}</th>
+                <th>{{ $t('supplyChain.cols.nameDesc') }}</th>
+                <th>{{ $t('supplyChain.cols.category') }}</th>
+                <th>{{ $t('supplyChain.cols.locCostCenter') }}</th>
+                <th>{{ $t('supplyChain.cols.operatingHours') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
+                <th>{{ $t('supplyChain.cols.actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1216,7 +1216,7 @@
                 </td>
                 <td>
                   <button class="action-btn-sm" @click="selectEquipmentForWo(eq)">
-                    <span>Create WO</span>
+                    <span>{{ $t('supplyChain.buttons.createWo') }}</span>
                   </button>
                 </td>
               </tr>
@@ -1228,8 +1228,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Maintenance Work Orders</h3>
-              <span class="panel-sub">Spare Parts Reservation & Cost Settlement</span>
+              <h3>{{ $t('supplyChain.panels.maintenanceOrders') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.maintenanceOrders') }}</span>
             </div>
           </div>
 
@@ -1275,7 +1275,7 @@
                 class="action-btn-sm"
                 @click="issueSparePart(wo.orderNumber)"
               >
-                <span>Issue Spare Part (Mvt 201)</span>
+                <span>{{ $t('supplyChain.buttons.issueSpares') }}</span>
               </button>
               <button
                 v-if="wo.status === 'RELEASED'"
@@ -1283,7 +1283,7 @@
                 @click="completeAndSettleWo(wo.orderNumber)"
               >
                 <CheckCircle2 class="btn-icon-sm" />
-                <span>Technically Complete & Settle</span>
+                <span>{{ $t('supplyChain.buttons.completeSettleWo') }}</span>
               </button>
               <span v-else-if="wo.status === 'CLOSED'" class="text-green font-mono" style="font-size: 12px;">
                 ✔ Settled to GL 510300 (Maintenance Exp)
@@ -1325,12 +1325,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>House Banks & MT940 Electronic Statements (SAP FI-BL)</h3>
-              <span class="panel-sub">Current Accounts, RTGS/NEFT Feeds & Statement Ingestion</span>
+              <h3>{{ $t('supplyChain.panels.houseBanks') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.houseBanks') }}</span>
             </div>
             <button class="action-btn-sm primary" @click="runAutoReconciliation">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>Execute 2-Way Auto-Reconciliation</span>
+              <span>{{ $t('supplyChain.buttons.autoRecon') }}</span>
             </button>
           </div>
 
@@ -1360,17 +1360,17 @@
           </div>
 
           <!-- Statement Lines Table -->
-          <h4 style="margin: 16px 0 8px 0;">Imported Bank Statement Lines (MT940 Feed)</h4>
+          <h4 style="margin: 16px 0 8px 0;">{{ $t('supplyChain.panels.importedStatementLines') }}</h4>
           <table class="data-table">
             <thead>
               <tr>
-                <th>Line ID</th>
-                <th>Date</th>
-                <th>Reference / UTR</th>
-                <th>Counterparty</th>
-                <th>Type</th>
+                <th>{{ $t('supplyChain.cols.lineId') }}</th>
+                <th>{{ $t('supplyChain.cols.date') }}</th>
+                <th>{{ $t('supplyChain.cols.refUtr') }}</th>
+                <th>{{ $t('supplyChain.cols.counterparty') }}</th>
+                <th>{{ $t('supplyChain.cols.type') }}</th>
                 <th>Amount ({{ currencySymbol }})</th>
-                <th>Recon Status</th>
+                <th>{{ $t('supplyChain.cols.reconStatus') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1401,8 +1401,8 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Bank Reconciliation Statement (BRS)</h3>
-              <span class="panel-sub">Automated Balancing & Cash Forecasting</span>
+              <h3>{{ $t('supplyChain.panels.bankRecon') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.bankRecon') }}</span>
             </div>
           </div>
 
@@ -1449,19 +1449,19 @@
           <div style="margin-top: 20px;">
             <div class="panel-header" style="margin-bottom: 10px;">
               <div>
-                <h4>30 / 60 / 90-Day Cash Liquidity Forecast</h4>
-                <span class="panel-sub">Real-Time AR & AP Open Invoices Inflow/Outflow</span>
+                <h4>{{ $t('supplyChain.panels.cashForecast') }}</h4>
+                <span class="panel-sub">{{ $t('supplyChain.panelSubs.cashFlowForecasting') }}</span>
               </div>
             </div>
 
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Horizon</th>
-                  <th>Receivables Inflow</th>
-                  <th>Payables Outflow</th>
-                  <th>Net Cash Flow</th>
-                  <th>Projected Closing Cash</th>
+                  <th>{{ $t('supplyChain.cols.horizon') }}</th>
+                  <th>{{ $t('supplyChain.cols.receivablesInflow') }}</th>
+                  <th>{{ $t('supplyChain.cols.payablesOutflow') }}</th>
+                  <th>{{ $t('supplyChain.cols.netCashFlow') }}</th>
+                  <th>{{ $t('supplyChain.cols.projectedClosingCash') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1524,21 +1524,21 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Employee Master Directory (SAP HCM)</h3>
-              <span class="panel-sub">Statutory Records, Cost Center Mapping & CTC Structures</span>
+              <h3>{{ $t('supplyChain.panels.employeeDirectory') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.employeeDirectory') }}</span>
             </div>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Emp ID</th>
-                <th>Name / Designation</th>
-                <th>Department</th>
-                <th>Cost Center</th>
-                <th>Monthly CTC</th>
-                <th>Attendance / LOP</th>
-                <th>Actions</th>
+                <th>{{ $t('supplyChain.cols.empId') }}</th>
+                <th>{{ $t('supplyChain.cols.nameDesignation') }}</th>
+                <th>{{ $t('supplyChain.cols.department') }}</th>
+                <th>{{ $t('supplyChain.cols.costCenter') }}</th>
+                <th>{{ $t('supplyChain.cols.monthlyCtc') }}</th>
+                <th>{{ $t('supplyChain.cols.attendanceLop') }}</th>
+                <th>{{ $t('supplyChain.cols.actions') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1560,7 +1560,7 @@
                 </td>
                 <td>
                   <button class="action-btn-sm" @click="selectEmployeeForPayslip(emp)">
-                    <span>View Payslip</span>
+                    <span>{{ $t('supplyChain.buttons.viewPayslip') }}</span>
                   </button>
                 </td>
               </tr>
@@ -1572,12 +1572,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Monthly Payroll Execution & GL Voucher</h3>
-              <span class="panel-sub">Indian Statutory Deductions & Multi-Line Posting</span>
+              <h3>{{ $t('supplyChain.panels.payrollExecution') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.payrollExecution') }}</span>
             </div>
             <button class="action-btn-sm primary" @click="runPayrollExecution">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>Execute September Payroll</span>
+              <span>{{ $t('supplyChain.buttons.executePayroll') }}</span>
             </button>
           </div>
 
@@ -1684,25 +1684,25 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Work Breakdown Structure (WBS Elements - SAP PS)</h3>
-              <span class="panel-sub">Cost Elements, Committed POs & Actual Spend Tracking</span>
+              <h3>{{ $t('supplyChain.panels.wbsElements') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.wbsElements') }}</span>
             </div>
             <button class="action-btn-sm" @click="achieveCommissioningMilestone">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>Complete Milestone M3 (Commissioning)</span>
+              <span>{{ $t('supplyChain.buttons.completeMilestone') }}</span>
             </button>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>WBS Code</th>
-                <th>Element Description</th>
-                <th>Cost Center</th>
-                <th>Allocated Budget</th>
-                <th>Committed (POs)</th>
-                <th>Actual Incurred</th>
-                <th>Status</th>
+                <th>{{ $t('supplyChain.cols.wbsCode') }}</th>
+                <th>{{ $t('supplyChain.cols.elementDescription') }}</th>
+                <th>{{ $t('supplyChain.cols.costCenter') }}</th>
+                <th>{{ $t('supplyChain.cols.allocatedBudget') }}</th>
+                <th>{{ $t('supplyChain.cols.committedPos') }}</th>
+                <th>{{ $t('supplyChain.cols.actualIncurred') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1722,7 +1722,7 @@
           <div style="margin-top: 20px;">
             <div class="panel-header" style="margin-bottom: 8px;">
               <div>
-                <h4>Project Milestones & Percentage of Completion (PoC)</h4>
+                <h4>{{ $t('supplyChain.panels.projectMilestones') }}</h4>
                 <span class="panel-sub">Weighted Progress: {{ projectPoc.pocPercentage }}% Achieved</span>
               </div>
             </div>
@@ -1745,12 +1745,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>CWIP Settlement & Fixed Asset Capitalization</h3>
-              <span class="panel-sub">Commercial Operation Date (COD) Asset Transfer</span>
+              <h3>{{ $t('supplyChain.panels.cwipSettlement') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.cwipSettlement') }}</span>
             </div>
             <button class="action-btn-sm primary" @click="settleProjectCwip">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>Settle CWIP & Capitalize Asset</span>
+              <span>{{ $t('supplyChain.buttons.settleCwipCapitalize') }}</span>
             </button>
           </div>
 
@@ -1831,24 +1831,24 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Storage Bin Topology & Real-time Allocation (SAP EWM)</h3>
-              <span class="panel-sub">Multi-Zone Racking, Max Weight/Volume & Stored Batches</span>
+              <h3>{{ $t('supplyChain.panels.storageBinTopology') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.storageBinTopology') }}</span>
             </div>
             <button class="action-btn-sm" @click="executeSimulatedPutaway">
               <Boxes class="btn-icon-sm" />
-              <span>Simulate Putaway (High-Bay Bin)</span>
+              <span>{{ $t('supplyChain.buttons.simulatePutaway') }}</span>
             </button>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Bin ID</th>
-                <th>Zone / Type</th>
-                <th>Aisle / Rack / Shelf</th>
-                <th>Capacity (Weight)</th>
-                <th>Stored SKU / Batch</th>
-                <th>Status</th>
+                <th>{{ $t('supplyChain.cols.binId') }}</th>
+                <th>{{ $t('supplyChain.cols.zoneType') }}</th>
+                <th>{{ $t('supplyChain.cols.aisleRackShelf') }}</th>
+                <th>{{ $t('supplyChain.cols.capacityWeight') }}</th>
+                <th>{{ $t('supplyChain.cols.storedSkuBatch') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1886,12 +1886,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>FIFO Wave Picking & Inventory Cycle Count</h3>
-              <span class="panel-sub">Warehouse Tasks & GL Variance Adjustment</span>
+              <h3>{{ $t('supplyChain.panels.fifoPicking') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.fifoPicking') }}</span>
             </div>
             <button class="action-btn-sm primary" @click="executeSimulatedPick">
               <CheckCircle2 class="btn-icon-sm" />
-              <span>Execute Wave Pick (FIFO)</span>
+              <span>{{ $t('supplyChain.buttons.executeWavePick') }}</span>
             </button>
           </div>
 
@@ -1925,7 +1925,7 @@
             <div class="calc-row">
               <strong>Cycle Count Audit: BIN-PUN-ZA-01</strong>
               <button class="action-btn-sm" @click="runCycleCountAudit">
-                <span>Record Audit</span>
+                <span>{{ $t('supplyChain.buttons.recordAudit') }}</span>
               </button>
             </div>
             <div class="calc-row" style="margin-top: 6px;">
@@ -1986,20 +1986,20 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>Parallel Accounting Ledgers (SAP 0L vs 2L)</h3>
-              <span class="panel-sub">Dual-Valuation in Local Operating Currency & International Group Currency</span>
+              <h3>{{ $t('supplyChain.panels.parallelLedgers') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.parallelLedgers') }}</span>
             </div>
           </div>
 
           <table class="data-table">
             <thead>
               <tr>
-                <th>Ledger Code</th>
-                <th>Ledger Name</th>
-                <th>Type</th>
-                <th>Base Currency</th>
-                <th>Reporting Standard</th>
-                <th>Status</th>
+                <th>{{ $t('supplyChain.cols.ledgerCode') }}</th>
+                <th>{{ $t('supplyChain.cols.ledgerName') }}</th>
+                <th>{{ $t('supplyChain.cols.type') }}</th>
+                <th>{{ $t('supplyChain.cols.baseCurrency') }}</th>
+                <th>{{ $t('supplyChain.cols.reportingStandard') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -2018,8 +2018,8 @@
           <div style="margin-top: 20px;">
             <div class="panel-header" style="margin-bottom: 8px;">
               <div>
-                <h4>Multi-Currency Dual-Valuation Journal (DOC-PAR-2026-001)</h4>
-                <span class="panel-sub">Transaction Currency: USD @ Spot Rate 83.50 INR</span>
+                <h4>{{ $t('supplyChain.panels.dualValuationJournal') }}</h4>
+                <span class="panel-sub">{{ $t('supplyChain.panelSubs.transactionCurrency') }}</span>
               </div>
             </div>
 
@@ -2040,12 +2040,12 @@
         <div class="panel">
           <div class="panel-header">
             <div>
-              <h3>IAS 21 / AS 11 Foreign Exchange Revaluation</h3>
-              <span class="panel-sub">Closing Rate Revaluation on Open AR/AP Monetary Items</span>
+              <h3>{{ $t('supplyChain.panels.forexReval') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.forexReval') }}</span>
             </div>
             <button class="action-btn-sm primary" @click="runForexRevaluation">
               <RefreshCw class="btn-icon-sm" />
-              <span>Run Month-End Revaluation</span>
+              <span>{{ $t('supplyChain.buttons.runForexReval') }}</span>
             </button>
           </div>
 
@@ -2078,8 +2078,8 @@
           <div class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
             <div class="panel-header" style="padding: 0 0 10px 0; border: none;">
               <div>
-                <h4>Global Jurisdiction Tax Engine</h4>
-                <span class="panel-sub">Pluggable Multi-Country Tax Rules</span>
+                <h4>{{ $t('supplyChain.panels.globalTaxEngine') }}</h4>
+                <span class="panel-sub">{{ $t('supplyChain.panelSubs.countryTaxRules') }}</span>
               </div>
             </div>
 
@@ -2122,13 +2122,13 @@
     <div v-if="activeTab === 'transportation'" class="tab-content">
       <div class="section-header">
         <div>
-          <h3>SAP TM Transportation Management & Fleet Logistics</h3>
-          <p class="section-desc">Manage freight carrier contracts, fleet vehicles, consignment lorry receipts (LR), dynamic diesel fuel surcharges, and electronic Proof of Delivery (e-POD).</p>
+          <h3>{{ $t('supplyChain.panels.transportFleet') }}</h3>
+          <p class="section-desc">{{ $t('supplyChain.panelSubs.transportFleet') }}</p>
         </div>
         <div class="header-actions">
           <button class="action-btn primary" @click="createDemoFreightOrder">
             <Plus class="btn-icon" />
-            <span>New Freight Order</span>
+            <span>{{ $t('supplyChain.buttons.newFreightOrder') }}</span>
           </button>
         </div>
       </div>
@@ -2160,20 +2160,20 @@
       <!-- Freight Orders Cockpit -->
       <div class="table-card">
         <div class="table-header">
-          <h4>Active Freight Orders & Consignments</h4>
-          <span class="badge blue">Live Waybill Tracking</span>
+          <h4>{{ $t('supplyChain.panels.activeFreightOrders') }}</h4>
+          <span class="badge blue">{{ $t('supplyChain.badges.liveWaybill') }}</span>
         </div>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Order & LR No.</th>
-              <th>Type</th>
-              <th>Carrier & Vehicle</th>
-              <th>Route (Origin &rarr; Dest)</th>
-              <th>Cargo & Weight</th>
-              <th>Freight Cost</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th>{{ $t('supplyChain.cols.orderLrNo') }}</th>
+              <th>{{ $t('supplyChain.cols.type') }}</th>
+              <th>{{ $t('supplyChain.cols.carrierVehicle') }}</th>
+              <th>{{ $t('supplyChain.cols.route') }}</th>
+              <th>{{ $t('supplyChain.cols.cargoWeight') }}</th>
+              <th>{{ $t('supplyChain.cols.freightCost') }}</th>
+              <th>{{ $t('supplyChain.cols.status') }}</th>
+              <th>{{ $t('supplyChain.cols.action') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -2184,7 +2184,7 @@
               </td>
               <td>
                 <span class="badge" :class="order.orderType === 'OUTBOUND_SALES' ? 'green' : 'blue'">
-                  {{ order.orderType === 'OUTBOUND_SALES' ? 'Outbound Sales' : 'Inbound Purchase' }}
+                  {{ order.orderType === 'OUTBOUND_SALES' ? $t('supplyChain.badges.outboundSales') : $t('supplyChain.badges.inboundPurchase') }}
                 </span>
               </td>
               <td>
@@ -2214,16 +2214,16 @@
                   class="action-btn-sm primary"
                   @click="dispatchOrder(order.orderNumber)"
                 >
-                  Dispatch
+                  {{ $t('supplyChain.buttons.dispatch') }}
                 </button>
                 <button
                   v-else-if="order.status === 'DISPATCHED' || order.status === 'IN_TRANSIT'"
                   class="action-btn-sm green"
                   @click="openPodModal(order)"
                 >
-                  Verify e-POD
+                  {{ $t('supplyChain.buttons.verifyPod') }}
                 </button>
-                <span v-else class="text-green text-sm font-semibold">Delivered &amp; Settled</span>
+                <span v-else class="text-green text-sm font-semibold">{{ $t('supplyChain.buttons.deliveredSettled') }}</span>
               </td>
             </tr>
           </tbody>
@@ -2234,17 +2234,17 @@
       <div class="grid-2-cols" style="margin-top: 20px;">
         <div class="table-card">
           <div class="table-header">
-            <h4>Approved Transporters &amp; Tariff Agreements</h4>
-            <span class="badge purple">MCA &amp; IT Act 194C</span>
+            <h4>{{ $t('supplyChain.panels.approvedTransporters') }}</h4>
+            <span class="badge purple">{{ $t('supplyChain.badges.mca194c') }}</span>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>Carrier Name</th>
-                <th>Rate Model</th>
-                <th>Base Rate</th>
-                <th>Sec 194C TDS</th>
-                <th>Rating</th>
+                <th>{{ $t('supplyChain.cols.carrierName') }}</th>
+                <th>{{ $t('supplyChain.cols.rateModel') }}</th>
+                <th>{{ $t('supplyChain.cols.baseRate') }}</th>
+                <th>{{ $t('supplyChain.cols.sec194cTds') }}</th>
+                <th>{{ $t('supplyChain.cols.rating') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -2270,17 +2270,17 @@
 
         <div class="table-card">
           <div class="table-header">
-            <h4>Fleet Vehicles &amp; Telematics</h4>
-            <span class="badge blue">Real-Time Status</span>
+            <h4>{{ $t('supplyChain.panels.fleetVehicles') }}</h4>
+            <span class="badge blue">{{ $t('supplyChain.badges.realTimeStatus') }}</span>
           </div>
           <table class="data-table">
             <thead>
               <tr>
-                <th>Vehicle No.</th>
-                <th>Type</th>
-                <th>Payload Cap</th>
-                <th>Location</th>
-                <th>Status</th>
+                <th>{{ $t('supplyChain.cols.vehicleNo') }}</th>
+                <th>{{ $t('supplyChain.cols.type') }}</th>
+                <th>{{ $t('supplyChain.cols.payloadCap') }}</th>
+                <th>{{ $t('supplyChain.cols.location') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
               </tr>
             </thead>
             <tbody>
