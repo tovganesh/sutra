@@ -99,6 +99,68 @@ export const enUS: LocaleMessage = {
       colCapability: 'Enterprise Capability',
       colSap: 'SAP S/4HANA Enterprise',
       colSutra: 'Sutra Open Enterprise OS',
+      rows: {
+        fiCo: {
+          sap: 'S/4HANA FI-GL / CO-OM',
+          sutra: 'Double-entry, statutory taxes native, PostgreSQL',
+        },
+        mmSd: {
+          sap: 'S/4HANA MM-IM / SD-SLS',
+          sutra: 'MinIO S3 document vault, Valkey queues, Moving Avg Price',
+        },
+        pp: {
+          sap: 'S/4HANA PP (BOM & Routing)',
+          sutra: 'Multi-level BOM explosion, Work Center capacity, WIP tracking',
+        },
+        fiAa: {
+          sap: 'S/4HANA Asset Accounting',
+          sutra: 'Straight-line / Accelerated depreciation, Asset register',
+        },
+        qm: {
+          sap: 'S/4HANA Quality Management',
+          sutra: 'Inspection lots, Certificate of Analysis (CoA), Bidirectional batch genealogy',
+        },
+        coCca: {
+          sap: 'S/4HANA Overhead Cost Allocation',
+          sutra: 'Secondary cost assessment cycles, Headcount/Sqft driver allocation',
+        },
+        pmEam: {
+          sap: 'S/4HANA Plant Maintenance',
+          sutra: 'Preventive schedules, MTBF & MTTR tracking, Breakdown settlement',
+        },
+        trmFiBl: {
+          sap: 'S/4HANA Bank Ledger & Cash Mgmt',
+          sutra: 'MT940 parser, 2-way automated reconciliation, 90-day cash liquidity forecast',
+        },
+        hcm: {
+          sap: 'S/4HANA SuccessFactors / Core HR',
+          sutra: 'Statutory Payroll, Leave deductions, General Ledger voucher',
+        },
+        ps: {
+          sap: 'S/4HANA Project Systems',
+          sutra: 'WBS hierarchy, CWIP tracking, Capitalization into Fixed Assets',
+        },
+        ewm: {
+          sap: 'S/4HANA Extended Warehouse',
+          sutra: 'Multi-bin storage topology, FIFO wave picking, Physical inventory cycle count',
+        },
+        parallelLedger: {
+          sap: 'S/4HANA Parallel Accounting Ledgers',
+          sutra: 'Leading & Non-Leading ledgers, IAS 21 Forex revaluation, Multi-jurisdiction tax',
+        },
+        tm: {
+          sap: 'S/4HANA Transportation Management',
+          sutra: 'Freight calculation, Dynamic fuel surcharge, e-POD confirmation with OTP',
+        },
+        abap: {
+          sap: 'SAP ABAP Dictionary / NetWeaver',
+          sutra: 'Dynamic JSONB entities, Visual state machines, Zero-migration schemas',
+        },
+        joule: {
+          sap: 'SAP Joule Generative AI',
+          sutra: 'Air-gapped private LLMs (Ollama) + Cloud fallback, Zero-Data Leakage',
+        },
+      },
     },
   },
   financial: {
@@ -138,6 +200,39 @@ export const enUS: LocaleMessage = {
     equityRetained: 'Retained Earnings (Current Period)',
     totalEquity: 'Total Equity',
     totalLiabEquity: 'Total Liabilities & Equity',
+    kpis: {
+      revenue: 'Gross Operating Revenue',
+      revenueSubtitle: 'FY2026-27 YTD Consolidated',
+      revenueTrend: '+18.4% YoY',
+      grossMargin: 'Gross Profit Margin',
+      grossMarginSubtitle: 'Direct margin after COGS',
+      grossProfitAmount: 'Gross Profit: {amount}',
+      ebitda: 'Operating EBITDA',
+      ebitdaSubtitle: 'Operating earnings before interest & tax',
+      workingCapital: 'Net Working Capital',
+      workingCapitalSubtitle: 'Current Assets less Current Liabilities',
+      currentRatio: 'Current Ratio: {ratio}x',
+    },
+    simulator: {
+      title: 'What-If Sensitivity & Financial Projection Engine',
+      subtitle: 'Dynamic scenario simulation modeling top-line growth, direct COGS efficiency, and OPEX expansion across double-entry ledgers',
+      modeBaseline: 'Baseline Audited Actuals',
+      modeScenario: 'What-If Simulation Active',
+      revVarianceLabel: 'Revenue Variance',
+      cogsVarianceLabel: 'COGS Efficiency Factor',
+      opexVarianceLabel: 'OPEX Optimization Factor',
+      presetConservative: 'Conservative (-10% Rev)',
+      presetBaseline: 'Reset Baseline',
+      presetGrowth: 'Aggressive Growth (+20% Rev, -5% COGS)',
+      resetBtn: 'Restore Audited Baseline',
+      varianceImpact: 'Scenario Net Income Impact',
+      projectedNetDelta: 'Net Profit Delta',
+      positiveDelta: '+{amount} Gain vs Baseline',
+      negativeDelta: '-{amount} Contraction vs Baseline',
+      neutralDelta: 'Identical to Audited Actuals',
+      pnlSimulatedSubtitle: 'Projected Statement of Profit & Loss (Scenario Simulation)',
+      balanceSheetSimulatedSubtitle: 'Projected Balance Sheet & Pro-Forma Retained Earnings',
+    },
   },
   compliance: {
     heroTitle: 'Statutory & Tax Compliance Engine',
@@ -622,6 +717,22 @@ export const enUS: LocaleMessage = {
     },
     validationAlert: 'Please complete mandatory fields (Asset Tag & Description)',
     enterFieldPrompt: 'Enter field label (e.g. "Calibration Certificate Number"):',
+    entitySlugSub: 'Slug: {slug} • PostgreSQL JSONB Storage',
+    fields: {
+      assetTag: 'Asset Serial Tag',
+      description: 'Machine Description',
+      purchaseCost: 'Purchase Cost',
+      operationalStatus: 'Operational Status',
+      locationSite: 'Manufacturing Plant Location',
+    },
+    records: {
+      asset1Desc: '5-Axis High Precision CNC Milling Center',
+      asset1Loc: 'Plant 2 - Chakan, Pune, Maharashtra',
+      asset2Desc: '200-Ton Hydraulic Stamping Press',
+      asset2Loc: 'Plant 1 - Peenya, Bengaluru, Karnataka',
+      asset3Desc: 'High-Speed Automated SMT Pick & Place Line',
+      asset3Loc: 'Plant 3 - Sector 62, Noida, Uttar Pradesh',
+    },
   },
   copilot: {
     heroTitle: 'Sutra Sovereign Gen AI Enterprise Copilot',
@@ -666,6 +777,8 @@ export const enUS: LocaleMessage = {
       rawJson: 'Show Technical JSON Payload',
       hideJson: 'Hide Technical JSON Payload',
     },
+    fallbackExecutionAnswer: 'Executed query for "{query}". Filtered against active PostgreSQL tenant ledger. Found 3 matching records with combined exposure of {amount}. All compliance records are in good standing.',
+    fallbackEngineMeta: 'Engine: Local Ollama (LLaMA 3.2)',
   },
   vault: {
     heroTitle: 'MinIO Enterprise S3 Document Vault',

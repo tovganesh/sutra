@@ -154,6 +154,29 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         assert.ok(auth.ssoResults && Object.keys(auth.ssoResults).length === 9, `Auth ssoResults in ${locale} must have 9 keys`);
       }
     });
+
+    test('verifies dashboard parity rows, financial kpis/simulator, and nocode fields dictionaries', () => {
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const dashboard = messages[locale].dashboard;
+        assert.ok(dashboard.parity.rows && Object.keys(dashboard.parity.rows).length === 15, `Parity rows in ${locale} must have 15 items`);
+        for (const [key, val] of Object.entries(dashboard.parity.rows)) {
+          assert.ok(val.sap && val.sap.length > 0, `SAP text for ${key} in ${locale} must not be empty`);
+          assert.ok(val.sutra && val.sutra.length > 0, `Sutra text for ${key} in ${locale} must not be empty`);
+        }
+
+        const fin = messages[locale].financial;
+        assert.ok(fin.kpis && Object.keys(fin.kpis).length === 11, `Financial kpis in ${locale} must have 11 keys`);
+        assert.ok(fin.simulator && Object.keys(fin.simulator).length === 18, `Financial simulator in ${locale} must have 18 keys`);
+
+        const nocode = messages[locale].nocode;
+        assert.ok(nocode.fields && Object.keys(nocode.fields).length === 5, `NoCode fields in ${locale} must have 5 keys`);
+        assert.ok(nocode.records && Object.keys(nocode.records).length === 6, `NoCode records in ${locale} must have 6 keys`);
+
+        const copilot = messages[locale].copilot;
+        assert.ok(copilot.fallbackExecutionAnswer && copilot.fallbackExecutionAnswer.length > 0);
+        assert.ok(copilot.fallbackEngineMeta && copilot.fallbackEngineMeta.length > 0);
+      }
+    });
   });
 
   describe('Multi-Currency Configuration & Live FX Engine', () => {

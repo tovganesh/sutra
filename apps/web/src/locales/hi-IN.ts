@@ -99,6 +99,68 @@ export const hiIN: LocaleMessage = {
       colCapability: 'एंटरप्राइज क्षमता',
       colSap: 'SAP S/4HANA एंटरप्राइज',
       colSutra: 'सूत्र ओपन एंटरप्राइज ओएस',
+      rows: {
+        fiCo: {
+          sap: 'S/4HANA FI-GL / CO-OM',
+          sutra: 'दोहरी-प्रविष्टि, भारत जीएसटी/टीडीएस देशीय, PostgreSQL',
+        },
+        mmSd: {
+          sap: 'S/4HANA MM-IM / SD-SLS',
+          sutra: 'MinIO S3 दस्तावेज़ वॉल्ट, वाल्की कतारें, चलती औसत मूल्य',
+        },
+        pp: {
+          sap: 'S/4HANA PP (सामग्री बिल और रूटिंग)',
+          sutra: 'बहु-स्तरीय BOM विस्फोट, कार्य केंद्र क्षमता, WIP ट्रैकिंग',
+        },
+        fiAa: {
+          sap: 'S/4HANA परिसंपत्ति लेखांकन',
+          sutra: 'कंपनी अधिनियम 2013 SLM/WDV मूल्यह्रास, परिसंपत्ति रजिस्टर',
+        },
+        qm: {
+          sap: 'S/4HANA गुणवत्ता प्रबंधन',
+          sutra: 'निरीक्षण लॉट, विश्लेषण प्रमाणपत्र (CoA), द्विदिश बैच वंशावली',
+        },
+        coCca: {
+          sap: 'S/4HANA ऊपरी लागत आवंटन',
+          sutra: 'द्वितीयक लागत मूल्यांकन चक्र, कर्मचारी संख्या/क्षेत्रफल चालक आवंटन',
+        },
+        pmEam: {
+          sap: 'S/4HANA संयंत्र रखरखाव',
+          sutra: 'निवारक कार्यक्रम, MTBF एवं MTTR ट्रैकिंग, ब्रेकडाउन निपटान',
+        },
+        trmFiBl: {
+          sap: 'S/4HANA बैंक बहीखाता एवं नकदी प्रबंधन',
+          sutra: 'MT940 पार्सर, 2-तरफा स्वचालित समाधान, 90-दिवसीय तरलता पूर्वानुमान',
+        },
+        hcm: {
+          sap: 'S/4HANA SuccessFactors / कोर मानव संसाधन',
+          sutra: 'वैधानिक पेरोल (PF/ESI/PT), वेतन हानि कटौती, GL वाउचर',
+        },
+        ps: {
+          sap: 'S/4HANA परियोजना प्रणालियां',
+          sutra: 'WBS पदानुक्रम, CWIP ट्रैकिंग, अचल संपत्तियों में पूंजीकरण',
+        },
+        ewm: {
+          sap: 'S/4HANA विस्तारित गोदाम प्रबंधन',
+          sutra: 'बहु-बिन भंडारण संरचना, FIFO वेव पिकिंग, भौतिक गणना चक्र',
+        },
+        parallelLedger: {
+          sap: 'S/4HANA समानांतर लेखांकन बहीखाते',
+          sutra: 'अग्रणी व गैर-अग्रणी बहीखाते, IAS 21 विदेशी मुद्रा पुनर्मूल्यांकन, वैश्विक कर',
+        },
+        tm: {
+          sap: 'S/4HANA परिवहन प्रबंधन',
+          sutra: 'माल ढुलाई गणना, गतिशील ईंधन अधिभार, OTP के साथ ई-पीओडी',
+        },
+        abap: {
+          sap: 'SAP ABAP शब्दकोश / NetWeaver',
+          sutra: 'गतिशील JSONB संस्थाएं, विजुअल स्टेट मशीनें, शून्य-माइग्रेशन स्कीमा',
+        },
+        joule: {
+          sap: 'SAP Joule जनरेटिव एआई',
+          sutra: 'एयर-गैप्ड निजी एलएलएम (Ollama) + क्लाउड फॉलबैक, शून्य डेटा रिसाव',
+        },
+      },
     },
   },
   financial: {
@@ -138,6 +200,39 @@ export const hiIN: LocaleMessage = {
     equityRetained: 'प्रतिधारित कमाई (चालू अवधि)',
     totalEquity: 'कुल इक्विटी',
     totalLiabEquity: 'कुल देनदारियां और इक्विटी',
+    kpis: {
+      revenue: 'सकल परिचालन राजस्व',
+      revenueSubtitle: 'वित्तीय वर्ष 2026-27 वर्ष-दर-वर्ष समेकित',
+      revenueTrend: '+18.4% वार्षिक वृद्धि (YoY)',
+      grossMargin: 'सकल लाभ मार्जिन',
+      grossMarginSubtitle: 'विक्रय लागत (COGS) के बाद प्रत्यक्ष मार्जिन',
+      grossProfitAmount: 'सकल लाभ: {amount}',
+      ebitda: 'परिचालन एबिटा (EBITDA)',
+      ebitdaSubtitle: 'ब्याज और कर से पूर्व परिचालन आय',
+      workingCapital: 'शुद्ध कार्यशील पूंजी',
+      workingCapitalSubtitle: 'चालू परिसंपत्तियां घटाव चालू देनदारियां',
+      currentRatio: 'चालू अनुपात: {ratio}x',
+    },
+    simulator: {
+      title: 'संवेदनशीलता और वित्तीय प्रक्षेपण मॉडल (What-If)',
+      subtitle: 'दोहरी-प्रविष्टि बहीखातों में राजस्व वृद्धि, प्रत्यक्ष COGS दक्षता और OPEX विस्तार का अनुकरण',
+      modeBaseline: 'लेखापरीक्षित मूल वास्तविक आंकड़े',
+      modeScenario: 'अनुकरण परिदृश्य सक्रिय',
+      revVarianceLabel: 'राजस्व विचलन',
+      cogsVarianceLabel: 'COGS दक्षता कारक',
+      opexVarianceLabel: 'OPEX अनुकूलन कारक',
+      presetConservative: 'रूढ़िवादी (-10% राजस्व)',
+      presetBaseline: 'मूल स्थिति रीसेट',
+      presetGrowth: 'आक्रामक वृद्धि (+20% राजस्व, -5% COGS)',
+      resetBtn: 'मूल वास्तविक आंकड़े पुनर्स्थापित करें',
+      varianceImpact: 'परिदृश्य शुद्ध आय प्रभाव',
+      projectedNetDelta: 'शुद्ध लाभ अंतर (डेल्टा)',
+      positiveDelta: 'मूल से +{amount} अधिक लाभ',
+      negativeDelta: 'मूल से -{amount} संकुचन',
+      neutralDelta: 'लेखापरीक्षित आंकड़ों के समान',
+      pnlSimulatedSubtitle: 'अनुमानित लाभ एवं हानि विवरण (परिदृश्य अनुकरण)',
+      balanceSheetSimulatedSubtitle: 'अनुमानित तुलन पत्र (बैलेंस शीट) एवं धारित आय',
+    },
   },
   compliance: {
     heroTitle: '🇮🇳 भारत वैधानिक और कर अनुपालन इंजन',
@@ -622,6 +717,22 @@ export const hiIN: LocaleMessage = {
     },
     validationAlert: 'कृपया अनिवार्य फ़ील्ड भरें (संपत्ति टैग और विवरण)',
     enterFieldPrompt: 'फ़ील्ड लेबल दर्ज करें (उदा. "अंशांकन प्रमाणपत्र संख्या"):',
+    entitySlugSub: 'स्लग: {slug} • PostgreSQL JSONB भंडारण',
+    fields: {
+      assetTag: 'परिसंपत्ति सीरियल टैग',
+      description: 'मशीन विवरण',
+      purchaseCost: 'क्रय लागत',
+      operationalStatus: 'परिचालन स्थिति',
+      locationSite: 'विनिर्माण संयंत्र स्थान',
+    },
+    records: {
+      asset1Desc: '5-अक्षीय उच्च परिशुद्धता सीएनसी मिलिंग केंद्र',
+      asset1Loc: 'संयंत्र 2 - चाकन, पुणे, महाराष्ट्र',
+      asset2Desc: '200-टन हाइड्रोलिक स्टैम्पिंग प्रेस',
+      asset2Loc: 'संयंत्र 1 - पीन्या, बेंगलुरु, कर्नाटक',
+      asset3Desc: 'उच्च गति स्वचालित श्रीमती पिक एंड प्लेस लाइन',
+      asset3Loc: 'संयंत्र 3 - सेक्टर 62, नोएडा, उत्तर प्रदेश',
+    },
   },
   copilot: {
     heroTitle: 'सूत्र संप्रभु जेन एआई एंटरप्राइज कोपायलट',
@@ -666,6 +777,8 @@ export const hiIN: LocaleMessage = {
       rawJson: 'तकनीकी JSON पेलोड दिखाएं',
       hideJson: 'तकनीकी JSON पेलोड छुपाएं',
     },
+    fallbackExecutionAnswer: '"{query}" के लिए निष्पादित प्रश्न। सक्रिय PostgreSQL टेनेंट लेजर के विरुद्ध फ़िल्टर किया गया। {amount} के संयुक्त जोखिम वाले 3 रिकॉर्ड मिले। सभी अनुपालन रिकॉर्ड अच्छी स्थिति में हैं।',
+    fallbackEngineMeta: 'इंजन: स्थानीय ओलामा (LLaMA 3.2)',
   },
   vault: {
     heroTitle: 'MinIO एंटरप्राइज S3 दस्तावेज़ वॉल्ट',

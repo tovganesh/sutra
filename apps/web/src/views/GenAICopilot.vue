@@ -242,9 +242,9 @@ async function sendQuery() {
   } catch {
     messages.value.push({
       role: 'ai',
-      text: `Executed query for "${q}". Filtered against active PostgreSQL tenant ledger. Found 3 matching records with combined exposure of ${formatCurrency(1420000)}. All compliance records are in good standing.`,
+      text: t('copilot.fallbackExecutionAnswer', { query: q, amount: formatCurrency(1420000) }),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      meta: 'Engine: Local Ollama (LLaMA 3.2)',
+      meta: t('copilot.fallbackEngineMeta'),
     });
   }
 }
