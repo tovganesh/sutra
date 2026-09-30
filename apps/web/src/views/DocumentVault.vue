@@ -32,7 +32,7 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ $t('vault.versioning') }}</span>
-            <strong>Enabled</strong>
+            <strong>{{ $t('common.enabled') }}</strong>
           </div>
         </div>
       </div>

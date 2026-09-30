@@ -29,7 +29,7 @@
         <div class="chat-feed" ref="chatFeedRef">
           <div v-for="(msg, idx) in messages" :key="idx" class="chat-bubble" :class="msg.role">
             <div class="bubble-header">
-              <strong>{{ msg.role === 'ai' ? 'Sutra Copilot' : 'You' }}</strong>
+              <strong>{{ msg.role === 'ai' ? $t('copilot.copilotName') : $t('copilot.userName') }}</strong>
               <span class="bubble-time">{{ msg.time }}</span>
             </div>
             <p>{{ msg.text }}</p>
@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Send } from 'lucide-vue-next';
 import { useI18n } from '../i18n';
 
@@ -96,16 +96,16 @@ const { t, formatCurrency } = useI18n();
 const selectedProvider = ref('local');
 const inputQuery = ref('');
 
-const samplePrompts = [
-  'What is our total GST output liability for this month?',
-  'Show all overdue invoices older than 30 days.',
-  'Analyze cash flow velocity and current ratio.',
-];
+const samplePrompts = computed(() => [
+  t('copilot.samplePrompt1'),
+  t('copilot.samplePrompt2'),
+  t('copilot.samplePrompt3'),
+]);
 
 const messages = ref([
   {
     role: 'ai',
-    text: 'Hello! I am your Sutra Enterprise AI Assistant. You can query financial records, check tax liabilities, or ask for operational forecasts in natural language.',
+    text: t('copilot.aiAssistantGreeting'),
     time: '12:00 PM',
   },
 ]);

@@ -148,7 +148,7 @@
         @click="activeTab = 'warehouse'"
       >
         <Boxes class="tab-icon" />
-        <span>Extended Warehouse (EWM)</span>
+        <span>{{ $t('supplyChain.tabs.warehouse') }}</span>
       </button>
 
       <button
@@ -157,7 +157,7 @@
         @click="activeTab = 'multicurrency'"
       >
         <Globe class="tab-icon" />
-        <span>Multi-Currency & Global (FI)</span>
+        <span>{{ $t('supplyChain.tabs.multicurrency') }}</span>
       </button>
 
       <button
@@ -166,7 +166,7 @@
         @click="activeTab = 'transportation'"
       >
         <Truck class="tab-icon" />
-        <span>Transportation & Fleet (TM)</span>
+        <span>{{ $t('supplyChain.tabs.transportation') }}</span>
       </button>
     </div>
 
@@ -212,7 +212,7 @@
                   </td>
                   <td class="text-dim">{{ mat.baseUom }}</td>
                   <td class="font-mono text-dim">{{ mat.hsnCode }}</td>
-                  <td class="font-mono font-bold">{{ mat.totalStock.toLocaleString() }}</td>
+                  <td class="font-mono font-bold">{{ formatNumber(mat.totalStock) }}</td>
                   <td class="font-mono">{{ formatCurrency(mat.movingAvgPrice, { decimals: 2 }) }}</td>
                   <td class="font-mono font-bold text-accent">{{ formatCurrency(mat.totalStock * mat.movingAvgPrice) }}</td>
                   <td>
@@ -286,11 +286,11 @@
             <div class="map-comparison">
               <div>
                 <span class="sub-label">Previous Stock:</span>
-                <strong>{{ movementResult.previousStock.toLocaleString() }}</strong>
+                <strong>{{ formatNumber(movementResult.previousStock) }}</strong>
               </div>
               <div>
                 <span class="sub-label">Current Stock:</span>
-                <strong class="text-accent">{{ movementResult.currentStock.toLocaleString() }}</strong>
+                <strong class="text-accent">{{ formatNumber(movementResult.currentStock) }}</strong>
               </div>
               <div>
                 <span class="sub-label">New MAP:</span>
@@ -1208,7 +1208,7 @@
                     <span class="sku-sub font-mono">{{ eq.costCenter }}</span>
                   </div>
                 </td>
-                <td class="font-mono text-cyan">{{ eq.operatingHours.toLocaleString('en-IN') }} hrs</td>
+                <td class="font-mono text-cyan">{{ formatNumber(eq.operatingHours) }} hrs</td>
                 <td>
                   <span class="status-pill" :class="eq.status === 'OPERATIONAL' ? 'active' : 'danger'">
                     {{ eq.status }}
@@ -2027,7 +2027,7 @@
               <div v-for="l in sampleParallelJournalLines" :key="l.accountCode" class="gl-line">
                 <span class="font-mono text-dim">{{ l.accountCode }}</span>
                 <span class="gl-acc-name">{{ l.accountName }}</span>
-                <span class="font-mono text-cyan">Group: ${{ l.amountGroup.toLocaleString('en-US') }}</span>
+                <span class="font-mono text-cyan">Group: ${{ formatNumber(l.amountGroup) }}</span>
                 <span class="font-mono" :class="l.debit > 0 ? 'text-green' : 'text-cyan'">
                   {{ l.debit > 0 ? `Local: Dr ${formatCurrency(l.debit)}` : `Local: Cr ${formatCurrency(l.credit)}` }}
                 </span>
@@ -2196,7 +2196,7 @@
                 <div class="cell-subtext">{{ order.distanceKm }} km</div>
               </td>
               <td>
-                <div class="cell-primary">{{ order.chargeableWeightKg.toLocaleString('en-IN') }} KG</div>
+                <div class="cell-primary">{{ formatNumber(order.chargeableWeightKg) }} KG</div>
                 <div class="cell-subtext">{{ order.cargoDescription }}</div>
               </td>
               <td>
@@ -2330,7 +2330,7 @@ import {
   Plus,
 } from 'lucide-vue-next';
 
-const { t, formatCurrency, currencySymbol, currencyConfig } = useI18n();
+const { t, formatCurrency, formatNumber, currencySymbol, currencyConfig } = useI18n();
 
 const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation'>('inventory');
 

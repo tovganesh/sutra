@@ -24,18 +24,18 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">ISO/IEC 7064</span>
-            <h3>GSTIN Real-Time Checksum Validator</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.iso') }}</span>
+            <h3>{{ $t('compliance.gstinValidatorTitle') }}</h3>
           </div>
           <ShieldCheck class="tool-icon" />
         </div>
-        <p class="tool-desc">Validates 15-character Indian GSTIN structure, decodes 2-digit state code, extracts PAN, and executes Modulo-36 checksum verification.</p>
+        <p class="tool-desc">{{ $t('compliance.gstinValidatorDesc') }}</p>
 
         <div class="form-group">
-          <label>Enter Indian GSTIN:</label>
+          <label>{{ $t('compliance.enterGstin') }}</label>
           <div class="input-with-btn">
-            <input type="text" v-model="gstinInput" class="input-control" placeholder="e.g. 27AAACB2212M1Z0" />
-            <button class="btn btn-primary" @click="validateGstin">Validate</button>
+            <input type="text" v-model="gstinInput" class="input-control" :placeholder="$t('compliance.enterGstinPlaceholder')" />
+            <button class="btn btn-primary" @click="validateGstin">{{ $t('compliance.validateBtn') }}</button>
           </div>
         </div>
 
@@ -48,36 +48,36 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Tax Slabs</span>
-            <h3>GST Determination (CGST/SGST vs IGST)</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.taxSlabs') }}</span>
+            <h3>{{ $t('compliance.taxCalcTitle') }}</h3>
           </div>
           <Calculator class="tool-icon" />
         </div>
-        <p class="tool-desc">Automated supply classification based on Supplier GSTIN and Place of Supply (POS) State Code.</p>
+        <p class="tool-desc">{{ $t('compliance.taxCalcDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Supplier GSTIN:</label>
+            <label>{{ $t('compliance.supplierGstin') }}</label>
             <input type="text" v-model="taxSupplierGstin" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Place of Supply (POS State):</label>
-            <input type="text" v-model="taxPosCode" class="input-control" placeholder="29 = Karnataka" />
+            <label>{{ $t('compliance.posState') }}</label>
+            <input type="text" v-model="taxPosCode" class="input-control" :placeholder="$t('compliance.posStatePlaceholder')" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>HSN / SAC Code:</label>
+            <label>{{ $t('compliance.hsnCode') }}</label>
             <input type="text" v-model="taxHsn" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Taxable Value ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.taxableValue', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="taxAmount" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-secondary" @click="calculateTax">Compute Tax Breakdown</button>
+        <button class="btn btn-secondary" @click="calculateTax">{{ $t('compliance.computeTaxBtn') }}</button>
 
         <div v-if="taxResult" class="code-preview" style="margin-top: 14px;">
           {{ taxResult }}
@@ -88,25 +88,25 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Mandatory B2B</span>
-            <h3>NIC E-Invoice (IRN & Signed QR)</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.mandatoryB2b') }}</span>
+            <h3>{{ $t('compliance.einvoiceTitle') }}</h3>
           </div>
           <FileText class="tool-icon" />
         </div>
-        <p class="tool-desc">Generates 64-character SHA-256 Invoice Reference Number (IRN) hash and base64 signed QR payload.</p>
+        <p class="tool-desc">{{ $t('compliance.einvoiceDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Invoice Number:</label>
+            <label>{{ $t('compliance.invoiceNumber') }}</label>
             <input type="text" v-model="einvDoc" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Financial Year:</label>
+            <label>{{ $t('compliance.financialYear') }}</label>
             <input type="text" v-model="einvFy" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-primary" @click="generateEInvoice">Generate IRN Precursor</button>
+        <button class="btn btn-primary" @click="generateEInvoice">{{ $t('compliance.generateIrnBtn') }}</button>
 
         <div v-if="einvResult" class="code-preview" style="margin-top: 14px;">
           {{ einvResult }}
@@ -117,25 +117,25 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Rule 138 CGST</span>
-            <h3>NIC E-Way Bill Generator</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.rule138') }}</span>
+            <h3>{{ $t('compliance.ewayBillTitle') }}</h3>
           </div>
           <Truck class="tool-icon" />
         </div>
-        <p class="tool-desc">Generate official E-Way Bill Part A and Part B payload with statutory distance-based validity.</p>
+        <p class="tool-desc">{{ $t('compliance.ewayBillDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Vehicle Number:</label>
-            <input type="text" v-model="ewbVehicle" class="input-control" placeholder="MH12AB1234" />
+            <label>{{ $t('compliance.vehicleNumber') }}</label>
+            <input type="text" v-model="ewbVehicle" class="input-control" :placeholder="$t('compliance.vehiclePlaceholder')" />
           </div>
           <div class="form-group">
-            <label>Distance (KM):</label>
+            <label>{{ $t('compliance.distanceKm') }}</label>
             <input type="number" v-model.number="ewbDistance" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-secondary" @click="generateEWayBill">Generate E-Way Bill</button>
+        <button class="btn btn-secondary" @click="generateEWayBill">{{ $t('compliance.generateEwbBtn') }}</button>
 
         <div v-if="ewbResult" class="code-preview" style="margin-top: 14px;">
           {{ ewbResult }}
@@ -149,25 +149,25 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">GSTN Schema v1.4</span>
-            <h3>GSTR-1 Outward Supplies Generator</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.gstnSchema') }}</span>
+            <h3>{{ $t('compliance.gstr1Title') }}</h3>
           </div>
           <FileSpreadsheet class="tool-icon" />
         </div>
-        <p class="tool-desc">Aggregates sales invoices into official GSTN GSTR-1 tables: Table 4 (B2B), Table 12 (HSN Summary), and Table 13 (Document Issue).</p>
+        <p class="tool-desc">{{ $t('compliance.gstr1Desc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Supplier GSTIN:</label>
+            <label>{{ $t('compliance.supplierGstin') }}</label>
             <input type="text" v-model="taxSupplierGstin" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Return Period (MMYYYY):</label>
+            <label>{{ $t('compliance.returnPeriod') }}</label>
             <input type="text" v-model="gstrPeriod" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-primary" @click="generateGstr1">Compile GSTR-1 Return JSON</button>
+        <button class="btn btn-primary" @click="generateGstr1">{{ $t('compliance.compileGstr1Btn') }}</button>
 
         <div v-if="gstr1Result" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ gstr1Result }}
@@ -178,36 +178,36 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Rule 88A Set-off</span>
-            <h3>GSTR-3B Tax & ITC Settlement Engine</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.rule88a') }}</span>
+            <h3>{{ $t('compliance.gstr3bTitle') }}</h3>
           </div>
           <Scale class="tool-icon" />
         </div>
-        <p class="tool-desc">Computes monthly tax liability, applies statutory Rule 88A set-off (IGST credit exhausted first), and calculates cash payment obligation.</p>
+        <p class="tool-desc">{{ $t('compliance.gstr3bDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Output IGST ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.outIgst', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="gstr3bOutIgst" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Output CGST+SGST ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.outCgstSgst', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="gstr3bOutCgstSgst" class="input-control" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Available Input Tax Credit (ITC):</label>
+            <label>{{ $t('compliance.availableItc', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="gstr3bItc" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Period:</label>
+            <label>{{ $t('compliance.period') }}</label>
             <input type="text" v-model="gstrPeriod" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-secondary" @click="computeGstr3b">Compute GSTR-3B Settlement</button>
+        <button class="btn btn-secondary" @click="computeGstr3b">{{ $t('compliance.computeGstr3bBtn') }}</button>
 
         <div v-if="gstr3bResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ gstr3bResult }}
@@ -221,31 +221,31 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">EPF & ESI Acts</span>
-            <h3>Indian Statutory Payroll Engine</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.epfEsi') }}</span>
+            <h3>{{ $t('compliance.payrollTitle') }}</h3>
           </div>
           <Users class="tool-icon" />
         </div>
-        <p class="tool-desc">Calculates Employee Provident Fund (12% EPF + 8.33% EPS), ESI (0.75% / 3.25%), State Professional Tax, and Cost to Company (CTC).</p>
+        <p class="tool-desc">{{ $t('compliance.payrollDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Basic Salary ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.basicSalary', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="payrollBasic" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Dearness Allowance (DA):</label>
+            <label>{{ $t('compliance.dearnessAllowance', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="payrollDa" class="input-control" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>HRA & Allowances ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.hraAllowances', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="payrollAllowances" class="input-control" />
           </div>
           <div class="form-group">
-            <label>State (Professional Tax):</label>
+            <label>{{ $t('compliance.statePt') }}</label>
             <select v-model="payrollState" class="input-control">
               <option value="MH">Maharashtra (MH)</option>
               <option value="KA">Karnataka (KA)</option>
@@ -257,7 +257,7 @@
           </div>
         </div>
 
-        <button class="btn btn-primary" @click="computePayroll">Calculate Statutory Payslip</button>
+        <button class="btn btn-primary" @click="computePayroll">{{ $t('compliance.calculatePayrollBtn') }}</button>
 
         <div v-if="payrollResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ payrollResult }}
@@ -268,16 +268,16 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Income Tax Act</span>
-            <h3>TDS Withholding Evaluator</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.incomeTaxAct') }}</span>
+            <h3>{{ $t('compliance.tdsTitle') }}</h3>
           </div>
           <Receipt class="tool-icon" />
         </div>
-        <p class="tool-desc">Evaluates threshold applicability under Sections 194C, 194J, 194Q and Sec 206AA penalty rate.</p>
+        <p class="tool-desc">{{ $t('compliance.tdsDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>TDS Section:</label>
+            <label>{{ $t('compliance.tdsSection') }}</label>
             <select v-model="tdsSection" class="input-control">
               <option value="194J_TECH">Sec 194J(a) - Tech Services (2%)</option>
               <option value="194J_PROF">Sec 194J(b) - Professional Services (10%)</option>
@@ -286,12 +286,12 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Invoice Amount ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.invoiceAmount', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="tdsAmount" class="input-control" />
           </div>
         </div>
 
-        <button class="btn btn-secondary" @click="evaluateTds">Calculate Withholding</button>
+        <button class="btn btn-secondary" @click="evaluateTds">{{ $t('compliance.calculateTdsBtn') }}</button>
 
         <div v-if="tdsResult" class="code-preview" style="margin-top: 14px;">
           {{ tdsResult }}
@@ -305,47 +305,47 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Customs Act 1962 & IGST</span>
-            <h3>Indian Customs Duty & Landed Cost Engine</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.customsAct') }}</span>
+            <h3>{{ $t('compliance.customsTitle') }}</h3>
           </div>
           <Ship class="tool-icon" />
         </div>
-        <p class="tool-desc">Calculates CIF Assessable Value, BCD, Social Welfare Surcharge (SWS), IGST, and segregates Creditable ITC (GSTR-3B Table 4A1) from capitalized inventory duty.</p>
+        <p class="tool-desc">{{ $t('compliance.customsDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>CIF Value ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.cifValue', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="customsCif" class="input-control" placeholder="1000000" />
           </div>
           <div class="form-group">
-            <label>HSN / Customs Tariff Code:</label>
+            <label>{{ $t('compliance.tariffCode') }}</label>
             <input type="text" v-model="customsHsn" class="input-control" placeholder="84713010" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Basic Customs Duty (BCD %):</label>
+            <label>{{ $t('compliance.bcdRate') }}</label>
             <input type="number" v-model.number="customsBcdRate" class="input-control" placeholder="10.0" />
           </div>
           <div class="form-group">
-            <label>Social Welfare Surcharge (SWS % of BCD):</label>
+            <label>{{ $t('compliance.swsRate') }}</label>
             <input type="number" v-model.number="customsSwsRate" class="input-control" placeholder="10.0" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Integrated GST (IGST %):</label>
+            <label>{{ $t('compliance.igstRate') }}</label>
             <input type="number" v-model.number="customsIgstRate" class="input-control" placeholder="18.0" />
           </div>
           <div class="form-group">
-            <label>Anti-Dumping / Safeguard Duty ({{ currencySymbol }}):</label>
+            <label>{{ $t('compliance.antiDumping', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="customsAntiDumping" class="input-control" placeholder="0" />
           </div>
         </div>
 
-        <button class="btn btn-primary" @click="calculateCustomsDuty">Calculate Customs Landed Cost</button>
+        <button class="btn btn-primary" @click="calculateCustomsDuty">{{ $t('compliance.calculateCustomsBtn') }}</button>
 
         <div v-if="customsResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ customsResult }}
@@ -356,29 +356,29 @@
       <div class="glass-card tool-card">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Rule 96A CGST Rules</span>
-            <h3>Letter of Undertaking (LUT) Export Verifier</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.rule96a') }}</span>
+            <h3>{{ $t('compliance.lutTitle') }}</h3>
           </div>
           <FileCheck class="tool-icon" />
         </div>
-        <p class="tool-desc">Verifies official GSTN ARN syntax for zero-rated export of goods and services without payment of integrated tax under bond/LUT.</p>
+        <p class="tool-desc">{{ $t('compliance.lutDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Exporter GSTIN:</label>
+            <label>{{ $t('compliance.exporterGstin') }}</label>
             <input type="text" v-model="lutExporterGstin" class="input-control" placeholder="27AAACB2212M1Z0" />
           </div>
           <div class="form-group">
-            <label>Financial Year:</label>
+            <label>{{ $t('compliance.financialYear') }}</label>
             <input type="text" v-model="lutFy" class="input-control" placeholder="2026-27" />
           </div>
         </div>
 
         <div class="form-group">
-          <label>GSTN LUT ARN:</label>
+          <label>{{ $t('compliance.lutArn') }}</label>
           <div class="input-with-btn">
             <input type="text" v-model="lutArnInput" class="input-control" placeholder="e.g. AD270326001234F" />
-            <button class="btn btn-secondary" @click="verifyLutArn">Verify LUT</button>
+            <button class="btn btn-secondary" @click="verifyLutArn">{{ $t('compliance.verifyLutBtn') }}</button>
           </div>
         </div>
 
@@ -391,16 +391,16 @@
       <div class="glass-card tool-card" style="grid-column: 1 / -1;">
         <div class="tool-header">
           <div class="tool-title">
-            <span class="tool-tag">Global Tax Engine</span>
-            <h3>Cross-Border Jurisdiction Tax Simulator</h3>
+            <span class="tool-tag">{{ $t('compliance.tags.globalTax') }}</span>
+            <h3>{{ $t('compliance.globalTaxTitle') }}</h3>
           </div>
           <Globe class="tool-icon" />
         </div>
-        <p class="tool-desc">Configurable global tax rules: US State & Local Nexus (California 8.25%), EU VIES Cross-Border Reverse Charge (Art 194), UAE FTA VAT (5%), and India GST.</p>
+        <p class="tool-desc">{{ $t('compliance.globalTaxDesc') }}</p>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Select Jurisdiction:</label>
+            <label>{{ $t('compliance.selectJurisdiction') }}</label>
             <select v-model="globalTaxCountry" class="input-control">
               <option value="US">United States (US Nexus & Local Surcharges)</option>
               <option value="EU">European Union (VIES Cross-Border B2B / B2C)</option>
@@ -409,23 +409,23 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Taxable Net Amount:</label>
+            <label>{{ $t('compliance.taxableNetAmount', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="globalTaxAmount" class="input-control" placeholder="50000" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Destination State / Region:</label>
+            <label>{{ $t('compliance.destRegion') }}</label>
             <input type="text" v-model="globalTaxRegion" class="input-control" placeholder="CA (for US) or 29 (for IN)" />
           </div>
           <div class="form-group">
-            <label>Tax / VAT Registration ID:</label>
+            <label>{{ $t('compliance.vatRegId') }}</label>
             <input type="text" v-model="globalTaxRegId" class="input-control" placeholder="e.g. DE123456789 (for EU VIES)" />
           </div>
         </div>
 
-        <button class="btn btn-primary" @click="runGlobalTaxSim">Simulate Jurisdiction Tax</button>
+        <button class="btn btn-primary" @click="runGlobalTaxSim">{{ $t('compliance.simulateTaxBtn') }}</button>
 
         <div v-if="globalTaxResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ globalTaxResult }}
@@ -460,7 +460,7 @@ const subTabs = computed(() => [
   { id: 'gst', label: t('compliance.tabs.gst') },
   { id: 'returns', label: t('compliance.tabs.returns') },
   { id: 'payroll', label: t('compliance.tabs.payroll') },
-  { id: 'customs', label: 'Customs & Cross-Border Trade' },
+  { id: 'customs', label: t('compliance.tabs.customs') },
 ]);
 
 // 1. GSTIN Validator State

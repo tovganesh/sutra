@@ -103,10 +103,10 @@
       <div class="glass-card plugins-card">
         <div class="card-header">
           <div>
-            <h3>Registered Authentication Plugins</h3>
-            <span class="card-subtitle">Zero lock-in identity federation architecture</span>
+            <h3>{{ $t('auth.pluginsTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('auth.pluginsSubtitle') }}</span>
           </div>
-          <span class="badge badge-info">{{ providers.length }} Plugins Loaded</span>
+          <span class="badge badge-info">{{ $t('auth.pluginsLoaded', { count: providers.length }) }}</span>
         </div>
 
         <div class="plugins-list">
@@ -117,11 +117,11 @@
             <div class="plugin-meta">
               <div class="plugin-title-row">
                 <strong>{{ p.name }}</strong>
-                <span v-if="p.isDefault" class="badge badge-success">Active Default</span>
+                <span v-if="p.isDefault" class="badge badge-success">{{ $t('auth.activeDefault') }}</span>
               </div>
               <p class="plugin-desc">{{ p.description }}</p>
               <div class="plugin-protocol">
-                Protocol: <code>{{ p.type.toUpperCase() }}</code> • ID: <code>{{ p.id }}</code>
+                {{ $t('auth.protocolLabel') }}: <code>{{ p.type.toUpperCase() }}</code> • ID: <code>{{ p.id }}</code>
               </div>
             </div>
             <button
@@ -129,21 +129,21 @@
               :disabled="p.isDefault"
               @click="makeDefaultProvider(p.id)"
             >
-              {{ p.isDefault ? 'Default' : 'Set as Default' }}
+              {{ p.isDefault ? $t('auth.defaultBtn') : $t('auth.setDefaultBtn') }}
             </button>
           </div>
         </div>
 
         <!-- SSO Simulation Trigger -->
         <div class="sso-simulation-box">
-          <h4>Enterprise Single Sign-On (SSO) Simulation</h4>
-          <p class="tool-desc">Test enterprise identity provider handshake (Azure AD OIDC or Okta SAML).</p>
+          <h4>{{ $t('auth.ssoSimTitle') }}</h4>
+          <p class="tool-desc">{{ $t('auth.ssoSimDesc') }}</p>
           <div class="sso-buttons">
             <button class="btn btn-secondary" @click="simulateSSO('azure-ad-oidc')">
-              Launch Microsoft Entra ID (OIDC) SSO
+              {{ $t('auth.launchAzureBtn') }}
             </button>
             <button class="btn btn-secondary" @click="simulateSSO('okta-saml')">
-              Launch Okta SAML 2.0 SSO
+              {{ $t('auth.launchOktaBtn') }}
             </button>
           </div>
           <div v-if="ssoResult" class="code-preview" style="margin-top: 12px;">
