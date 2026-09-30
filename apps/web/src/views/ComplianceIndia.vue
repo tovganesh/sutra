@@ -39,7 +39,41 @@
           </div>
         </div>
 
-        <div v-if="gstinResult" class="code-preview">
+        <div v-if="parsedGstin" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.gstinStatus') }}</span>
+              <span class="kpi-val" :style="{ color: parsedGstin.isValid ? '#34d399' : '#f87171' }">
+                {{ parsedGstin.isValid ? $t('compliance.results.gstinValid') : $t('compliance.results.gstinInvalid') }}
+              </span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.extractedPan') }}</span>
+              <span class="kpi-val">{{ parsedGstin.pan }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.stateJurisdiction') }}:</span>
+              <strong>{{ parsedGstin.stateName }} ({{ parsedGstin.stateCode }})</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.entityNumber') }}:</span>
+              <strong>{{ parsedGstin.entityNumber }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.checksumEngine') }}:</span>
+              <span class="badge-success">{{ parsedGstin.checksumStatus }}</span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showGstinJson = !showGstinJson">
+              {{ showGstinJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="gstinResult && showGstinJson" class="code-preview" style="margin-top: 14px;">
           {{ gstinResult }}
         </div>
       </div>
@@ -79,7 +113,41 @@
 
         <button class="btn btn-secondary" @click="calculateTax">{{ $t('compliance.computeTaxBtn') }}</button>
 
-        <div v-if="taxResult" class="code-preview" style="margin-top: 14px;">
+        <div v-if="parsedTax" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.totalTax') }} ({{ parsedTax.taxRate }}%)</span>
+              <span class="kpi-val">{{ formatCurrency(parsedTax.totalTax) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.invoiceTotal') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedTax.totalInvoiceAmount) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.supplyType') }}:</span>
+              <span :class="parsedTax.isInterState ? 'badge-warning' : 'badge-success'">
+                {{ parsedTax.isInterState ? $t('compliance.results.interState') : $t('compliance.results.intraState') }}
+              </span>
+            </div>
+            <div v-if="!parsedTax.isInterState" class="detail-row">
+              <span>CGST ({{ parsedTax.taxRate / 2 }}%) + SGST ({{ parsedTax.taxRate / 2 }}%):</span>
+              <strong>{{ formatCurrency(parsedTax.cgstAmount) }} + {{ formatCurrency(parsedTax.sgstAmount) }}</strong>
+            </div>
+            <div v-else class="detail-row">
+              <span>IGST ({{ parsedTax.taxRate }}%):</span>
+              <strong>{{ formatCurrency(parsedTax.igstAmount) }}</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showTaxJson = !showTaxJson">
+              {{ showTaxJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="taxResult && showTaxJson" class="code-preview" style="margin-top: 14px;">
           {{ taxResult }}
         </div>
       </div>
@@ -108,7 +176,37 @@
 
         <button class="btn btn-primary" @click="generateEInvoice">{{ $t('compliance.generateIrnBtn') }}</button>
 
-        <div v-if="einvResult" class="code-preview" style="margin-top: 14px;">
+        <div v-if="parsedEinv" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.irnStatus') }}</span>
+              <span class="kpi-val" style="color: #34d399; font-size: 0.95rem;">
+                {{ parsedEinv.status }}
+              </span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.ackNumber') }}</span>
+              <span class="kpi-val" style="font-size: 0.95rem;">{{ parsedEinv.ackNo }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row" style="align-items: flex-start;">
+              <span>IRN Hash:</span>
+              <strong style="word-break: break-all; max-width: 65%; font-family: monospace; font-size: 0.75rem;">{{ parsedEinv.irn }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.status') }}:</span>
+              <span class="badge-success">NIC Signed &amp; Validated</span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showEinvJson = !showEinvJson">
+              {{ showEinvJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="einvResult && showEinvJson" class="code-preview" style="margin-top: 14px;">
           {{ einvResult }}
         </div>
       </div>
@@ -137,7 +235,35 @@
 
         <button class="btn btn-secondary" @click="generateEWayBill">{{ $t('compliance.generateEwbBtn') }}</button>
 
-        <div v-if="ewbResult" class="code-preview" style="margin-top: 14px;">
+        <div v-if="parsedEwb" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.ewbNumber') }}</span>
+              <span class="kpi-val" style="color: #38bdf8;">{{ parsedEwb.ewbNumber }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.validityDays') }}</span>
+              <span class="kpi-val">{{ parsedEwb.validUntilDays }} {{ $t('compliance.results.daysUnit') }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.status') }}:</span>
+              <span class="badge-success">{{ parsedEwb.status }}</span>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.statutoryRule') }}:</span>
+              <strong>{{ $t('compliance.tags.rule138') }} (1 Day per 200 KM)</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showEwbJson = !showEwbJson">
+              {{ showEwbJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="ewbResult && showEwbJson" class="code-preview" style="margin-top: 14px;">
           {{ ewbResult }}
         </div>
       </div>
@@ -169,7 +295,39 @@
 
         <button class="btn btn-primary" @click="generateGstr1">{{ $t('compliance.compileGstr1Btn') }}</button>
 
-        <div v-if="gstr1Result" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+        <div v-if="parsedGstr1" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.taxableSupplies') }}</span>
+              <span class="kpi-val">{{ formatCurrency(parsedGstr1.totalTaxableValue) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.b2bInvoicesCount') }}</span>
+              <span class="kpi-val">{{ parsedGstr1.b2bCount }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.supplierGstin') }}:</span>
+              <strong>{{ parsedGstr1.gstin }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.returnPeriod') }}:</span>
+              <strong>{{ parsedGstr1.fp }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.gstnCompliance') }}:</span>
+              <span class="badge-success">{{ parsedGstr1.status }}</span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showGstr1Json = !showGstr1Json">
+              {{ showGstr1Json ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="gstr1Result && showGstr1Json" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ gstr1Result }}
         </div>
       </div>
@@ -209,7 +367,35 @@
 
         <button class="btn btn-secondary" @click="computeGstr3b">{{ $t('compliance.computeGstr3bBtn') }}</button>
 
-        <div v-if="gstr3bResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+        <div v-if="parsedGstr3b" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.netCashTax') }}</span>
+              <span class="kpi-val deduction">{{ formatCurrency(parsedGstr3b.netTaxPayableCash) }}</span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.itcUtilized') }}</span>
+              <span class="kpi-val" style="color: #34d399;">{{ formatCurrency(parsedGstr3b.itcUtilized) }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.totalTaxLiability') }}:</span>
+              <strong>{{ formatCurrency(parsedGstr3b.totalTaxLiability) }}</strong>
+            </div>
+            <div class="detail-row highlight-itc">
+              <span>{{ $t('compliance.results.rule88aSetoff') }}:</span>
+              <span class="badge-success">{{ parsedGstr3b.rule88ACompliance }}</span>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showGstr3bJson = !showGstr3bJson">
+              {{ showGstr3bJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="gstr3bResult && showGstr3bJson" class="code-preview" style="margin-top: 14px; max-height: 280px;">
           {{ gstr3bResult }}
         </div>
       </div>
@@ -488,7 +674,41 @@
           </div>
         </div>
 
-        <div v-if="lutResult" class="code-preview" style="margin-top: 14px;">
+        <div v-if="parsedLut" class="result-summary-card">
+          <div class="summary-kpis">
+            <div class="kpi-block highlight">
+              <span class="kpi-label">{{ $t('compliance.results.lutStatus') }}</span>
+              <span class="kpi-val" :style="{ color: parsedLut.isValid ? '#34d399' : '#f87171' }">
+                {{ parsedLut.isValid ? $t('compliance.results.lutValid') : $t('compliance.results.lutInvalid') }}
+              </span>
+            </div>
+            <div class="kpi-block">
+              <span class="kpi-label">{{ $t('compliance.results.arn') }}</span>
+              <span class="kpi-val" style="font-size: 0.95rem;">{{ parsedLut.arn }}</span>
+            </div>
+          </div>
+          <div class="summary-details-grid">
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.financialYear') }}:</span>
+              <strong>{{ parsedLut.financialYear }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>{{ $t('compliance.results.status') }}:</span>
+              <span :class="parsedLut.isValid ? 'badge-success' : 'badge-warning'">{{ parsedLut.status }}</span>
+            </div>
+            <div v-if="parsedLut.governingRule" class="detail-row">
+              <span>{{ $t('compliance.results.statutoryRule') }}:</span>
+              <strong>{{ parsedLut.governingRule }}</strong>
+            </div>
+          </div>
+          <div class="summary-actions">
+            <button class="btn btn-xs btn-outline" @click="showLutJson = !showLutJson">
+              {{ showLutJson ? $t('compliance.results.hideJson') : $t('compliance.results.rawJson') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="lutResult && showLutJson" class="code-preview" style="margin-top: 14px;">
           {{ lutResult }}
         </div>
       </div>
@@ -842,6 +1062,63 @@ async function computeGstr3b() {
 }
 
 // Executive KPI Result Interfaces & State
+interface GstinData {
+  isValid: boolean;
+  stateCode: string;
+  stateName: string;
+  pan: string;
+  entityNumber: string;
+  checksumStatus: string;
+}
+
+interface TaxBreakdownData {
+  isInterState: boolean;
+  taxRate: number;
+  taxableAmount: number;
+  cgstAmount: number;
+  sgstAmount: number;
+  igstAmount: number;
+  totalTax: number;
+  totalInvoiceAmount: number;
+}
+
+interface EInvoiceData {
+  irn: string;
+  ackNo: string;
+  ackDate: string;
+  qrCodePayloadPreview?: string;
+  status: string;
+}
+
+interface EWayBillData {
+  ewbNumber: string;
+  validUntilDays: number;
+  status: string;
+}
+
+interface Gstr1Data {
+  gstin: string;
+  fp: string;
+  b2bCount: number;
+  totalTaxableValue: number;
+  status: string;
+}
+
+interface Gstr3bData {
+  totalTaxLiability: number;
+  itcUtilized: number;
+  netTaxPayableCash: number;
+  rule88ACompliance: string;
+}
+
+interface LutData {
+  isValid: boolean;
+  arn: string;
+  financialYear: string;
+  status: string;
+  governingRule?: string;
+}
+
 interface PayrollData {
   grossSalary: number;
   employeePF: number;
@@ -879,10 +1156,80 @@ interface GlobalTaxData {
   isReverseChargeApplicable?: boolean;
 }
 
+const showGstinJson = ref(false);
+const showTaxJson = ref(false);
+const showEinvJson = ref(false);
+const showEwbJson = ref(false);
+const showGstr1Json = ref(false);
+const showGstr3bJson = ref(false);
 const showPayrollJson = ref(false);
 const showTdsJson = ref(false);
 const showCustomsJson = ref(false);
+const showLutJson = ref(false);
 const showGlobalTaxJson = ref(false);
+
+const parsedGstin = computed<GstinData | null>(() => {
+  if (!gstinResult.value) return null;
+  try {
+    return JSON.parse(gstinResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedTax = computed<TaxBreakdownData | null>(() => {
+  if (!taxResult.value) return null;
+  try {
+    return JSON.parse(taxResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedEinv = computed<EInvoiceData | null>(() => {
+  if (!einvResult.value) return null;
+  try {
+    return JSON.parse(einvResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedEwb = computed<EWayBillData | null>(() => {
+  if (!ewbResult.value) return null;
+  try {
+    return JSON.parse(ewbResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedGstr1 = computed<Gstr1Data | null>(() => {
+  if (!gstr1Result.value) return null;
+  try {
+    return JSON.parse(gstr1Result.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedGstr3b = computed<Gstr3bData | null>(() => {
+  if (!gstr3bResult.value) return null;
+  try {
+    return JSON.parse(gstr3bResult.value);
+  } catch {
+    return null;
+  }
+});
+
+const parsedLut = computed<LutData | null>(() => {
+  if (!lutResult.value) return null;
+  try {
+    return JSON.parse(lutResult.value);
+  } catch {
+    return null;
+  }
+});
 
 const parsedPayroll = computed<PayrollData | null>(() => {
   if (!payrollResult.value) return null;
