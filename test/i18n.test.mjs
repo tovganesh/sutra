@@ -115,7 +115,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         assert.ok(comp.states && Object.keys(comp.states).length === 6, `States in ${locale} must have 6 keys`);
         assert.ok(comp.tdsSections && Object.keys(comp.tdsSections).length === 4, `TDS sections in ${locale} must have 4 keys`);
         assert.ok(comp.jurisdictions && Object.keys(comp.jurisdictions).length === 4, `Jurisdictions in ${locale} must have 4 keys`);
-        assert.ok(comp.results && Object.keys(comp.results).length >= 18, `Results in ${locale} must have >= 18 keys`);
+        assert.ok(comp.results && Object.keys(comp.results).length >= 50, `Results in ${locale} must have >= 50 keys`);
       }
     });
 
