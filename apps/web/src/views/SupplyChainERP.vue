@@ -8,26 +8,26 @@
           <span class="badge green">MM • SD • P2P • FI-AR/AP</span>
           <span class="badge purple">India GST & E-Invoice Integrated</span>
         </div>
-        <h2>Enterprise Supply Chain & Operations Cockpit</h2>
-        <p class="subtitle">Unified Materials Management, Order-to-Cash, Procure-to-Pay with 3-Way Match, and Working Capital</p>
+        <h2>{{ $t('supplyChain.headerTitle') }}</h2>
+        <p class="subtitle">{{ $t('supplyChain.headerSubtitle') }}</p>
       </div>
 
       <!-- Quick KPI Strip -->
       <div class="kpi-strip">
         <div class="kpi-card">
-          <span class="kpi-label">Total Inventory Valuation</span>
-          <span class="kpi-value">₹{{ (totalInventoryValuation).toLocaleString('en-IN') }}</span>
-          <span class="kpi-trend positive">Moving Avg Price (MAP)</span>
+          <span class="kpi-label">{{ $t('supplyChain.kpiInventoryValuation') }}</span>
+          <span class="kpi-value">{{ formatCurrency(totalInventoryValuation) }}</span>
+          <span class="kpi-trend positive">{{ $t('supplyChain.kpiMap') }}</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">Days Sales Outstanding (DSO)</span>
+          <span class="kpi-label">{{ $t('supplyChain.kpiDso') }}</span>
           <span class="kpi-value">{{ agingData.receivables.dsoDays }} Days</span>
           <span class="kpi-trend info">AR Benchmark: &lt; 45d</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">MSME Payment Deadlines</span>
+          <span class="kpi-label">{{ $t('supplyChain.kpiMsme') }}</span>
           <span class="kpi-value text-accent">100% Compliant</span>
-          <span class="kpi-trend positive">Sec 43B(h) Safe</span>
+          <span class="kpi-trend positive">{{ $t('supplyChain.kpiMsmeSafe') }}</span>
         </div>
       </div>
     </div>
@@ -40,7 +40,7 @@
         @click="activeTab = 'inventory'"
       >
         <Package class="tab-icon" />
-        <span>Materials & Inventory (MM)</span>
+        <span>{{ $t('supplyChain.tabs.inventory') }}</span>
       </button>
 
       <button
@@ -49,7 +49,7 @@
         @click="activeTab = 'o2c'"
       >
         <TrendingUp class="tab-icon" />
-        <span>Order-to-Cash (SD)</span>
+        <span>{{ $t('supplyChain.tabs.o2c') }}</span>
       </button>
 
       <button
@@ -58,7 +58,7 @@
         @click="activeTab = 'p2p'"
       >
         <ShoppingCart class="tab-icon" />
-        <span>Procure-to-Pay & 3-Way Match</span>
+        <span>{{ $t('supplyChain.tabs.p2p') }}</span>
       </button>
 
       <button
@@ -67,7 +67,7 @@
         @click="activeTab = 'subledger'"
       >
         <Clock class="tab-icon" />
-        <span>AR / AP Working Capital</span>
+        <span>{{ $t('supplyChain.tabs.subledger') }}</span>
       </button>
 
       <button
@@ -76,7 +76,7 @@
         @click="activeTab = 'mfg'"
       >
         <Factory class="tab-icon" />
-        <span>Manufacturing & BOM (PP)</span>
+        <span>{{ $t('supplyChain.tabs.mfg') }}</span>
       </button>
 
       <button
@@ -85,7 +85,7 @@
         @click="activeTab = 'assets'"
       >
         <Building2 class="tab-icon" />
-        <span>Fixed Assets & Depr (FI-AA)</span>
+        <span>{{ $t('supplyChain.tabs.assets') }}</span>
       </button>
 
       <button
@@ -94,7 +94,7 @@
         @click="activeTab = 'quality'"
       >
         <ShieldCheck class="tab-icon" />
-        <span>Quality & Traceability (QM)</span>
+        <span>{{ $t('supplyChain.tabs.quality') }}</span>
       </button>
 
       <button
@@ -103,7 +103,7 @@
         @click="activeTab = 'controlling'"
       >
         <PieChart class="tab-icon" />
-        <span>Cost Centers & Alloc (CO)</span>
+        <span>{{ $t('supplyChain.tabs.controlling') }}</span>
       </button>
 
       <button
@@ -112,7 +112,7 @@
         @click="activeTab = 'maintenance'"
       >
         <Wrench class="tab-icon" />
-        <span>Plant Maintenance (PM/EAM)</span>
+        <span>{{ $t('supplyChain.tabs.maintenance') }}</span>
       </button>
 
       <button
@@ -121,7 +121,7 @@
         @click="activeTab = 'treasury'"
       >
         <Landmark class="tab-icon" />
-        <span>Treasury & Bank Recon (TRM)</span>
+        <span>{{ $t('supplyChain.tabs.treasury') }}</span>
       </button>
 
       <button
@@ -130,7 +130,7 @@
         @click="activeTab = 'hcm'"
       >
         <Users class="tab-icon" />
-        <span>Human Capital & Payroll (HCM)</span>
+        <span>{{ $t('supplyChain.tabs.hcm') }}</span>
       </button>
 
       <button
@@ -139,7 +139,7 @@
         @click="activeTab = 'projects'"
       >
         <Briefcase class="tab-icon" />
-        <span>Project Systems & CWIP (PS)</span>
+        <span>{{ $t('supplyChain.tabs.projects') }}</span>
       </button>
 
       <button
@@ -213,8 +213,8 @@
                   <td class="text-dim">{{ mat.baseUom }}</td>
                   <td class="font-mono text-dim">{{ mat.hsnCode }}</td>
                   <td class="font-mono font-bold">{{ mat.totalStock.toLocaleString() }}</td>
-                  <td class="font-mono">₹{{ mat.movingAvgPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</td>
-                  <td class="font-mono font-bold text-accent">₹{{ (mat.totalStock * mat.movingAvgPrice).toLocaleString('en-IN') }}</td>
+                  <td class="font-mono">{{ formatCurrency(mat.movingAvgPrice, { decimals: 2 }) }}</td>
+                  <td class="font-mono font-bold text-accent">{{ formatCurrency(mat.totalStock * mat.movingAvgPrice) }}</td>
                   <td>
                     <span v-if="mat.totalStock <= mat.reorderPoint" class="status-pill warning">Reorder Req</span>
                     <span v-else class="status-pill success">Optimal</span>
@@ -294,7 +294,7 @@
               </div>
               <div>
                 <span class="sub-label">New MAP:</span>
-                <strong class="text-cyan">₹{{ movementResult.newMovingAvgPrice.toFixed(2) }}</strong>
+                <strong class="text-cyan">{{ formatCurrency(movementResult.newMovingAvgPrice, { decimals: 2 }) }}</strong>
               </div>
             </div>
 
@@ -303,8 +303,8 @@
               <div v-for="(line, idx) in movementResult.journalLines" :key="idx" class="gl-line">
                 <span class="font-mono text-dim">{{ line.accountCode }}</span>
                 <span class="gl-acc-name">{{ line.accountName }}</span>
-                <span class="font-mono text-green" v-if="line.debit > 0">Dr ₹{{ line.debit.toLocaleString('en-IN') }}</span>
-                <span class="font-mono text-cyan" v-if="line.credit > 0">Cr ₹{{ line.credit.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green" v-if="line.debit > 0">Dr {{ formatCurrency(line.debit) }}</span>
+                <span class="font-mono text-cyan" v-if="line.credit > 0">Cr {{ formatCurrency(line.credit) }}</span>
               </div>
             </div>
           </div>
@@ -343,8 +343,8 @@
                   <td>{{ cust.name }}</td>
                   <td class="font-mono text-dim">{{ cust.gstin }}</td>
                   <td><span class="badge blue">{{ cust.stateCode === '27' ? 'MH (Intra)' : 'KA (Inter)' }}</span></td>
-                  <td class="font-mono">₹{{ (cust.creditLimit).toLocaleString('en-IN') }}</td>
-                  <td class="font-mono font-bold text-accent">₹{{ (cust.currentOutstanding).toLocaleString('en-IN') }}</td>
+                  <td class="font-mono">{{ formatCurrency(cust.creditLimit) }}</td>
+                  <td class="font-mono font-bold text-accent">{{ formatCurrency(cust.currentOutstanding) }}</td>
                   <td>
                     <div class="progress-bar">
                       <div class="progress-fill" :style="{ width: `${Math.min(100, (cust.currentOutstanding / cust.creditLimit) * 100)}%` }"></div>
@@ -412,19 +412,19 @@
               </div>
               <div class="summary-line">
                 <span>Taxable Amount:</span>
-                <span class="font-mono">₹{{ activeSalesOrder.taxableValue.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(activeSalesOrder.taxableValue) }}</span>
               </div>
               <div class="summary-line" v-if="!activeSalesOrder.isInterState">
                 <span>Intra-State GST (9% CGST + 9% SGST):</span>
-                <span class="font-mono text-green">₹{{ (activeSalesOrder.cgst + activeSalesOrder.sgst).toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(activeSalesOrder.cgst + activeSalesOrder.sgst) }}</span>
               </div>
               <div class="summary-line" v-else>
                 <span>Inter-State IGST (18%):</span>
-                <span class="font-mono text-green">₹{{ activeSalesOrder.igst.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(activeSalesOrder.igst) }}</span>
               </div>
               <div class="summary-line total">
                 <span>Invoice Grand Total:</span>
-                <strong class="font-mono text-accent">₹{{ activeSalesOrder.grandTotal.toLocaleString('en-IN') }}</strong>
+                <strong class="font-mono text-accent">{{ formatCurrency(activeSalesOrder.grandTotal) }}</strong>
               </div>
             </div>
 
@@ -457,7 +457,7 @@
 
               <div class="eway-tag">
                 <span class="badge purple">E-Way Bill Auto-Generated</span>
-                <span class="text-dim">Consignment &gt; ₹50,000 statutory requirement met</span>
+                <span class="text-dim">Consignment &gt; {{ formatCurrency(50000) }} statutory requirement met</span>
               </div>
             </div>
           </div>
@@ -523,7 +523,7 @@
                 <div class="step-card" :class="{ completed: p2pState.poCreated }">
                   <div class="step-num">1</div>
                   <div class="step-title">PO Created</div>
-                  <span class="step-sub">{{ p2pState.poNumber }} (₹{{ p2pState.poValue.toLocaleString('en-IN') }})</span>
+                  <span class="step-sub">{{ p2pState.poNumber }} ({{ formatCurrency(p2pState.poValue) }})</span>
                 </div>
                 <div class="step-arrow"><ArrowRight /></div>
                 <div class="step-card" :class="{ completed: p2pState.grnDone }">
@@ -573,19 +573,19 @@
             <div class="tax-tds-breakdown">
               <div class="calc-row">
                 <span>Taxable Amount:</span>
-                <span class="font-mono">₹{{ p2pVerificationResult.taxableAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(p2pVerificationResult.taxableAmount) }}</span>
               </div>
               <div class="calc-row">
                 <span>Input GST Credit (ITC):</span>
-                <span class="font-mono text-green">₹{{ p2pVerificationResult.inputGstCredit.totalGst.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(p2pVerificationResult.inputGstCredit.totalGst) }}</span>
               </div>
               <div class="calc-row">
                 <span>TDS Withheld (Sec {{ p2pVerificationResult.tdsDeduction.section }} @ {{ p2pVerificationResult.tdsDeduction.ratePercent }}%):</span>
-                <span class="font-mono text-red">- ₹{{ p2pVerificationResult.tdsDeduction.deductionAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-red">- {{ formatCurrency(p2pVerificationResult.tdsDeduction.deductionAmount) }}</span>
               </div>
               <div class="calc-row net">
                 <span>Net Payable to Vendor:</span>
-                <strong class="font-mono text-accent">₹{{ p2pVerificationResult.netPayableToVendor.toLocaleString('en-IN') }}</strong>
+                <strong class="font-mono text-accent">{{ formatCurrency(p2pVerificationResult.netPayableToVendor) }}</strong>
               </div>
               <div class="calc-row due">
                 <span>Statutory MSME Payment Due Date:</span>
@@ -617,32 +617,32 @@
             <div class="aging-box">
               <span class="aging-header">Current (0–30 Days)</span>
               <div class="aging-vals">
-                <div><span class="text-dim">AR:</span> <strong class="text-green">₹{{ agingData.receivables.summary.current0to30.toLocaleString('en-IN') }}</strong></div>
-                <div><span class="text-dim">AP:</span> <strong class="text-cyan">₹{{ agingData.payables.summary.current0to30.toLocaleString('en-IN') }}</strong></div>
+                <div><span class="text-dim">AR:</span> <strong class="text-green">{{ formatCurrency(agingData.receivables.summary.current0to30) }}</strong></div>
+                <div><span class="text-dim">AP:</span> <strong class="text-cyan">{{ formatCurrency(agingData.payables.summary.current0to30) }}</strong></div>
               </div>
             </div>
 
             <div class="aging-box">
               <span class="aging-header">31–60 Days</span>
               <div class="aging-vals">
-                <div><span class="text-dim">AR:</span> <strong class="text-green">₹{{ agingData.receivables.summary.days31to60.toLocaleString('en-IN') }}</strong></div>
-                <div><span class="text-dim">AP:</span> <strong class="text-cyan">₹{{ agingData.payables.summary.days31to60.toLocaleString('en-IN') }}</strong></div>
+                <div><span class="text-dim">AR:</span> <strong class="text-green">{{ formatCurrency(agingData.receivables.summary.days31to60) }}</strong></div>
+                <div><span class="text-dim">AP:</span> <strong class="text-cyan">{{ formatCurrency(agingData.payables.summary.days31to60) }}</strong></div>
               </div>
             </div>
 
             <div class="aging-box">
               <span class="aging-header">61–90 Days</span>
               <div class="aging-vals">
-                <div><span class="text-dim">AR:</span> <strong class="text-yellow">₹{{ agingData.receivables.summary.days61to90.toLocaleString('en-IN') }}</strong></div>
-                <div><span class="text-dim">AP:</span> <strong class="text-cyan">₹{{ agingData.payables.summary.days61to90.toLocaleString('en-IN') }}</strong></div>
+                <div><span class="text-dim">AR:</span> <strong class="text-yellow">{{ formatCurrency(agingData.receivables.summary.days61to90) }}</strong></div>
+                <div><span class="text-dim">AP:</span> <strong class="text-cyan">{{ formatCurrency(agingData.payables.summary.days61to90) }}</strong></div>
               </div>
             </div>
 
             <div class="aging-box alert">
               <span class="aging-header">Overdue (&gt; 90 Days)</span>
               <div class="aging-vals">
-                <div><span class="text-dim">AR:</span> <strong class="text-red">₹{{ agingData.receivables.summary.above90.toLocaleString('en-IN') }}</strong></div>
-                <div><span class="text-dim">AP:</span> <strong class="text-cyan">₹{{ agingData.payables.summary.above90.toLocaleString('en-IN') }}</strong></div>
+                <div><span class="text-dim">AR:</span> <strong class="text-red">{{ formatCurrency(agingData.receivables.summary.above90) }}</strong></div>
+                <div><span class="text-dim">AP:</span> <strong class="text-cyan">{{ formatCurrency(agingData.payables.summary.above90) }}</strong></div>
               </div>
             </div>
           </div>
@@ -651,17 +651,17 @@
           <div class="working-cap-summary">
             <div class="wc-item">
               <span class="wc-label">Total Trade Receivables (AR)</span>
-              <span class="wc-val text-green">₹{{ agingData.receivables.summary.totalOutstanding.toLocaleString('en-IN') }}</span>
+              <span class="wc-val text-green">{{ formatCurrency(agingData.receivables.summary.totalOutstanding) }}</span>
               <span class="wc-sub">DSO: {{ agingData.receivables.dsoDays }} Days</span>
             </div>
             <div class="wc-item">
               <span class="wc-label">Total Trade Payables (AP)</span>
-              <span class="wc-val text-cyan">₹{{ agingData.payables.summary.totalOutstanding.toLocaleString('en-IN') }}</span>
+              <span class="wc-val text-cyan">{{ formatCurrency(agingData.payables.summary.totalOutstanding) }}</span>
               <span class="wc-sub">DPO: {{ agingData.payables.dpoDays }} Days</span>
             </div>
             <div class="wc-item">
               <span class="wc-label">Net Working Capital Exposure</span>
-              <span class="wc-val text-accent">₹{{ (agingData.receivables.summary.totalOutstanding - agingData.payables.summary.totalOutstanding).toLocaleString('en-IN') }}</span>
+              <span class="wc-val text-accent">{{ formatCurrency(agingData.receivables.summary.totalOutstanding - agingData.payables.summary.totalOutstanding) }}</span>
               <span class="wc-sub">Cash surplus cushion</span>
             </div>
           </div>
@@ -681,7 +681,7 @@
                 <span class="debtor-days text-yellow">{{ debtor.oldestInvoiceDays }} Days Outstanding</span>
               </div>
               <div class="debtor-amt font-mono text-red font-bold">
-                ₹{{ debtor.outstandingBalance.toLocaleString('en-IN') }}
+                {{ formatCurrency(debtor.outstandingBalance) }}
               </div>
             </div>
           </div>
@@ -743,8 +743,8 @@
                   <strong>{{ wc.name }}</strong>
                 </div>
                 <div class="wc-rates">
-                  <div><span class="text-dim">Labor:</span> ₹{{ wc.hourlyLaborCost }}/hr</div>
-                  <div><span class="text-dim">Machine:</span> ₹{{ wc.hourlyMachineCost }}/hr</div>
+                  <div><span class="text-dim">Labor:</span> {{ formatCurrency(wc.hourlyLaborCost) }}/hr</div>
+                  <div><span class="text-dim">Machine:</span> {{ formatCurrency(wc.hourlyMachineCost) }}/hr</div>
                   <div><span class="text-dim">Capacity:</span> {{ wc.capacityHoursPerDay }} hrs/day</div>
                 </div>
               </div>
@@ -780,19 +780,19 @@
             <div class="cost-summary-box">
               <div class="summary-line">
                 <span>Direct Material Cost:</span>
-                <span class="font-mono">₹{{ plannedOrder.totalDirectMaterialCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(plannedOrder.totalDirectMaterialCost) }}</span>
               </div>
               <div class="summary-line">
                 <span>Direct Labor Overhead:</span>
-                <span class="font-mono">₹{{ plannedOrder.estimatedLaborCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(plannedOrder.estimatedLaborCost) }}</span>
               </div>
               <div class="summary-line">
                 <span>Machine Overhead:</span>
-                <span class="font-mono">₹{{ plannedOrder.estimatedMachineCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(plannedOrder.estimatedMachineCost) }}</span>
               </div>
               <div class="summary-line total">
                 <span>Total Standard Cost:</span>
-                <strong class="font-mono text-accent">₹{{ plannedOrder.totalPlannedCost.toLocaleString('en-IN') }}</strong>
+                <strong class="font-mono text-accent">{{ formatCurrency(plannedOrder.totalPlannedCost) }}</strong>
               </div>
             </div>
 
@@ -842,9 +842,9 @@
                   <td><span class="badge blue">{{ ast.assetClass }}</span></td>
                   <td class="font-mono">{{ ast.usefulLifeYears }} Yrs</td>
                   <td class="font-mono text-dim">{{ ast.depreciationMethod }}</td>
-                  <td class="font-mono">₹{{ ast.originalCost.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-red">₹{{ ast.accumulatedDepreciation.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono font-bold text-green">₹{{ ast.currentBookValue.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono">{{ formatCurrency(ast.originalCost) }}</td>
+                  <td class="font-mono text-red">{{ formatCurrency(ast.accumulatedDepreciation) }}</td>
+                  <td class="font-mono font-bold text-green">{{ formatCurrency(ast.currentBookValue) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -869,7 +869,7 @@
 
             <div class="calc-row total" style="margin: 12px 0;">
               <span>Total Monthly Depreciation:</span>
-              <strong class="font-mono text-accent">₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</strong>
+              <strong class="font-mono text-accent">{{ formatCurrency(deprRunResult.totalDepreciationAmount) }}</strong>
             </div>
 
             <div class="gl-lines-box">
@@ -877,12 +877,12 @@
               <div class="gl-line">
                 <span class="font-mono text-dim">530100</span>
                 <span class="gl-acc-name">Depreciation Expense (P&L)</span>
-                <span class="font-mono text-green">Dr ₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">Dr {{ formatCurrency(deprRunResult.totalDepreciationAmount) }}</span>
               </div>
               <div class="gl-line">
                 <span class="font-mono text-dim">140900</span>
                 <span class="gl-acc-name">Accumulated Depreciation (Contra Asset)</span>
-                <span class="font-mono text-cyan">Cr ₹{{ deprRunResult.totalDepreciationAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">Cr {{ formatCurrency(deprRunResult.totalDepreciationAmount) }}</span>
               </div>
             </div>
           </div>
@@ -1081,8 +1081,8 @@
                   <td>{{ cc.name }}</td>
                   <td><span class="badge blue">{{ cc.category }}</span></td>
                   <td class="font-mono text-dim">{{ cc.profitCenterCode }}</td>
-                  <td class="font-mono">₹{{ cc.budgetAnnual.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono font-bold text-accent">₹{{ cc.actualIncurred.toLocaleString('en-IN') }}</td>
+                  <td class="font-mono">{{ formatCurrency(cc.budgetAnnual) }}</td>
+                  <td class="font-mono font-bold text-accent">{{ formatCurrency(cc.actualIncurred) }}</td>
                   <td>
                     <div class="progress-bar" style="width: 80px;">
                       <div class="progress-fill" :style="{ width: Math.min(100, Math.round((cc.actualIncurred / cc.budgetAnnual) * 100)) + '%' }"></div>
@@ -1106,7 +1106,7 @@
               <CheckCircle2 class="icon-success" />
               <div>
                 <strong>Assessment Cycle {{ assessmentResult.cycleId }}</strong>
-                <span>Distributed ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }} from {{ assessmentResult.sender }}</span>
+                <span>Distributed {{ formatCurrency(assessmentResult.totalAmount) }} from {{ assessmentResult.sender }}</span>
               </div>
             </div>
 
@@ -1114,7 +1114,7 @@
               <span class="gl-title">Secondary Cost Allocations:</span>
               <div v-for="alloc in assessmentResult.distributions" :key="alloc.receiver" class="calc-row">
                 <span>{{ alloc.receiver }} ({{ alloc.percentage }}%):</span>
-                <span class="font-mono text-cyan">₹{{ alloc.amount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">{{ formatCurrency(alloc.amount) }}</span>
               </div>
             </div>
 
@@ -1123,12 +1123,12 @@
               <div class="gl-line">
                 <span class="font-mono text-dim">610000</span>
                 <span class="gl-acc-name">Cost Assessment Inflow</span>
-                <span class="font-mono text-green">Dr ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">Dr {{ formatCurrency(assessmentResult.totalAmount) }}</span>
               </div>
               <div class="gl-line">
                 <span class="font-mono text-dim">610000</span>
                 <span class="gl-acc-name">Cost Assessment Outflow</span>
-                <span class="font-mono text-cyan">Cr ₹{{ assessmentResult.totalAmount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">Cr {{ formatCurrency(assessmentResult.totalAmount) }}</span>
               </div>
             </div>
           </div>
@@ -1250,22 +1250,22 @@
               <span class="gl-title">Allocated Spare Parts (MM Integration):</span>
               <div v-for="part in wo.spareParts" :key="part.sku" class="calc-row">
                 <span>{{ part.name }} (Qty: {{ part.issuedQuantity }}/{{ part.requiredQuantity }}):</span>
-                <span class="font-mono text-green">₹{{ part.totalCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(part.totalCost) }}</span>
               </div>
             </div>
 
             <div class="cost-summary-box" style="margin-top: 12px;">
               <div class="cost-row">
-                <span>Labor Cost ({{ wo.actualLaborHours }} hrs @ ₹{{ wo.laborHourlyRate }}/hr):</span>
-                <span class="font-mono">₹{{ wo.totalLaborCost.toLocaleString('en-IN') }}</span>
+                <span>Labor Cost ({{ wo.actualLaborHours }} hrs @ {{ formatCurrency(wo.laborHourlyRate) }}/hr):</span>
+                <span class="font-mono">{{ formatCurrency(wo.totalLaborCost) }}</span>
               </div>
               <div class="cost-row">
                 <span>Spare Parts Material Cost:</span>
-                <span class="font-mono">₹{{ wo.totalMaterialCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono">{{ formatCurrency(wo.totalMaterialCost) }}</span>
               </div>
               <div class="cost-row total">
                 <strong>Total Maintenance Cost Settled:</strong>
-                <strong class="font-mono text-cyan">₹{{ wo.totalActualCost.toLocaleString('en-IN') }}</strong>
+                <strong class="font-mono text-cyan">{{ formatCurrency(wo.totalActualCost) }}</strong>
               </div>
             </div>
 
@@ -1300,23 +1300,23 @@
       <div class="kpi-strip" style="margin-bottom: 20px;">
         <div class="kpi-card">
           <span class="kpi-label">Total Operating Bank Balance</span>
-          <span class="kpi-value text-green">₹{{ (totalBankBalance).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value text-green">{{ formatCurrency(totalBankBalance) }}</span>
           <span class="kpi-trend positive">HDFC & SBI Accounts</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">GL Book Balance</span>
-          <span class="kpi-value">₹{{ (treasuryBookBalance).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value">{{ formatCurrency(treasuryBookBalance) }}</span>
           <span class="kpi-trend info">GL Account 100100</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Reconciliation Status</span>
           <span class="kpi-value text-accent">{{ brsData.isBalanced ? '100% Balanced' : 'Open Variance' }}</span>
-          <span class="kpi-trend positive">Variance: ₹{{ brsData.variance }}</span>
+          <span class="kpi-trend positive">Variance: {{ formatCurrency(brsData.variance) }}</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">30-Day Projected Net Cash</span>
-          <span class="kpi-value text-cyan">₹{{ (cashForecast.forecast30Days.projectedClosingCash).toLocaleString('en-IN') }}</span>
-          <span class="kpi-trend positive">+₹{{ (cashForecast.forecast30Days.netCashFlow).toLocaleString('en-IN') }} Net Flow</span>
+          <span class="kpi-value text-cyan">{{ formatCurrency(cashForecast.forecast30Days.projectedClosingCash) }}</span>
+          <span class="kpi-trend positive">+{{ formatCurrency((cashForecast.forecast30Days.netCashFlow)) }} Net Flow</span>
         </div>
       </div>
 
@@ -1346,11 +1346,11 @@
               </div>
               <div class="calc-row" style="margin-top: 10px;">
                 <span>GL Book Balance:</span>
-                <span class="font-mono text-cyan">₹{{ acc.currentBookBalance.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">{{ formatCurrency(acc.currentBookBalance) }}</span>
               </div>
               <div class="calc-row">
                 <span>Reconciled Bank Balance:</span>
-                <span class="font-mono text-green">₹{{ acc.reconciledBankBalance.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(acc.reconciledBankBalance) }}</span>
               </div>
               <div class="calc-row">
                 <span>IFSC / Branch:</span>
@@ -1385,7 +1385,7 @@
                   </span>
                 </td>
                 <td class="font-mono" :class="line.direction === 'CREDIT' ? 'text-green' : 'text-danger'">
-                  {{ line.direction === 'CREDIT' ? '+' : '-' }}₹{{ line.amount.toLocaleString('en-IN') }}
+                  {{ line.direction === 'CREDIT' ? '+' : '-' }}{{ formatCurrency(line.amount) }}
                 </td>
                 <td>
                   <span class="status-pill" :class="line.reconciliationStatus === 'AUTO_CLEARED' ? 'active' : 'warning'">
@@ -1410,14 +1410,14 @@
           <div class="brs-summary-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
             <div class="calc-row">
               <span><strong>Balance as per Bank Statement:</strong></span>
-              <strong class="font-mono text-green">₹{{ brsData.balanceAsPerBank.toLocaleString('en-IN') }}</strong>
+              <strong class="font-mono text-green">{{ formatCurrency(brsData.balanceAsPerBank) }}</strong>
             </div>
 
             <div style="margin-top: 10px;">
               <span class="gl-title text-cyan">Add: Deposits in Transit (Debited in Books, Not by Bank):</span>
               <div v-for="dep in brsData.addDepositsInTransit" :key="dep.reference" class="calc-row" style="padding-left: 10px;">
                 <span class="font-mono">{{ dep.reference }}:</span>
-                <span class="font-mono text-cyan">+₹{{ dep.amount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">+{{ formatCurrency(dep.amount) }}</span>
               </div>
             </div>
 
@@ -1425,22 +1425,22 @@
               <span class="gl-title text-danger">Less: Unpresented Cheques (Issued in Books, Uncleared):</span>
               <div v-for="chq in brsData.lessUnpresentedCheques" :key="chq.reference" class="calc-row" style="padding-left: 10px;">
                 <span class="font-mono">{{ chq.reference }}:</span>
-                <span class="font-mono text-danger">-₹{{ chq.amount.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(chq.amount) }}</span>
               </div>
             </div>
 
             <div class="calc-row total" style="margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 10px;">
               <strong>Adjusted Bank Balance:</strong>
-              <strong class="font-mono text-accent">₹{{ brsData.adjustedBankBalance.toLocaleString('en-IN') }}</strong>
+              <strong class="font-mono text-accent">{{ formatCurrency(brsData.adjustedBankBalance) }}</strong>
             </div>
             <div class="calc-row">
               <span>Balance as per Company Books:</span>
-              <span class="font-mono text-cyan">₹{{ brsData.balanceAsPerCompanyBooks.toLocaleString('en-IN') }}</span>
+              <span class="font-mono text-cyan">{{ formatCurrency(brsData.balanceAsPerCompanyBooks) }}</span>
             </div>
             <div class="calc-row">
               <span>Reconciliation Variance:</span>
               <span class="font-mono" :class="brsData.isBalanced ? 'text-green' : 'text-danger'">
-                ₹{{ brsData.variance }} {{ brsData.isBalanced ? '(PERFECT MATCH)' : '' }}
+                {{ formatCurrency(brsData.variance) }} {{ brsData.isBalanced ? '(PERFECT MATCH)' : '' }}
               </span>
             </div>
           </div>
@@ -1467,24 +1467,24 @@
               <tbody>
                 <tr>
                   <td><strong>30 Days</strong></td>
-                  <td class="font-mono text-green">+₹{{ cashForecast.forecast30Days.expectedReceivables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast30Days.expectedPayables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast30Days.netCashFlow.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast30Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                  <td class="font-mono text-green">+{{ formatCurrency(cashForecast.forecast30Days.expectedReceivables) }}</td>
+                  <td class="font-mono text-danger">-{{ formatCurrency(cashForecast.forecast30Days.expectedPayables) }}</td>
+                  <td class="font-mono text-cyan">+{{ formatCurrency(cashForecast.forecast30Days.netCashFlow) }}</td>
+                  <td class="font-mono text-accent"><strong>{{ formatCurrency(cashForecast.forecast30Days.projectedClosingCash) }}</strong></td>
                 </tr>
                 <tr>
                   <td><strong>60 Days</strong></td>
-                  <td class="font-mono text-green">+₹{{ cashForecast.forecast60Days.expectedReceivables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast60Days.expectedPayables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast60Days.netCashFlow.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast60Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                  <td class="font-mono text-green">+{{ formatCurrency(cashForecast.forecast60Days.expectedReceivables) }}</td>
+                  <td class="font-mono text-danger">-{{ formatCurrency(cashForecast.forecast60Days.expectedPayables) }}</td>
+                  <td class="font-mono text-cyan">+{{ formatCurrency(cashForecast.forecast60Days.netCashFlow) }}</td>
+                  <td class="font-mono text-accent"><strong>{{ formatCurrency(cashForecast.forecast60Days.projectedClosingCash) }}</strong></td>
                 </tr>
                 <tr>
                   <td><strong>90 Days</strong></td>
-                  <td class="font-mono text-green">+₹{{ cashForecast.forecast90Days.expectedReceivables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-danger">-₹{{ cashForecast.forecast90Days.expectedPayables.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-cyan">+₹{{ cashForecast.forecast90Days.netCashFlow.toLocaleString('en-IN') }}</td>
-                  <td class="font-mono text-accent"><strong>₹{{ cashForecast.forecast90Days.projectedClosingCash.toLocaleString('en-IN') }}</strong></td>
+                  <td class="font-mono text-green">+{{ formatCurrency(cashForecast.forecast90Days.expectedReceivables) }}</td>
+                  <td class="font-mono text-danger">-{{ formatCurrency(cashForecast.forecast90Days.expectedPayables) }}</td>
+                  <td class="font-mono text-cyan">+{{ formatCurrency(cashForecast.forecast90Days.netCashFlow) }}</td>
+                  <td class="font-mono text-accent"><strong>{{ formatCurrency(cashForecast.forecast90Days.projectedClosingCash) }}</strong></td>
                 </tr>
               </tbody>
             </table>
@@ -1509,7 +1509,7 @@
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Monthly Gross Payroll</span>
-          <span class="kpi-value">₹{{ (totalMonthlyGross).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value">{{ formatCurrency(totalMonthlyGross) }}</span>
           <span class="kpi-trend positive">Cost Centers Assigned</span>
         </div>
         <div class="kpi-card">
@@ -1552,7 +1552,7 @@
                 </td>
                 <td><span class="badge blue">{{ emp.department }}</span></td>
                 <td><span class="font-mono text-cyan">{{ emp.costCenter }}</span></td>
-                <td class="font-mono text-green">₹{{ emp.salaryStructure.grossMonthly.toLocaleString('en-IN') }}</td>
+                <td class="font-mono text-green">{{ formatCurrency(emp.salaryStructure.grossMonthly) }}</td>
                 <td>
                   <span class="status-pill" :class="emp.lossOfPayDays > 0 ? 'warning' : 'active'">
                     {{ emp.presentDays }}/{{ emp.totalWorkingDays }} Days {{ emp.lossOfPayDays > 0 ? `(${emp.lossOfPayDays} LOP)` : '' }}
@@ -1596,45 +1596,45 @@
               <span class="gl-title text-green">Earnings (Pro-Rata for Present Days):</span>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>Basic Salary:</span>
-                <span class="font-mono text-green">₹{{ selectedPayslip.earnedBasic.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(selectedPayslip.earnedBasic) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>House Rent Allowance (HRA):</span>
-                <span class="font-mono text-green">₹{{ selectedPayslip.earnedHra.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(selectedPayslip.earnedHra) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>Special Allowance:</span>
-                <span class="font-mono text-green">₹{{ selectedPayslip.earnedSpecialAllowance.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(selectedPayslip.earnedSpecialAllowance) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px; font-weight: bold;">
                 <span>Earned Gross:</span>
-                <span class="font-mono text-green">₹{{ selectedPayslip.earnedGrossSalary.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(selectedPayslip.earnedGrossSalary) }}</span>
               </div>
             </div>
 
             <div style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px;">
               <span class="gl-title text-danger">Statutory Deductions:</span>
               <div class="calc-row" style="padding-left: 10px;">
-                <span>Employee EPF (12% capped at ₹1,800):</span>
-                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.epfEmployee.toLocaleString('en-IN') }}</span>
+                <span>Employee EPF (12% capped at {{ formatCurrency(1800) }}):</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(selectedPayslip.deductions.epfEmployee) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>Employee ESIC (0.75%):</span>
-                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.esiEmployee.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(selectedPayslip.deductions.esiEmployee) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>Professional Tax (PT):</span>
-                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.professionalTax.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(selectedPayslip.deductions.professionalTax) }}</span>
               </div>
               <div class="calc-row" style="padding-left: 10px;">
                 <span>Income Tax TDS (Sec 192):</span>
-                <span class="font-mono text-danger">-₹{{ selectedPayslip.deductions.incomeTaxTds192.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(selectedPayslip.deductions.incomeTaxTds192) }}</span>
               </div>
             </div>
 
             <div class="calc-row total" style="margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 8px;">
               <strong>Net Take-Home Disbursed:</strong>
-              <strong class="font-mono text-accent">₹{{ selectedPayslip.netPayableSalary.toLocaleString('en-IN') }}</strong>
+              <strong class="font-mono text-accent">{{ formatCurrency(selectedPayslip.netPayableSalary) }}</strong>
             </div>
           </div>
 
@@ -1645,7 +1645,7 @@
               <span class="font-mono text-dim">{{ line.accountCode }}</span>
               <span class="gl-acc-name">{{ line.accountName }}</span>
               <span class="font-mono" :class="line.debit > 0 ? 'text-green' : 'text-cyan'">
-                {{ line.debit > 0 ? `Dr ₹${line.debit.toLocaleString('en-IN')}` : `Cr ₹${line.credit.toLocaleString('en-IN')}` }}
+                {{ line.debit > 0 ? `Dr ${formatCurrency(line.debit)}` : `Cr ${formatCurrency(line.credit)}` }}
               </span>
             </div>
           </div>
@@ -1664,17 +1664,17 @@
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Approved Project Budget</span>
-          <span class="kpi-value">₹{{ (currentProject.totalApprovedBudget).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value">{{ formatCurrency(currentProject.totalApprovedBudget) }}</span>
           <span class="kpi-trend info">CapEx Facility</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Committed PO Funds</span>
-          <span class="kpi-value text-cyan">₹{{ (currentProject.totalCommittedCost).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value text-cyan">{{ formatCurrency(currentProject.totalCommittedCost) }}</span>
           <span class="kpi-trend info">Vendor Purchase Orders</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Actual Incurred CWIP</span>
-          <span class="kpi-value text-green">₹{{ (currentProject.totalActualCost).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value text-green">{{ formatCurrency(currentProject.totalActualCost) }}</span>
           <span class="kpi-trend positive">GL 140800 CWIP Asset</span>
         </div>
       </div>
@@ -1710,9 +1710,9 @@
                 <td class="font-mono text-cyan">{{ wbs.wbsCode }}</td>
                 <td><strong>{{ wbs.name }}</strong></td>
                 <td class="font-mono">{{ wbs.costCenter }}</td>
-                <td class="font-mono">₹{{ wbs.budgetAllocated.toLocaleString('en-IN') }}</td>
-                <td class="font-mono text-cyan">₹{{ wbs.budgetCommitted.toLocaleString('en-IN') }}</td>
-                <td class="font-mono text-green">₹{{ wbs.actualCostIncurred.toLocaleString('en-IN') }}</td>
+                <td class="font-mono">{{ formatCurrency(wbs.budgetAllocated) }}</td>
+                <td class="font-mono text-cyan">{{ formatCurrency(wbs.budgetCommitted) }}</td>
+                <td class="font-mono text-green">{{ formatCurrency(wbs.actualCostIncurred) }}</td>
                 <td><span class="status-pill active">{{ wbs.status }}</span></td>
               </tr>
             </tbody>
@@ -1774,7 +1774,7 @@
               </div>
               <div class="calc-row">
                 <span>Total Capitalized Cost:</span>
-                <span class="font-mono text-green">₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">{{ formatCurrency(cwipSettlement.totalSettledCost) }}</span>
               </div>
             </div>
 
@@ -1783,12 +1783,12 @@
               <div class="gl-line">
                 <span class="font-mono text-dim">140100</span>
                 <span class="gl-acc-name">Plant Machinery & Infrastructure (Fixed Asset)</span>
-                <span class="font-mono text-green">Dr ₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">Dr {{ formatCurrency(cwipSettlement.totalSettledCost) }}</span>
               </div>
               <div class="gl-line">
                 <span class="font-mono text-dim">140800</span>
                 <span class="gl-acc-name">Capital Work-in-Progress (CWIP) Clearing</span>
-                <span class="font-mono text-cyan">Cr ₹{{ cwipSettlement.totalSettledCost.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">Cr {{ formatCurrency(cwipSettlement.totalSettledCost) }}</span>
               </div>
             </div>
           </div>
@@ -1934,7 +1934,7 @@
             </div>
             <div class="calc-row" style="margin-top: 4px;">
               <span class="text-dim">Shrinkage Variance: {{ cycleCountState.varianceQty }} KG</span>
-              <span class="font-mono text-danger">Value: -₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+              <span class="font-mono text-danger">Value: -{{ formatCurrency(cycleCountState.varianceVal) }}</span>
             </div>
 
             <div v-if="cycleCountState.glPosted" class="gl-lines-box" style="margin-top: 10px;">
@@ -1942,12 +1942,12 @@
               <div class="gl-line">
                 <span class="font-mono text-dim">540100</span>
                 <span class="gl-acc-name">Inventory Shrinkage Expense</span>
-                <span class="font-mono text-green">Dr ₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">Dr {{ formatCurrency(cycleCountState.varianceVal) }}</span>
               </div>
               <div class="gl-line">
                 <span class="font-mono text-dim">120100</span>
                 <span class="gl-acc-name">Raw Materials Inventory Clearing</span>
-                <span class="font-mono text-cyan">Cr ₹{{ cycleCountState.varianceVal.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-cyan">Cr {{ formatCurrency(cycleCountState.varianceVal) }}</span>
               </div>
             </div>
           </div>
@@ -1961,7 +1961,7 @@
       <div class="kpi-strip" style="margin-bottom: 20px;">
         <div class="kpi-card">
           <span class="kpi-label">Operating Company Currency</span>
-          <span class="kpi-value text-accent">INR (₹)</span>
+          <span class="kpi-value text-accent">{{ currencyConfig.name }}</span>
           <span class="kpi-trend positive">Leading Ledger 0L</span>
         </div>
         <div class="kpi-card">
@@ -1971,12 +1971,12 @@
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Spot Exchange Rate (USD/INR)</span>
-          <span class="kpi-value">₹{{ (usdInrSpotRate).toFixed(2) }}</span>
-          <span class="kpi-trend positive">Closing Rate: ₹{{ (usdInrClosingRate).toFixed(2) }}</span>
+          <span class="kpi-value">{{ formatCurrency(usdInrSpotRate, { decimals: 2 }) }}</span>
+          <span class="kpi-trend positive">Closing Rate: {{ formatCurrency(usdInrClosingRate, { decimals: 2 }) }}</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">IAS 21 Net Forex Gain</span>
-          <span class="kpi-value text-green">+₹{{ (forexRevalSummary.netForexImpact).toLocaleString('en-IN') }}</span>
+          <span class="kpi-value text-green">+{{ formatCurrency((forexRevalSummary.netForexImpact)) }}</span>
           <span class="kpi-trend positive">Auto-Revalued</span>
         </div>
       </div>
@@ -2029,7 +2029,7 @@
                 <span class="gl-acc-name">{{ l.accountName }}</span>
                 <span class="font-mono text-cyan">Group: ${{ l.amountGroup.toLocaleString('en-US') }}</span>
                 <span class="font-mono" :class="l.debit > 0 ? 'text-green' : 'text-cyan'">
-                  {{ l.debit > 0 ? `Local: Dr ₹${l.debit.toLocaleString('en-IN')}` : `Local: Cr ₹${l.credit.toLocaleString('en-IN')}` }}
+                  {{ l.debit > 0 ? `Local: Dr ${formatCurrency(l.debit)}` : `Local: Cr ${formatCurrency(l.credit)}` }}
                 </span>
               </div>
             </div>
@@ -2053,7 +2053,7 @@
             <div class="coa-header">
               <CheckCircle2 class="coa-icon" style="color: #10b981;" />
               <div>
-                <strong style="color: #10b981;">Forex Valuation Reconciled (USD Closing Rate: ₹{{ usdInrClosingRate }})</strong>
+                <strong style="color: #10b981;">Forex Valuation Reconciled (USD Closing Rate: {{ formatCurrency(usdInrClosingRate, { decimals: 2 }) }})</strong>
                 <p class="subtitle font-mono">{{ forexRevalSummary.revaluationId }}</p>
               </div>
             </div>
@@ -2061,15 +2061,15 @@
             <div style="margin-top: 10px;">
               <div class="calc-row">
                 <span>Unrealized Forex Gain (Export AR):</span>
-                <span class="font-mono text-green">+₹{{ forexRevalSummary.totalUnrealizedGain.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-green">+{{ formatCurrency(forexRevalSummary.totalUnrealizedGain) }}</span>
               </div>
               <div class="calc-row">
                 <span>Unrealized Forex Loss (Import AP):</span>
-                <span class="font-mono text-danger">-₹{{ forexRevalSummary.totalUnrealizedLoss.toLocaleString('en-IN') }}</span>
+                <span class="font-mono text-danger">-{{ formatCurrency(forexRevalSummary.totalUnrealizedLoss) }}</span>
               </div>
               <div class="calc-row total" style="border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 8px;">
                 <strong>Net P&amp;L Forex Gain:</strong>
-                <strong class="font-mono text-green">+₹{{ forexRevalSummary.netForexImpact.toLocaleString('en-IN') }}</strong>
+                <strong class="font-mono text-green">+{{ formatCurrency(forexRevalSummary.netForexImpact) }}</strong>
               </div>
             </div>
           </div>
@@ -2097,7 +2097,7 @@
 
             <div class="calc-row">
               <span>Taxable Supply Value:</span>
-              <span class="font-mono">₹1,00,000</span>
+              <span class="font-mono">{{ formatCurrency(100000) }}</span>
             </div>
             <div class="calc-row">
               <span>Jurisdiction Tax Rate:</span>
@@ -2105,7 +2105,7 @@
             </div>
             <div class="calc-row">
               <span>Statutory Tax Amount:</span>
-              <span class="font-mono text-green">₹{{ currentTaxResult.taxAmount.toLocaleString('en-IN') }}</span>
+              <span class="font-mono text-green">{{ formatCurrency(currentTaxResult.taxAmount) }}</span>
             </div>
             <div class="calc-row">
               <span>Reverse Charge Mechanism (RCM):</span>
@@ -2152,7 +2152,7 @@
         </div>
         <div class="data-card">
           <span class="card-label">Benchmark Diesel Rate</span>
-          <span class="card-value text-green">₹94.50 / L</span>
+          <span class="card-value text-green">{{ formatCurrency(94.5, { decimals: 2 }) }} / L</span>
           <span class="card-subtext warning">+1.50% Fuel Surcharge</span>
         </div>
       </div>
@@ -2200,8 +2200,8 @@
                 <div class="cell-subtext">{{ order.cargoDescription }}</div>
               </td>
               <td>
-                <div class="cell-primary font-mono">₹{{ order.totalFreightCost.toLocaleString('en-IN') }}</div>
-                <div class="cell-subtext">TDS: ₹{{ order.tdsWithheld.toLocaleString('en-IN') }} ({{ order.tdsRatePercent }}%)</div>
+                <div class="cell-primary font-mono">{{ formatCurrency(order.totalFreightCost) }}</div>
+                <div class="cell-subtext">TDS: {{ formatCurrency(order.tdsWithheld) }} ({{ order.tdsRatePercent }}%)</div>
               </td>
               <td>
                 <span class="badge" :class="getStatusBadgeClass(order.status)">
@@ -2255,7 +2255,7 @@
                 </td>
                 <td><span class="badge gray">{{ c.rateModel }}</span></td>
                 <td class="font-mono">
-                  {{ c.rateModel === 'PER_KM' ? `₹${c.baseRatePerUnit}/KM` : c.rateModel === 'PER_KG' ? `₹${c.baseRatePerUnit}/KG` : `₹${c.baseRatePerUnit.toLocaleString('en-IN')} Flat` }}
+                  {{ c.rateModel === 'PER_KM' ? `${formatCurrency(c.baseRatePerUnit)}/KM` : c.rateModel === 'PER_KG' ? `${formatCurrency(c.baseRatePerUnit)}/KG` : `${formatCurrency(c.baseRatePerUnit)} Flat` }}
                 </td>
                 <td>
                   <span class="badge" :class="c.hasSec194CDeclaration ? 'green' : 'blue'">
@@ -2305,6 +2305,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from '../i18n';
 import {
   Package,
   TrendingUp,
@@ -2328,6 +2329,8 @@ import {
   Globe,
   Plus,
 } from 'lucide-vue-next';
+
+const { t, formatCurrency, currencySymbol, currencyConfig } = useI18n();
 
 const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation'>('inventory');
 

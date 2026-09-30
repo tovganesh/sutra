@@ -2,11 +2,11 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>🗄️ MinIO Enterprise S3 Document Vault</h2>
-        <p>Sovereign, air-gapped document archive for signed E-Invoices, Purchase Orders, statutory audit attachments, and contracts. 100% S3-compatible, encrypted at rest.</p>
+        <h2>🗄️ {{ $t('vault.heroTitle') }}</h2>
+        <p>{{ $t('vault.heroSubtitle') }}</p>
       </div>
       <div class="vault-status">
-        <span class="badge badge-success">MinIO Object Store Online</span>
+        <span class="badge badge-success">{{ $t('vault.storeOnline') }}</span>
       </div>
     </div>
 
@@ -18,20 +18,20 @@
             <h3>{{ bucket.name }}</h3>
             <span>{{ bucket.description }}</span>
           </div>
-          <span class="badge badge-info">{{ bucket.fileCount }} Files</span>
+          <span class="badge badge-info">{{ $t('vault.filesBadge', { count: bucket.fileCount }) }}</span>
         </div>
 
         <div class="bucket-stats">
           <div class="stat-item">
-            <span class="stat-label">Total Size</span>
+            <span class="stat-label">{{ $t('vault.totalSize') }}</span>
             <strong>{{ bucket.totalSize }}</strong>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Encryption</span>
+            <span class="stat-label">{{ $t('vault.encryption') }}</span>
             <strong>AES-256 (SSE-S3)</strong>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Versioning</span>
+            <span class="stat-label">{{ $t('vault.versioning') }}</span>
             <strong>Enabled</strong>
           </div>
         </div>
@@ -42,22 +42,22 @@
     <div class="glass-card recent-docs-card">
       <div class="card-header">
         <div>
-          <h3>Recent Encrypted Document Attachments</h3>
-          <span class="card-subtitle">Immutable records linked to Sutra General Ledger</span>
+          <h3>{{ $t('vault.recentDocsTitle') }}</h3>
+          <span class="card-subtitle">{{ $t('vault.recentDocsSubtitle') }}</span>
         </div>
-        <button class="btn btn-secondary btn-sm">Upload New Document</button>
+        <button class="btn btn-secondary btn-sm">{{ $t('vault.uploadDocBtn') }}</button>
       </div>
 
       <div class="table-container">
         <table class="sutra-table">
           <thead>
             <tr>
-              <th>Document Name</th>
-              <th>Bucket</th>
-              <th>Linked Entity</th>
-              <th>File Size</th>
-              <th>SHA-256 Checksum</th>
-              <th>Uploaded At</th>
+              <th>{{ $t('vault.colDocName') }}</th>
+              <th>{{ $t('vault.colBucket') }}</th>
+              <th>{{ $t('vault.colLinkedEntity') }}</th>
+              <th>{{ $t('vault.colFileSize') }}</th>
+              <th>{{ $t('vault.colChecksum') }}</th>
+              <th>{{ $t('vault.colUploadedAt') }}</th>
             </tr>
           </thead>
           <tbody>

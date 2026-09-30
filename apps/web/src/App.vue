@@ -11,13 +11,13 @@
           </svg>
         </div>
         <div class="brand-info">
-          <span class="brand-title">SUTRA</span>
-          <span class="brand-badge">ENTERPRISE OS</span>
+          <span class="brand-title">{{ $t('nav.brandTitle') }}</span>
+          <span class="brand-badge">{{ $t('nav.brandBadge') }}</span>
         </div>
       </div>
 
       <nav class="nav-container">
-        <div class="nav-label">Core Suite</div>
+        <div class="nav-label">{{ $t('nav.coreSuite') }}</div>
         <button
           v-for="item in navItems"
           :key="item.id"
@@ -30,14 +30,14 @@
           <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
         </button>
 
-        <div class="nav-label" style="margin-top: 18px;">Storage & Vault</div>
+        <div class="nav-label" style="margin-top: 18px;">{{ $t('nav.storageVault') }}</div>
         <button
           class="nav-btn"
           :class="{ active: currentTab === 'vault' }"
           @click="currentTab = 'vault'"
         >
           <FolderArchive class="nav-icon" />
-          <span class="nav-text">MinIO Document Vault</span>
+          <span class="nav-text">{{ $t('nav.vault') }}</span>
         </button>
       </nav>
 
@@ -46,8 +46,8 @@
         <div class="tenant-card">
           <div class="tenant-avatar">BT</div>
           <div class="tenant-details">
-            <strong class="tenant-title">Bharat Tech Ltd</strong>
-            <span class="tenant-sub">GSTIN: 27AAACB2212M1Z0</span>
+            <strong class="tenant-title">{{ $t('header.tenantName') }}</strong>
+            <span class="tenant-sub">{{ $t('header.tenantGstin') }}</span>
           </div>
         </div>
       </div>
@@ -58,26 +58,46 @@
       <!-- Top Header -->
       <header class="top-header">
         <div class="header-left">
-          <button class="icon-btn" @click="isCollapsed = !isCollapsed" title="Toggle Navigation">
+          <button class="icon-btn" @click="isCollapsed = !isCollapsed" :title="$t('header.toggleNav')">
             <Menu class="header-icon" />
           </button>
           <div class="page-title-box">
             <h1>{{ currentViewTitle }}</h1>
-            <span class="page-sub">Enterprise Operating Cockpit • Multi-Tenant Isolation</span>
+            <span class="page-sub">{{ $t('header.cockpitSubtitle') }}</span>
           </div>
         </div>
 
         <div class="header-right">
+          <!-- Language Selector -->
+          <div class="selector-pill" :title="$t('header.selectLanguage')">
+            <Globe class="selector-icon" />
+            <select :value="currentLocale" @change="onLocaleChange" class="header-select">
+              <option v-for="(loc, code) in supportedLocales" :key="code" :value="code">
+                {{ loc.flag }} {{ loc.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Currency Selector -->
+          <div class="selector-pill" :title="$t('header.selectCurrency')">
+            <Coins class="selector-icon" />
+            <select :value="currentCurrency" @change="onCurrencyChange" class="header-select">
+              <option v-for="(curr, code) in supportedCurrencies" :key="code" :value="code">
+                {{ curr.symbol }} {{ curr.code }}
+              </option>
+            </select>
+          </div>
+
           <div class="system-status">
             <span class="pulse-indicator"></span>
-            <span class="status-name">Engine v0.1 Online</span>
+            <span class="status-name">{{ $t('header.engineStatus') }}</span>
           </div>
 
           <div class="jurisdiction-pill">
-            <span>🇮🇳 India First</span>
+            <span>{{ $t('header.jurisdiction') }}</span>
           </div>
 
-          <button class="theme-btn" @click="toggleTheme" title="Toggle Light/Dark Theme">
+          <button class="theme-btn" @click="toggleTheme" :title="$t('header.toggleTheme')">
             <component :is="isDark ? Sun : Moon" class="header-icon" />
           </button>
 
@@ -111,7 +131,10 @@ import {
   Moon,
   Lock,
   Truck,
+  Globe,
+  Coins,
 } from 'lucide-vue-next';
+import { useI18n } from './i18n';
 
 // Views
 import ExecutiveDashboard from './views/ExecutiveDashboard.vue';
@@ -123,32 +146,32 @@ import FinancialAnalytics from './views/FinancialAnalytics.vue';
 import GenAICopilot from './views/GenAICopilot.vue';
 import DocumentVault from './views/DocumentVault.vue';
 
+const {
+  currentLocale,
+  currentCurrency,
+  supportedLocales,
+  supportedCurrencies,
+  setLocale,
+  setCurrency,
+  t,
+} = useI18n();
+
 const currentTab = ref('dashboard');
 const isCollapsed = ref(false);
 const isDark = ref(true);
 
-const navItems = [
-  { id: 'dashboard', label: 'Executive Cockpit', icon: LayoutDashboard },
-  { id: 'auth', label: 'Auth & Identity', icon: Lock, badge: 'JWT/SSO' },
-  { id: 'supplychain', label: 'Supply Chain & ERP', icon: Truck, badge: 'MM/SD' },
-  { id: 'compliance', label: 'India Compliance', icon: ShieldCheck, badge: 'GST' },
-  { id: 'nocode', label: 'No-Code Studio', icon: Boxes },
-  { id: 'analytics', label: 'Financial OLAP', icon: LineChart },
-  { id: 'copilot', label: 'Gen AI Copilot', icon: Bot, badge: 'AI' },
-];
+const navItems = computed(() => [
+  { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+  { id: 'auth', label: t('nav.auth'), icon: Lock, badge: 'JWT/SSO' },
+  { id: 'supplychain', label: t('nav.supplychain'), icon: Truck, badge: 'MM/SD' },
+  { id: 'compliance', label: t('nav.compliance'), icon: ShieldCheck, badge: 'GST' },
+  { id: 'nocode', label: t('nav.nocode'), icon: Boxes },
+  { id: 'analytics', label: t('nav.analytics'), icon: LineChart },
+  { id: 'copilot', label: t('nav.copilot'), icon: Bot, badge: 'AI' },
+]);
 
 const currentViewTitle = computed(() => {
-  const map: Record<string, string> = {
-    dashboard: 'Executive Cockpit',
-    auth: 'Pluggable Enterprise Auth & JWT Console',
-    supplychain: 'Supply Chain & Enterprise Operations (MM • SD • P2P)',
-    compliance: 'India Statutory & GST Compliance',
-    nocode: 'No-Code Entity & Workflow Studio',
-    analytics: 'Financial Statements (P&L & Balance Sheet)',
-    copilot: 'Gen AI Enterprise Copilot',
-    vault: 'MinIO S3 Document Vault',
-  };
-  return map[currentTab.value] || 'Executive Cockpit';
+  return t(`nav.titles.${currentTab.value}`) || t('nav.dashboard');
 });
 
 const currentViewComponent = computed(() => {
@@ -169,6 +192,16 @@ function toggleTheme() {
   isDark.value = !isDark.value;
   document.body.classList.toggle('light-theme', !isDark.value);
   document.body.classList.toggle('dark-theme', isDark.value);
+}
+
+function onLocaleChange(e: Event) {
+  const target = e.target as HTMLSelectElement;
+  setLocale(target.value);
+}
+
+function onCurrencyChange(e: Event) {
+  const target = e.target as HTMLSelectElement;
+  setCurrency(target.value);
 }
 </script>
 
@@ -449,6 +482,44 @@ function toggleTheme() {
   color: var(--brand-blue);
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
+
+.selector-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  transition: var(--transition-fast);
+}
+
+.selector-pill:hover {
+  border-color: var(--border-active);
+}
+
+.selector-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--brand-cyan);
+}
+
+.header-select {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+
+.header-select option {
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
 
 .theme-btn {
   background: transparent;

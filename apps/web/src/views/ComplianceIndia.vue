@@ -2,8 +2,8 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>🇮🇳 India Statutory & Tax Compliance Engine</h2>
-        <p>Built for India first, configurable for the world. Natively computes Modulo-36 GSTIN checksums, intra/inter-state tax splitting, NIC E-Invoicing (IRN Hash + signed QR), GSTR-1/3B return filings, E-Way bills, and statutory Payroll (PF/ESI/PT).</p>
+        <h2>🇮🇳 {{ $t('compliance.heroTitle') }}</h2>
+        <p>{{ $t('compliance.heroSubtitle') }}</p>
       </div>
       <div class="compliance-tabs">
         <button
@@ -72,7 +72,7 @@
             <input type="text" v-model="taxHsn" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Taxable Value (₹):</label>
+            <label>Taxable Value ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="taxAmount" class="input-control" />
           </div>
         </div>
@@ -187,11 +187,11 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Output IGST (₹):</label>
+            <label>Output IGST ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="gstr3bOutIgst" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Output CGST+SGST (₹):</label>
+            <label>Output CGST+SGST ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="gstr3bOutCgstSgst" class="input-control" />
           </div>
         </div>
@@ -230,7 +230,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Basic Salary (₹):</label>
+            <label>Basic Salary ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="payrollBasic" class="input-control" />
           </div>
           <div class="form-group">
@@ -241,7 +241,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>HRA & Allowances (₹):</label>
+            <label>HRA & Allowances ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="payrollAllowances" class="input-control" />
           </div>
           <div class="form-group">
@@ -286,7 +286,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Invoice Amount (₹):</label>
+            <label>Invoice Amount ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="tdsAmount" class="input-control" />
           </div>
         </div>
@@ -314,7 +314,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>CIF Value (INR ₹):</label>
+            <label>CIF Value ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="customsCif" class="input-control" placeholder="1000000" />
           </div>
           <div class="form-group">
@@ -340,7 +340,7 @@
             <input type="number" v-model.number="customsIgstRate" class="input-control" placeholder="18.0" />
           </div>
           <div class="form-group">
-            <label>Anti-Dumping / Safeguard Duty (₹):</label>
+            <label>Anti-Dumping / Safeguard Duty ({{ currencySymbol }}):</label>
             <input type="number" v-model.number="customsAntiDumping" class="input-control" placeholder="0" />
           </div>
         </div>
@@ -436,7 +436,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import {
   ShieldCheck,
   Calculator,
@@ -450,15 +450,18 @@ import {
   Globe,
   FileCheck,
 } from 'lucide-vue-next';
+import { useI18n } from '../i18n';
+
+const { t, currencySymbol, formatCurrency } = useI18n();
 
 const activeSubTab = ref<'gst' | 'returns' | 'payroll' | 'customs'>('gst');
 
-const subTabs = [
-  { id: 'gst', label: 'GST & E-Invoicing' },
-  { id: 'returns', label: 'Returns (GSTR-1 & 3B)' },
-  { id: 'payroll', label: 'Statutory Payroll & TDS' },
+const subTabs = computed(() => [
+  { id: 'gst', label: t('compliance.tabs.gst') },
+  { id: 'returns', label: t('compliance.tabs.returns') },
+  { id: 'payroll', label: t('compliance.tabs.payroll') },
   { id: 'customs', label: 'Customs & Cross-Border Trade' },
-];
+]);
 
 // 1. GSTIN Validator State
 const gstinInput = ref('27AAACB2212M1Z0');
