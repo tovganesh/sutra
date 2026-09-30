@@ -2136,24 +2136,24 @@
       <!-- Quick Metrics Strip -->
       <div class="kpi-grid-4">
         <div class="data-card">
-          <span class="card-label">Active Transporters / Carriers</span>
+          <span class="card-label">{{ $t('supplyChain.transportation.activeTransporters') }}</span>
           <span class="card-value">{{ carriersList.length }}</span>
-          <span class="card-subtext positive">100% Section 194C Compliant</span>
+          <span class="card-subtext positive">{{ $t('supplyChain.transportation.sec194cCompliant') }}</span>
         </div>
         <div class="data-card">
-          <span class="card-label">Fleet Vehicles</span>
-          <span class="card-value">{{ vehiclesList.length }} Units</span>
-          <span class="card-subtext info">GPS Telematics Active</span>
+          <span class="card-label">{{ $t('supplyChain.transportation.fleetVehicles') }}</span>
+          <span class="card-value">{{ $t('supplyChain.transportation.units', { count: vehiclesList.length }) }}</span>
+          <span class="card-subtext info">{{ $t('supplyChain.transportation.telematicsActive') }}</span>
         </div>
         <div class="data-card">
-          <span class="card-label">Consignments In Transit</span>
+          <span class="card-label">{{ $t('supplyChain.transportation.consignmentsInTransit') }}</span>
           <span class="card-value text-accent">{{ inTransitOrdersCount }}</span>
-          <span class="card-subtext">Active Lorry Receipts (LR)</span>
+          <span class="card-subtext">{{ $t('supplyChain.transportation.activeLr') }}</span>
         </div>
         <div class="data-card">
-          <span class="card-label">Benchmark Diesel Rate</span>
-          <span class="card-value text-green">{{ formatCurrency(94.5, { decimals: 2 }) }} / L</span>
-          <span class="card-subtext warning">+1.50% Fuel Surcharge</span>
+          <span class="card-label">{{ $t('supplyChain.transportation.benchmarkDiesel') }}</span>
+          <span class="card-value text-green">{{ $t('supplyChain.transportation.dieselPerLiter', { rate: formatCurrency(94.5, { decimals: 2 }) }) }}</span>
+          <span class="card-subtext warning">{{ $t('supplyChain.transportation.fuelSurcharge') }}</span>
         </div>
       </div>
 
@@ -2201,7 +2201,7 @@
               </td>
               <td>
                 <div class="cell-primary font-mono">{{ formatCurrency(order.totalFreightCost) }}</div>
-                <div class="cell-subtext">TDS: {{ formatCurrency(order.tdsWithheld) }} ({{ order.tdsRatePercent }}%)</div>
+                <div class="cell-subtext">{{ $t('supplyChain.transportation.tdsLabel', { amount: formatCurrency(order.tdsWithheld), rate: order.tdsRatePercent }) }}</div>
               </td>
               <td>
                 <span class="badge" :class="getStatusBadgeClass(order.status)">
@@ -2255,11 +2255,11 @@
                 </td>
                 <td><span class="badge gray">{{ c.rateModel }}</span></td>
                 <td class="font-mono">
-                  {{ c.rateModel === 'PER_KM' ? `${formatCurrency(c.baseRatePerUnit)}/KM` : c.rateModel === 'PER_KG' ? `${formatCurrency(c.baseRatePerUnit)}/KG` : `${formatCurrency(c.baseRatePerUnit)} Flat` }}
+                  {{ c.rateModel === 'PER_KM' ? $t('supplyChain.transportation.ratePerKm', { rate: formatCurrency(c.baseRatePerUnit) }) : c.rateModel === 'PER_KG' ? $t('supplyChain.transportation.ratePerKg', { rate: formatCurrency(c.baseRatePerUnit) }) : $t('supplyChain.transportation.rateFlat', { rate: formatCurrency(c.baseRatePerUnit) }) }}
                 </td>
                 <td>
                   <span class="badge" :class="c.hasSec194CDeclaration ? 'green' : 'blue'">
-                    {{ c.hasSec194CDeclaration ? '0% (Fleet &le; 10)' : c.isCompany ? '2% TDS' : '1% TDS' }}
+                    {{ c.hasSec194CDeclaration ? $t('supplyChain.transportation.tdsZeroFleet') : c.isCompany ? $t('supplyChain.transportation.tdsCompany') : $t('supplyChain.transportation.tdsIndividual') }}
                   </span>
                 </td>
                 <td><span class="font-bold text-accent">&star; {{ c.ratingScore }}</span></td>
@@ -3782,12 +3782,16 @@ async function dispatchOrder(orderNumber: string) {
 
 async function openPodModal(order: any) {
   const enteredOtp = prompt(
-    `Enter 6-digit electronic Proof of Delivery (e-POD) OTP for ${order.lorryReceiptNumber}:\n(Generated OTP for demo: ${order.podOtp || '482910'})`,
+    t('supplyChain.messages.enterPodOtp', {
+      lrNumber: order.lorryReceiptNumber,
+      demoOtp: order.podOtp || '482910',
+    }),
     order.podOtp || '482910'
   );
   if (!enteredOtp) return;
 
-  const recipient = prompt('Enter Recipient Name:', 'S. Kumar (Warehouse Manager)') || 'S. Kumar (Warehouse Manager)';
+  const defaultRecipient = t('supplyChain.messages.defaultRecipient');
+  const recipient = prompt(t('supplyChain.messages.enterRecipient'), defaultRecipient) || defaultRecipient;
 
   try {
     const res = await fetch('/api/v1/transportation/orders/confirm-delivery', {
@@ -3801,7 +3805,7 @@ async function openPodModal(order: any) {
     });
     if (res.ok) {
       order.status = 'DELIVERED';
-      alert(`e-POD Verified for ${order.lorryReceiptNumber}! Balanced GL settlement voucher posted: 520100 Dr Freight Expense / 210400 Cr Transporter AP.`);
+      alert(t('supplyChain.messages.podVerifiedAlert', { lrNumber: order.lorryReceiptNumber }));
       return;
     }
   } catch {
@@ -3809,7 +3813,7 @@ async function openPodModal(order: any) {
   }
 
   order.status = 'DELIVERED';
-  alert(`e-POD Verified for ${order.lorryReceiptNumber}! Balanced GL settlement voucher posted: 520100 Dr Freight Expense / 210400 Cr Transporter AP.`);
+  alert(t('supplyChain.messages.podVerifiedAlert', { lrNumber: order.lorryReceiptNumber }));
 }
 </script>
 

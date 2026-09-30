@@ -29,7 +29,7 @@
             <label>{{ $t('auth.authStrategy') }}</label>
             <select v-model="selectedProviderId" class="input-control">
               <option v-for="p in providers" :key="p.id" :value="p.id">
-                {{ p.name }} ({{ p.type.toUpperCase() }})
+                {{ p.nameKey ? $t(p.nameKey) : p.name }} ({{ p.type.toUpperCase() }})
               </option>
             </select>
           </div>
@@ -116,10 +116,10 @@
             </div>
             <div class="plugin-meta">
               <div class="plugin-title-row">
-                <strong>{{ p.name }}</strong>
+                <strong>{{ p.nameKey ? $t(p.nameKey) : p.name }}</strong>
                 <span v-if="p.isDefault" class="badge badge-success">{{ $t('auth.activeDefault') }}</span>
               </div>
-              <p class="plugin-desc">{{ p.description }}</p>
+              <p class="plugin-desc">{{ p.descKey ? $t(p.descKey) : p.description }}</p>
               <div class="plugin-protocol">
                 {{ $t('auth.protocolLabel') }}: <code>{{ p.type.toUpperCase() }}</code> • ID: <code>{{ p.id }}</code>
               </div>
@@ -146,8 +146,49 @@
               {{ $t('auth.launchOktaBtn') }}
             </button>
           </div>
-          <div v-if="ssoResult" class="code-preview" style="margin-top: 12px;">
-            {{ ssoResult }}
+          <!-- Executive SSO Handshake Summary Card -->
+          <div v-if="ssoData" class="result-summary-card" style="margin-top: 16px;">
+            <div class="result-card-header">
+              <div class="result-title-row">
+                <span class="result-title">⚡ {{ $t('auth.ssoResults.summaryTitle') }}</span>
+                <span class="badge badge-success">{{ ssoData.status }}</span>
+              </div>
+              <button class="json-toggle-btn" @click="showRawSsoJson = !showRawSsoJson">
+                {{ showRawSsoJson ? $t('auth.ssoResults.hideJson') : $t('auth.ssoResults.rawJson') }}
+              </button>
+            </div>
+
+            <div class="result-metrics-grid">
+              <div class="result-metric">
+                <span class="metric-label">{{ $t('auth.ssoResults.targetIdp') }}</span>
+                <span class="metric-val text-brand">{{ ssoData.providerName }}</span>
+              </div>
+              <div class="result-metric">
+                <span class="metric-label">{{ $t('auth.ssoResults.protocol') }}</span>
+                <span class="metric-val">{{ ssoData.protocol }}</span>
+              </div>
+              <div class="result-metric">
+                <span class="metric-label">Client ID / Scope</span>
+                <span class="metric-val font-mono" style="font-size: 0.78rem;">{{ ssoData.clientId }}</span>
+              </div>
+              <div class="result-metric">
+                <span class="metric-label">{{ $t('auth.ssoResults.handshakeStatus') }}</span>
+                <span class="metric-val text-accent">{{ ssoData.status }}</span>
+              </div>
+            </div>
+
+            <div class="sso-redirect-box">
+              <span class="redirect-label">{{ $t('auth.ssoResults.authRedirect') }}:</span>
+              <code class="redirect-url">{{ ssoData.redirectUrl }}</code>
+            </div>
+
+            <div class="sso-step-note">
+              <span>💡 <strong>{{ $t('auth.ssoResults.nextStep') }}:</strong> {{ ssoData.nextStep }}</span>
+            </div>
+
+            <div v-if="showRawSsoJson" class="code-preview" style="margin-top: 10px;">
+              {{ ssoData.rawJson }}
+            </div>
           </div>
         </div>
       </div>
@@ -158,12 +199,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { Key, Shield, UserCheck, RefreshCw, LogOut } from 'lucide-vue-next';
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 interface AuthProvider {
   id: string;
   name: string;
+  nameKey?: string;
   type: string;
   description: string;
+  descKey?: string;
   isDefault: boolean;
 }
 
@@ -184,26 +230,44 @@ interface TokenInfo {
   tokenType: string;
 }
 
+interface SsoHandshakeData {
+  status: string;
+  providerId: string;
+  providerName: string;
+  protocol: string;
+  redirectUrl: string;
+  nextStep: string;
+  scope: string;
+  clientId: string;
+  rawJson: string;
+}
+
 const providers = ref<AuthProvider[]>([
   {
     id: 'local-jwt',
     name: 'Sutra Standard JWT Authentication',
+    nameKey: 'auth.providers.localJwt.name',
     type: 'jwt',
     description: 'Built-in enterprise password and JWT token authentication with bcrypt hashing',
+    descKey: 'auth.providers.localJwt.desc',
     isDefault: true,
   },
   {
     id: 'azure-ad-oidc',
     name: 'Microsoft Entra ID (Azure AD)',
+    nameKey: 'auth.providers.azureAd.name',
     type: 'oidc',
     description: 'Enterprise OpenID Connect & OAuth2 Federation (Okta, Azure AD, Keycloak)',
+    descKey: 'auth.providers.azureAd.desc',
     isDefault: false,
   },
   {
     id: 'okta-saml',
     name: 'Okta Enterprise SAML 2.0',
+    nameKey: 'auth.providers.oktaSaml.name',
     type: 'saml',
     description: 'Enterprise SAML 2.0 Identity Federation (ADFS, Okta SAML, Ping Identity)',
+    descKey: 'auth.providers.oktaSaml.desc',
     isDefault: false,
   },
 ]);
@@ -231,11 +295,13 @@ const tokenData = ref<TokenInfo | null>({
   tokenType: 'Bearer',
 });
 
-const ssoResult = ref<string | null>(null);
+const ssoData = ref<SsoHandshakeData | null>(null);
+const showRawSsoJson = ref(false);
 
 const activeProviderName = computed(() => {
   const p = providers.value.find((x) => x.isDefault);
-  return p ? p.name : 'Local JWT';
+  if (!p) return 'Local JWT';
+  return p.nameKey ? t(p.nameKey) : p.name;
 });
 
 const userInitials = computed(() => {
@@ -277,7 +343,7 @@ async function performLogin() {
 
     const data = await res.json();
     if (!res.ok) {
-      alert(`Login Failed: ${data.message || data.error}`);
+      alert(t('auth.alerts.loginFailed', { error: data.message || data.error }));
       return;
     }
 
@@ -298,9 +364,13 @@ async function testAuthMe() {
       headers: { Authorization: `Bearer ${tokenData.value.accessToken}` },
     });
     const data = await res.json();
-    alert(`Token Validated Successfully!\n\nUser: ${data.user?.fullName}\nRoles: ${data.user?.roles?.join(', ')}\nTenant: ${data.user?.tenantId}`);
+    alert(t('auth.alerts.tokenValidated', {
+      name: data.user?.fullName || currentUser.value?.fullName || '',
+      roles: data.user?.roles?.join(', ') || currentUser.value?.roles?.join(', ') || '',
+      tenant: data.user?.tenantId || currentUser.value?.tenantId || '',
+    }));
   } catch {
-    alert('Session verified via Sutra JWT token middleware.');
+    alert(t('auth.alerts.sessionVerified'));
   }
 }
 
@@ -319,10 +389,10 @@ async function refreshToken() {
     const data = await res.json();
     if (data.tokens) {
       tokenData.value = data.tokens;
-      alert('JWT Access Token refreshed successfully!');
+      alert(t('auth.alerts.tokenRefreshed'));
     }
   } catch {
-    alert('JWT token refreshed.');
+    alert(t('auth.alerts.tokenRefreshed'));
   }
 }
 
@@ -340,22 +410,48 @@ function makeDefaultProvider(providerId: string) {
 }
 
 async function simulateSSO(providerId: string) {
+  const isAzure = providerId.includes('azure');
+  const providerName = isAzure ? t('auth.providers.azureAd.name') : t('auth.providers.oktaSaml.name');
+  const protocol = isAzure ? 'OIDC / OAuth 2.0 PKCE' : 'SAML 2.0 AuthNRequest';
+
   try {
     const res = await fetch(`/api/v1/auth/sso/login-url?providerId=${providerId}`);
     const data = await res.json();
-    ssoResult.value = JSON.stringify({
+    const payload = {
       status: 'HANDSHAKE_INITIATED',
-      providerId: data.providerId,
-      authorizationRedirectUrl: data.redirectUrl,
+      providerId: data.providerId || providerId,
+      authorizationRedirectUrl: data.redirectUrl || `https://identity.enterprise.com/oauth2/v1/authorize?client_id=sutra-enterprise&scope=openid+profile+email&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback`,
       nextStep: 'Redirect client browser to IdP consent screen and catch callback on /auth/sso/callback',
-    }, null, 2);
+    };
+    ssoData.value = {
+      status: 'HANDSHAKE_INITIATED',
+      providerId,
+      providerName,
+      protocol,
+      redirectUrl: payload.authorizationRedirectUrl,
+      nextStep: payload.nextStep,
+      scope: 'openid profile email offline_access',
+      clientId: 'sutra-enterprise-os',
+      rawJson: JSON.stringify(payload, null, 2),
+    };
   } catch {
-    ssoResult.value = JSON.stringify({
+    const payload = {
       status: 'HANDSHAKE_SIMULATED',
       providerId,
       authorizationRedirectUrl: `https://identity.enterprise.com/oauth2/v1/authorize?client_id=sutra-enterprise&scope=openid+profile+email&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fcallback`,
-      protocol: providerId.includes('saml') ? 'SAML 2.0 AuthNRequest' : 'OIDC / OAuth 2.0 PKCE',
-    }, null, 2);
+      protocol,
+    };
+    ssoData.value = {
+      status: 'HANDSHAKE_SIMULATED',
+      providerId,
+      providerName,
+      protocol,
+      redirectUrl: payload.authorizationRedirectUrl,
+      nextStep: 'Redirect client browser to IdP consent screen and catch callback on /auth/sso/callback',
+      scope: 'openid profile email offline_access',
+      clientId: 'sutra-enterprise-os',
+      rawJson: JSON.stringify(payload, null, 2),
+    };
   }
 }
 </script>
@@ -610,5 +706,120 @@ async function simulateSSO(providerId: string) {
 .icon-sm {
   width: 16px;
   height: 16px;
+}
+
+.result-summary-card {
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.1);
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.result-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.json-toggle-btn {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--brand-blue);
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.json-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.result-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.result-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.metric-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.text-brand {
+  color: var(--brand-blue) !important;
+}
+
+.text-accent {
+  color: var(--brand-cyan) !important;
+}
+
+.sso-redirect-box {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.redirect-label {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.redirect-url {
+  word-break: break-all;
+  font-size: 0.75rem;
+  color: var(--brand-cyan);
+}
+
+.sso-step-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: rgba(59, 130, 246, 0.05);
+  border-left: 3px solid var(--brand-blue);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 </style>
