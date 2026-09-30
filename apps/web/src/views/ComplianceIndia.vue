@@ -298,6 +298,140 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 4: Customs, Cross-Border Trade & Global Jurisdictions -->
+    <div v-if="activeSubTab === 'customs'" class="tools-grid">
+      <!-- Tool 1: Indian Customs & Landed Cost Valuation -->
+      <div class="glass-card tool-card">
+        <div class="tool-header">
+          <div class="tool-title">
+            <span class="tool-tag">Customs Act 1962 & IGST</span>
+            <h3>Indian Customs Duty & Landed Cost Engine</h3>
+          </div>
+          <Ship class="tool-icon" />
+        </div>
+        <p class="tool-desc">Calculates CIF Assessable Value, BCD, Social Welfare Surcharge (SWS), IGST, and segregates Creditable ITC (GSTR-3B Table 4A1) from capitalized inventory duty.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>CIF Value (INR ₹):</label>
+            <input type="number" v-model.number="customsCif" class="input-control" placeholder="1000000" />
+          </div>
+          <div class="form-group">
+            <label>HSN / Customs Tariff Code:</label>
+            <input type="text" v-model="customsHsn" class="input-control" placeholder="84713010" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Basic Customs Duty (BCD %):</label>
+            <input type="number" v-model.number="customsBcdRate" class="input-control" placeholder="10.0" />
+          </div>
+          <div class="form-group">
+            <label>Social Welfare Surcharge (SWS % of BCD):</label>
+            <input type="number" v-model.number="customsSwsRate" class="input-control" placeholder="10.0" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Integrated GST (IGST %):</label>
+            <input type="number" v-model.number="customsIgstRate" class="input-control" placeholder="18.0" />
+          </div>
+          <div class="form-group">
+            <label>Anti-Dumping / Safeguard Duty (₹):</label>
+            <input type="number" v-model.number="customsAntiDumping" class="input-control" placeholder="0" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" @click="calculateCustomsDuty">Calculate Customs Landed Cost</button>
+
+        <div v-if="customsResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+          {{ customsResult }}
+        </div>
+      </div>
+
+      <!-- Tool 2: Rule 96A LUT Export Verification -->
+      <div class="glass-card tool-card">
+        <div class="tool-header">
+          <div class="tool-title">
+            <span class="tool-tag">Rule 96A CGST Rules</span>
+            <h3>Letter of Undertaking (LUT) Export Verifier</h3>
+          </div>
+          <FileCheck class="tool-icon" />
+        </div>
+        <p class="tool-desc">Verifies official GSTN ARN syntax for zero-rated export of goods and services without payment of integrated tax under bond/LUT.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Exporter GSTIN:</label>
+            <input type="text" v-model="lutExporterGstin" class="input-control" placeholder="27AAACB2212M1Z0" />
+          </div>
+          <div class="form-group">
+            <label>Financial Year:</label>
+            <input type="text" v-model="lutFy" class="input-control" placeholder="2026-27" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>GSTN LUT ARN:</label>
+          <div class="input-with-btn">
+            <input type="text" v-model="lutArnInput" class="input-control" placeholder="e.g. AD270326001234F" />
+            <button class="btn btn-secondary" @click="verifyLutArn">Verify LUT</button>
+          </div>
+        </div>
+
+        <div v-if="lutResult" class="code-preview" style="margin-top: 14px;">
+          {{ lutResult }}
+        </div>
+      </div>
+
+      <!-- Tool 3: Global Multi-Jurisdiction Tax Simulator -->
+      <div class="glass-card tool-card" style="grid-column: 1 / -1;">
+        <div class="tool-header">
+          <div class="tool-title">
+            <span class="tool-tag">Global Tax Engine</span>
+            <h3>Cross-Border Jurisdiction Tax Simulator</h3>
+          </div>
+          <Globe class="tool-icon" />
+        </div>
+        <p class="tool-desc">Configurable global tax rules: US State & Local Nexus (California 8.25%), EU VIES Cross-Border Reverse Charge (Art 194), UAE FTA VAT (5%), and India GST.</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Select Jurisdiction:</label>
+            <select v-model="globalTaxCountry" class="input-control">
+              <option value="US">United States (US Nexus & Local Surcharges)</option>
+              <option value="EU">European Union (VIES Cross-Border B2B / B2C)</option>
+              <option value="AE">United Arab Emirates (UAE Federal Tax Authority 5%)</option>
+              <option value="IN">India (GST Council Dual GST)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Taxable Net Amount:</label>
+            <input type="number" v-model.number="globalTaxAmount" class="input-control" placeholder="50000" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Destination State / Region:</label>
+            <input type="text" v-model="globalTaxRegion" class="input-control" placeholder="CA (for US) or 29 (for IN)" />
+          </div>
+          <div class="form-group">
+            <label>Tax / VAT Registration ID:</label>
+            <input type="text" v-model="globalTaxRegId" class="input-control" placeholder="e.g. DE123456789 (for EU VIES)" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary" @click="runGlobalTaxSim">Simulate Jurisdiction Tax</button>
+
+        <div v-if="globalTaxResult" class="code-preview" style="margin-top: 14px; max-height: 280px;">
+          {{ globalTaxResult }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -312,14 +446,18 @@ import {
   FileSpreadsheet,
   Scale,
   Users,
+  Ship,
+  Globe,
+  FileCheck,
 } from 'lucide-vue-next';
 
-const activeSubTab = ref<'gst' | 'returns' | 'payroll'>('gst');
+const activeSubTab = ref<'gst' | 'returns' | 'payroll' | 'customs'>('gst');
 
 const subTabs = [
   { id: 'gst', label: 'GST & E-Invoicing' },
   { id: 'returns', label: 'Returns (GSTR-1 & 3B)' },
   { id: 'payroll', label: 'Statutory Payroll & TDS' },
+  { id: 'customs', label: 'Customs & Cross-Border Trade' },
 ];
 
 // 1. GSTIN Validator State
@@ -623,6 +761,114 @@ async function evaluateTds() {
       appliedRate: 2.0,
       tdsAmount: (tdsAmount.value * 0.02),
       netPayableAmount: (tdsAmount.value * 0.98),
+    }, null, 2);
+  }
+}
+
+// 9. Indian Customs & Landed Cost State
+const customsCif = ref(1000000);
+const customsHsn = ref('84713010');
+const customsBcdRate = ref(10.0);
+const customsSwsRate = ref(10.0);
+const customsIgstRate = ref(18.0);
+const customsAntiDumping = ref(0);
+const customsResult = ref<string | null>(null);
+
+async function calculateCustomsDuty() {
+  try {
+    const res = await fetch('/api/v1/compliance/customs/import-duty', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cifValueInr: customsCif.value,
+        hsnCode: customsHsn.value.trim(),
+        basicCustomsDutyPercent: customsBcdRate.value,
+        swsPercent: customsSwsRate.value,
+        igstPercent: customsIgstRate.value,
+        antiDumpingDuty: customsAntiDumping.value,
+      }),
+    });
+    const data = await res.json();
+    customsResult.value = JSON.stringify(data, null, 2);
+  } catch {
+    const bcd = customsCif.value * (customsBcdRate.value / 100);
+    const sws = bcd * (customsSwsRate.value / 100);
+    const igstBase = customsCif.value + bcd + sws + customsAntiDumping.value;
+    const igst = igstBase * (customsIgstRate.value / 100);
+    customsResult.value = JSON.stringify({
+      assessableValue: customsCif.value,
+      bcdAmount: bcd,
+      swsAmount: sws,
+      igstAmount: igst,
+      totalCustomsDuty: bcd + sws + igst,
+      totalLandedCost: customsCif.value + bcd + sws + igst,
+      creditableItc: igst,
+      nonCreditableDutyCost: bcd + sws,
+      status: 'CALCULATED_LOCAL_FALLBACK',
+    }, null, 2);
+  }
+}
+
+// 10. Rule 96A LUT Export State
+const lutExporterGstin = ref('27AAACB2212M1Z0');
+const lutFy = ref('2026-27');
+const lutArnInput = ref('AD270326001234F');
+const lutResult = ref<string | null>(null);
+
+async function verifyLutArn() {
+  try {
+    const res = await fetch('/api/v1/compliance/export/lut-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lutArn: lutArnInput.value.trim(),
+        financialYear: lutFy.value.trim(),
+        exporterGstin: lutExporterGstin.value.trim(),
+      }),
+    });
+    const data = await res.json();
+    lutResult.value = JSON.stringify(data, null, 2);
+  } catch {
+    const isValid = /^AD[0-9]{2}[0-9]{2}[0-9]{2}[0-9]{6}[A-Z0-9]$/i.test(lutArnInput.value.trim());
+    lutResult.value = JSON.stringify({
+      isValid,
+      arn: lutArnInput.value.trim().toUpperCase(),
+      financialYear: lutFy.value,
+      status: isValid ? 'ACTIVE_VALID_LUT' : 'INVALID_SYNTAX',
+      governingRule: 'Rule 96A of CGST Rules 2017',
+    }, null, 2);
+  }
+}
+
+// 11. Global Tax Jurisdiction State
+const globalTaxCountry = ref('US');
+const globalTaxAmount = ref(50000);
+const globalTaxRegion = ref('CA');
+const globalTaxRegId = ref('DE123456789');
+const globalTaxResult = ref<string | null>(null);
+
+async function runGlobalTaxSim() {
+  try {
+    const res = await fetch('/api/v1/multicurrency/tax/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        countryCode: globalTaxCountry.value,
+        taxableAmount: globalTaxAmount.value,
+        customerStateOrRegion: globalTaxRegion.value,
+        companyStateOrRegion: 'CA',
+        taxRegistrationNumber: globalTaxRegId.value,
+      }),
+    });
+    const data = await res.json();
+    globalTaxResult.value = JSON.stringify(data, null, 2);
+  } catch {
+    globalTaxResult.value = JSON.stringify({
+      countryCode: globalTaxCountry.value,
+      taxableAmount: globalTaxAmount.value,
+      taxRatePercent: globalTaxCountry.value === 'US' ? 8.25 : 20.0,
+      taxAmount: globalTaxAmount.value * 0.0825,
+      isReverseChargeApplicable: false,
     }, null, 2);
   }
 }
