@@ -134,6 +134,26 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         assert.ok(header.userAvatarTitle && header.userAvatarTitle.length > 0);
       }
     });
+
+    test('verifies supplyChain messages/transportation, vault, and auth dictionaries', () => {
+      for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
+        const sc = messages[locale].supplyChain;
+        assert.ok(sc.messages && Object.keys(sc.messages).length === 4, `SC messages in ${locale} must have 4 keys`);
+        assert.ok(sc.transportation && Object.keys(sc.transportation).length === 17, `SC transportation in ${locale} must have 17 keys`);
+
+        const vault = messages[locale].vault;
+        assert.ok(vault.buckets && Object.keys(vault.buckets).length === 2, `Vault buckets in ${locale} must have 2 keys`);
+        assert.ok(vault.entities && Object.keys(vault.entities).length === 4, `Vault entities in ${locale} must have 4 keys`);
+        assert.ok(vault.timestamps && Object.keys(vault.timestamps).length === 2, `Vault timestamps in ${locale} must have 2 keys`);
+        assert.ok(vault.modal && Object.keys(vault.modal).length === 7, `Vault modal in ${locale} must have 7 keys`);
+        assert.ok(vault.kpis && Object.keys(vault.kpis).length === 8, `Vault kpis in ${locale} must have 8 keys`);
+
+        const auth = messages[locale].auth;
+        assert.ok(auth.providers && Object.keys(auth.providers).length === 3, `Auth providers in ${locale} must have 3 keys`);
+        assert.ok(auth.alerts && Object.keys(auth.alerts).length === 4, `Auth alerts in ${locale} must have 4 keys`);
+        assert.ok(auth.ssoResults && Object.keys(auth.ssoResults).length === 9, `Auth ssoResults in ${locale} must have 9 keys`);
+      }
+    });
   });
 
   describe('Multi-Currency Configuration & Live FX Engine', () => {

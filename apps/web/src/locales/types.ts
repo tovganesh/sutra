@@ -523,6 +523,31 @@ export interface LocaleMessage {
       outboundSales: string;
       inboundPurchase: string;
     };
+    messages: {
+      enterPodOtp: string;
+      enterRecipient: string;
+      defaultRecipient: string;
+      podVerifiedAlert: string;
+    };
+    transportation: {
+      activeTransporters: string;
+      sec194cCompliant: string;
+      fleetVehicles: string;
+      units: string;
+      telematicsActive: string;
+      consignmentsInTransit: string;
+      activeLr: string;
+      benchmarkDiesel: string;
+      dieselPerLiter: string;
+      fuelSurcharge: string;
+      tdsZeroFleet: string;
+      tdsCompany: string;
+      tdsIndividual: string;
+      ratePerKm: string;
+      ratePerKg: string;
+      rateFlat: string;
+      tdsLabel: string;
+    };
   };
   nocode: {
     heroTitle: string;
@@ -615,6 +640,39 @@ export interface LocaleMessage {
     colFileSize: string;
     colChecksum: string;
     colUploadedAt: string;
+    buckets: {
+      documentsDesc: string;
+      attachmentsDesc: string;
+    };
+    entities: {
+      invoiceSales: string;
+      billOfEntry: string;
+      assetMachinery: string;
+      auditReport: string;
+    };
+    timestamps: {
+      today: string;
+      yesterday: string;
+    };
+    modal: {
+      title: string;
+      fileNameLabel: string;
+      bucketLabel: string;
+      entityLabel: string;
+      uploadBtn: string;
+      cancelBtn: string;
+      successNotice: string;
+    };
+    kpis: {
+      totalDocs: string;
+      totalDocsValue: string;
+      totalStorage: string;
+      totalStorageValue: string;
+      encryptionType: string;
+      encryptionValue: string;
+      sla: string;
+      slaValue: string;
+    };
   };
   auth: {
     heroTitle: string;
@@ -648,5 +706,36 @@ export interface LocaleMessage {
     launchAzureBtn: string;
     launchOktaBtn: string;
     protocolLabel: string;
+    providers: {
+      localJwt: {
+        name: string;
+        desc: string;
+      };
+      azureAd: {
+        name: string;
+        desc: string;
+      };
+      oktaSaml: {
+        name: string;
+        desc: string;
+      };
+    };
+    alerts: {
+      loginFailed: string;
+      tokenValidated: string;
+      sessionVerified: string;
+      tokenRefreshed: string;
+    };
+    ssoResults: {
+      summaryTitle: string;
+      handshakeStatus: string;
+      targetIdp: string;
+      protocol: string;
+      authRedirect: string;
+      nextStep: string;
+      simulatedNotice: string;
+      rawJson: string;
+      hideJson: string;
+    };
   };
 }
