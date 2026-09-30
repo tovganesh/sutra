@@ -34,5 +34,7 @@ export * from './warehouse/warehouse-types.js';
 export * from './warehouse/warehouse-engine.js';
 export * from './multicurrency/multicurrency-types.js';
 export * from './multicurrency/multicurrency-engine.js';
+export * from './transportation/transportation-types.js';
+export * from './transportation/transportation-engine.js';
 export * from './common/http-status.js';
 
