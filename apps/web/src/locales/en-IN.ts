@@ -71,6 +71,7 @@ export const enIN: LocaleMessage = {
     toggleNav: 'Toggle Navigation',
     selectLanguage: 'Language',
     selectCurrency: 'Currency',
+    userAvatarTitle: 'Chief Enterprise Architect (SuperAdmin) - Manage JWT & Auth Strategy',
   },
   dashboard: {
     kpis: {
@@ -556,6 +557,13 @@ export const enIN: LocaleMessage = {
     modalStatusLabel: 'Operational Status:',
     modalLocationLabel: 'Plant Location:',
     saveRecordBtn: 'Save & Index Record',
+    statusOptions: {
+      active: 'Active',
+      maintenance: 'Under Maintenance',
+      decommissioned: 'Decommissioned',
+    },
+    validationAlert: 'Please complete mandatory fields (Asset Tag & Description)',
+    enterFieldPrompt: 'Enter field label (e.g. "Calibration Certificate Number"):',
   },
   copilot: {
     heroTitle: 'Sutra Sovereign Gen AI Enterprise Copilot',
@@ -578,6 +586,28 @@ export const enIN: LocaleMessage = {
     aiAssistantGreeting: 'Hello! I am your Sutra Enterprise AI Assistant. You can query financial records, check tax liabilities, or ask for operational forecasts in natural language.',
     copilotName: 'Sutra Copilot',
     userName: 'You',
+    providers: {
+      local: 'Ollama (Local LLaMA 3.2 / DeepSeek)',
+      openai: 'OpenAI (Cloud GPT-4o)',
+      gemini: 'Google Gemini 2.5 Flash',
+    },
+    results: {
+      supplier: 'Supplier Entity',
+      gstin: 'Supplier GSTIN',
+      invoiceNo: 'Extracted Invoice #',
+      invoiceDate: 'Invoice Date',
+      subtotal: 'Taxable Subtotal',
+      tax: 'Integrated Tax (18% IGST)',
+      total: 'Total Payable',
+      confidence: 'Vision/OCR Confidence Score',
+      colItem: 'Line Item Description',
+      colHsn: 'HSN / SAC',
+      colQty: 'Qty',
+      colPrice: 'Unit Price ({symbol})',
+      colAmount: 'Line Total ({symbol})',
+      rawJson: 'Show Technical JSON Payload',
+      hideJson: 'Hide Technical JSON Payload',
+    },
   },
   vault: {
     heroTitle: 'MinIO Enterprise S3 Document Vault',

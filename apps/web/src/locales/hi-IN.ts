@@ -71,6 +71,7 @@ export const hiIN: LocaleMessage = {
     toggleNav: 'नेविगेशन टॉगल करें',
     selectLanguage: 'भाषा चुनें',
     selectCurrency: 'मुद्रा चुनें',
+    userAvatarTitle: 'मुख्य एंटरप्राइज आर्किटेक्ट (SuperAdmin) - JWT और प्रमाणीकरण रणनीति प्रबंधित करें',
   },
   dashboard: {
     kpis: {
@@ -556,6 +557,13 @@ export const hiIN: LocaleMessage = {
     modalStatusLabel: 'परिचालन स्थिति:',
     modalLocationLabel: 'संयंत्र स्थान:',
     saveRecordBtn: 'रिकॉर्ड सहेजें',
+    statusOptions: {
+      active: 'सक्रिय (Active)',
+      maintenance: 'रखरखाव में (Maintenance)',
+      decommissioned: 'सेवामुक्त (Decommissioned)',
+    },
+    validationAlert: 'कृपया अनिवार्य फ़ील्ड भरें (संपत्ति टैग और विवरण)',
+    enterFieldPrompt: 'फ़ील्ड लेबल दर्ज करें (उदा. "अंशांकन प्रमाणपत्र संख्या"):',
   },
   copilot: {
     heroTitle: 'सूत्र संप्रभु जेन एआई एंटरप्राइज कोपायलट',
@@ -578,6 +586,28 @@ export const hiIN: LocaleMessage = {
     aiAssistantGreeting: 'नमस्ते! मैं आपका सूत्र एंटरप्राइज एआई सहायक हूं। आप वित्तीय रिकॉर्ड, कर देनदारियों या परिचालन पूर्वानुमानों के बारे में पूछ सकते हैं।',
     copilotName: 'सूत्र कोपायलट',
     userName: 'आप',
+    providers: {
+      local: 'ओलामा (लोकल LLaMA 3.2 / DeepSeek)',
+      openai: 'ओपनएआई (क्लाउड GPT-4o)',
+      gemini: 'गूगल जेमिनी 2.5 फ्लैश',
+    },
+    results: {
+      supplier: 'आपूर्तिकर्ता इकाई',
+      gstin: 'आपूर्तिकर्ता GSTIN',
+      invoiceNo: 'निकाला गया चालान सं.',
+      invoiceDate: 'चालान दिनांक',
+      subtotal: 'कर योग्य उप-योग',
+      tax: 'एकीकृत कर (18% IGST)',
+      total: 'कुल देय राशि',
+      confidence: 'विज़न/OCR विश्वसनीयता स्कोर',
+      colItem: 'मद विवरण',
+      colHsn: 'HSN / SAC कोड',
+      colQty: 'मात्रा',
+      colPrice: 'इकाई मूल्य ({symbol})',
+      colAmount: 'कुल राशि ({symbol})',
+      rawJson: 'तकनीकी JSON पेलोड दिखाएं',
+      hideJson: 'तकनीकी JSON पेलोड छुपाएं',
+    },
   },
   vault: {
     heroTitle: 'MinIO एंटरप्राइज S3 दस्तावेज़ वॉल्ट',

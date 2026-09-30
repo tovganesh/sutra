@@ -101,7 +101,7 @@
             <component :is="isDark ? Sun : Moon" class="header-icon" />
           </button>
 
-          <div class="user-avatar" @click="currentTab = 'auth'" style="cursor: pointer;" title="Chief Enterprise Architect (SuperAdmin) - Manage JWT & Auth Strategy">
+          <div class="user-avatar" @click="currentTab = 'auth'" style="cursor: pointer;" :title="$t('header.userAvatarTitle')">
             GA
           </div>
         </div>

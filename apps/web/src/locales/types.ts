@@ -60,6 +60,7 @@ export interface LocaleMessage {
     toggleNav: string;
     selectLanguage: string;
     selectCurrency: string;
+    userAvatarTitle: string;
   };
   dashboard: {
     kpis: {
@@ -545,6 +546,13 @@ export interface LocaleMessage {
     modalStatusLabel: string;
     modalLocationLabel: string;
     saveRecordBtn: string;
+    statusOptions: {
+      active: string;
+      maintenance: string;
+      decommissioned: string;
+    };
+    validationAlert: string;
+    enterFieldPrompt: string;
   };
   copilot: {
     heroTitle: string;
@@ -567,6 +575,28 @@ export interface LocaleMessage {
     aiAssistantGreeting: string;
     copilotName: string;
     userName: string;
+    providers: {
+      local: string;
+      openai: string;
+      gemini: string;
+    };
+    results: {
+      supplier: string;
+      gstin: string;
+      invoiceNo: string;
+      invoiceDate: string;
+      subtotal: string;
+      tax: string;
+      total: string;
+      confidence: string;
+      colItem: string;
+      colHsn: string;
+      colQty: string;
+      colPrice: string;
+      colAmount: string;
+      rawJson: string;
+      hideJson: string;
+    };
   };
   vault: {
     heroTitle: string;
