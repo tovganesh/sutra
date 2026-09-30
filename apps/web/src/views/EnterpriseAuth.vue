@@ -2,11 +2,11 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>🔐 Pluggable Enterprise Authentication System</h2>
-        <p>Zero vendor lock-in identity architecture. Built-in <strong>JWT-based authentication</strong> with bcrypt hashing, alongside an extensible plugin system supporting corporate <strong>OIDC (Azure AD, Keycloak)</strong> and <strong>SAML 2.0 (Okta, ADFS)</strong>.</p>
+        <h2>🔐 {{ $t('auth.heroTitle') }}</h2>
+        <p>{{ $t('auth.heroSubtitle') }}</p>
       </div>
       <div class="hero-status">
-        <span class="badge badge-success">Active Plugin: {{ activeProviderName }}</span>
+        <span class="badge badge-success">{{ $t('auth.activePlugin', { name: activeProviderName }) }}</span>
       </div>
     </div>
 
@@ -16,17 +16,17 @@
       <div class="glass-card auth-card">
         <div class="card-header">
           <div>
-            <h3>Enterprise Session & JWT Authentication</h3>
-            <span class="card-subtitle">Authenticate against Sutra Auth Service</span>
+            <h3>{{ $t('auth.sessionTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('auth.sessionSubtitle') }}</span>
           </div>
           <span class="badge" :class="isAuthenticated ? 'badge-success' : 'badge-warning'">
-            {{ isAuthenticated ? 'Session Active' : 'Unauthenticated' }}
+            {{ isAuthenticated ? $t('auth.sessionActive') : $t('auth.unauthenticated') }}
           </span>
         </div>
 
         <div v-if="!isAuthenticated" class="login-form">
           <div class="form-group">
-            <label>Authentication Strategy / Plugin:</label>
+            <label>{{ $t('auth.authStrategy') }}</label>
             <select v-model="selectedProviderId" class="input-control">
               <option v-for="p in providers" :key="p.id" :value="p.id">
                 {{ p.name }} ({{ p.type.toUpperCase() }})
@@ -35,26 +35,26 @@
           </div>
 
           <div class="form-group">
-            <label>Corporate Email / Username:</label>
+            <label>{{ $t('auth.emailLabel') }}</label>
             <input type="email" v-model="loginEmail" class="input-control" placeholder="admin@sutra.local" />
           </div>
 
           <div class="form-group">
-            <label>Password:</label>
+            <label>{{ $t('auth.passwordLabel') }}</label>
             <input type="password" v-model="loginPassword" class="input-control" placeholder="••••••••" />
           </div>
 
           <div class="form-group">
-            <label>Tenant ID (Organization Scoping):</label>
+            <label>{{ $t('auth.tenantIdLabel') }}</label>
             <input type="text" v-model="loginTenantId" class="input-control" />
           </div>
 
           <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" @click="performLogin">
-            <Key class="icon-sm" /> Sign In & Issue JWT
+            <Key class="icon-sm" /> {{ $t('auth.signInBtn') }}
           </button>
 
           <div class="quick-credentials">
-            <span>Default Evaluation Credentials:</span>
+            <span>{{ $t('auth.defaultCreds') }}</span>
             <code>admin@sutra.local</code> / <code>admin123</code>
           </div>
         </div>
@@ -74,27 +74,27 @@
 
           <div class="session-actions">
             <button class="btn btn-secondary btn-sm" @click="testAuthMe">
-              <UserCheck class="icon-xs" /> Validate Token (/auth/me)
+              <UserCheck class="icon-xs" /> {{ $t('auth.validateTokenBtn') }}
             </button>
             <button class="btn btn-secondary btn-sm" @click="refreshToken">
-              <RefreshCw class="icon-xs" /> Refresh Token
+              <RefreshCw class="icon-xs" /> {{ $t('auth.refreshTokenBtn') }}
             </button>
             <button class="btn btn-danger btn-sm" @click="logout">
-              <LogOut class="icon-xs" /> Terminate Session
+              <LogOut class="icon-xs" /> {{ $t('auth.terminateSessionBtn') }}
             </button>
           </div>
         </div>
 
         <!-- Token Inspector -->
         <div v-if="tokenData" class="token-inspector">
-          <h4>Active JWT Bearer Token</h4>
+          <h4>{{ $t('auth.activeToken') }}</h4>
           <div class="code-preview" style="font-size: 0.76rem; max-height: 120px;">
             {{ tokenData.accessToken }}
           </div>
           <div class="token-meta">
-            <span>Expires In: <strong>{{ tokenData.expiresIn }}s</strong></span>
-            <span>Type: <strong>{{ tokenData.tokenType }}</strong></span>
-            <span>Issuer: <strong>sutra-enterprise-os</strong></span>
+            <span>{{ $t('auth.expiresIn', { seconds: tokenData.expiresIn }) }}</span>
+            <span>{{ $t('auth.tokenType', { type: tokenData.tokenType }) }}</span>
+            <span>{{ $t('auth.issuer', { issuer: 'sutra-enterprise-os' }) }}</span>
           </div>
         </div>
       </div>

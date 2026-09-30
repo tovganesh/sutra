@@ -2,11 +2,11 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>🤖 Sutra Sovereign Gen AI Enterprise Copilot</h2>
-        <p>Enterprise intelligence that never locks you into a single AI cloud. Run air-gapped on your private GPUs via <strong>Local Ollama / vLLM</strong> or connect seamlessly to <strong>OpenAI / Gemini / Anthropic</strong>.</p>
+        <h2>🤖 {{ $t('copilot.heroTitle') }}</h2>
+        <p>{{ $t('copilot.heroSubtitle') }}</p>
       </div>
       <div class="ai-provider-selector">
-        <label>Active Engine:</label>
+        <label>{{ $t('copilot.activeEngine') }}</label>
         <select v-model="selectedProvider" class="input-control" style="width: auto;">
           <option value="local">Ollama (Local LLaMA 3.2 / DeepSeek)</option>
           <option value="openai">OpenAI (Cloud GPT-4o)</option>
@@ -20,10 +20,10 @@
       <div class="glass-card chat-card">
         <div class="card-header">
           <div>
-            <h3>Natural Language ERP Query</h3>
-            <span class="card-subtitle">Translates English business questions into database transactions</span>
+            <h3>{{ $t('copilot.nlpTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('copilot.nlpSubtitle') }}</span>
           </div>
-          <span class="badge badge-info">Zero-Data Leakage</span>
+          <span class="badge badge-info">{{ $t('copilot.zeroLeakage') }}</span>
         </div>
 
         <div class="chat-feed" ref="chatFeedRef">
@@ -44,16 +44,16 @@
             type="text"
             v-model="inputQuery"
             class="input-control"
-            placeholder="e.g. Which customers in Maharashtra have unpaid invoices over ₹50,000?"
+            :placeholder="t('copilot.chatPlaceholder', { amount: formatCurrency(50000) })"
             @keydown.enter="sendQuery"
           />
           <button class="btn btn-primary" @click="sendQuery">
-            <Send class="icon-sm" /> Ask Sutra
+            <Send class="icon-sm" /> {{ $t('copilot.askBtn') }}
           </button>
         </div>
 
         <div class="sample-chips">
-          <span class="chip-label">Quick Prompts:</span>
+          <span class="chip-label">{{ $t('copilot.quickPrompts') }}</span>
           <button class="chip-btn" v-for="prompt in samplePrompts" :key="prompt" @click="inputQuery = prompt; sendQuery()">
             {{ prompt }}
           </button>
@@ -64,18 +64,18 @@
       <div class="glass-card idp-card">
         <div class="card-header">
           <div>
-            <h3>Intelligent Document Processing (IDP)</h3>
-            <span class="card-subtitle">Zero-Shot Invoice OCR & Line Item Extraction</span>
+            <h3>{{ $t('copilot.idpTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('copilot.idpSubtitle') }}</span>
           </div>
-          <span class="badge badge-warning">Automated PO Match</span>
+          <span class="badge badge-warning">{{ $t('copilot.autoPoMatch') }}</span>
         </div>
 
-        <p class="tool-desc">Paste raw invoice OCR text or scanned document output to extract structured vendor, HSN, line item and tax values.</p>
+        <p class="tool-desc">{{ $t('copilot.idpDesc') }}</p>
 
         <textarea v-model="idpText" rows="6" class="input-control" style="width: 100%; font-family: monospace;"></textarea>
 
         <button class="btn btn-secondary" style="margin-top: 12px;" @click="extractInvoice">
-          Extract Structured Bill of Entry
+          {{ $t('copilot.extractBtn') }}
         </button>
 
         <div v-if="idpResult" class="code-preview" style="margin-top: 14px;">
@@ -89,6 +89,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Send } from 'lucide-vue-next';
+import { useI18n } from '../i18n';
+
+const { t, formatCurrency } = useI18n();
 
 const selectedProvider = ref('local');
 const inputQuery = ref('');
@@ -143,7 +146,7 @@ async function sendQuery() {
   } catch {
     messages.value.push({
       role: 'ai',
-      text: `Executed query for "${q}". Filtered against active PostgreSQL tenant ledger. Found 3 matching records with combined exposure of ₹14,20,000. All compliance records are in good standing.`,
+      text: `Executed query for "${q}". Filtered against active PostgreSQL tenant ledger. Found 3 matching records with combined exposure of ${formatCurrency(1420000)}. All compliance records are in good standing.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       meta: 'Engine: Local Ollama (LLaMA 3.2)',
     });

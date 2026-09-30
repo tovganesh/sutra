@@ -2,12 +2,12 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>📊 Financial Statements & Real-Time OLAP Intelligence</h2>
-        <p>Live Profit & Loss Statement and Balance Sheet computed directly from PostgreSQL journal entries. Zero ETL pipeline lag, complete double-entry integrity.</p>
+        <h2>📊 {{ $t('financial.heroTitle') }}</h2>
+        <p>{{ $t('financial.heroSubtitle') }}</p>
       </div>
       <div class="hero-meta">
-        <span class="badge badge-success">Audit Status: Fully Balanced</span>
-        <span class="badge badge-info">Currency: INR (₹)</span>
+        <span class="badge badge-success">{{ $t('financial.auditStatus') }}</span>
+        <span class="badge badge-info">{{ $t('financial.currencyBadge', { code: currentCurrency, symbol: currencySymbol }) }}</span>
       </div>
     </div>
 
@@ -16,63 +16,63 @@
       <div class="glass-card statement-card">
         <div class="card-header">
           <div>
-            <h3>Statement of Profit & Loss</h3>
-            <span class="card-subtitle">Fiscal Year 2026-27 (Apr 2026 – Mar 2027)</span>
+            <h3>{{ $t('financial.pnlTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('financial.pnlPeriod') }}</span>
           </div>
-          <span class="badge badge-success">Operating Margin: 29.2%</span>
+          <span class="badge badge-success">{{ $t('financial.operatingMargin', { value: formatPercent(operatingMargin) }) }}</span>
         </div>
 
         <div class="table-container">
           <table class="sutra-table">
             <tbody>
               <tr class="section-row">
-                <td colspan="2"><strong>Operating Revenue</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.operatingRevenue') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Enterprise Software Licenses & Subscriptions</td>
-                <td class="amount-cell positive">₹1,20,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.revSubscriptions') }}</td>
+                <td class="amount-cell positive">{{ formatCurrency(figures.revenue) }}</td>
               </tr>
               <tr class="subtotal-row">
-                <td><strong>Total Gross Revenue (A)</strong></td>
-                <td class="amount-cell positive"><strong>₹1,20,00,000</strong></td>
+                <td><strong>{{ $t('financial.grossRevenueA') }}</strong></td>
+                <td class="amount-cell positive"><strong>{{ formatCurrency(figures.revenue) }}</strong></td>
               </tr>
 
               <tr class="section-row">
-                <td colspan="2"><strong>Cost of Goods Sold (COGS)</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.cogs') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Cloud Infrastructure & Direct Engineering</td>
-                <td class="amount-cell negative">(₹48,00,000)</td>
+                <td style="padding-left: 24px;">{{ $t('financial.cogsCloud') }}</td>
+                <td class="amount-cell negative">({{ formatCurrency(figures.cogs) }})</td>
               </tr>
               <tr class="subtotal-row">
-                <td><strong>Total Cost of Sales (B)</strong></td>
-                <td class="amount-cell negative"><strong>(₹48,00,000)</strong></td>
+                <td><strong>{{ $t('financial.costOfSalesB') }}</strong></td>
+                <td class="amount-cell negative"><strong>({{ formatCurrency(figures.cogs) }})</strong></td>
               </tr>
 
               <tr class="highlight-row">
-                <td><strong>Gross Operating Profit (A - B)</strong></td>
-                <td class="amount-cell"><strong>₹72,00,000</strong></td>
+                <td><strong>{{ $t('financial.grossProfit') }}</strong></td>
+                <td class="amount-cell"><strong>{{ formatCurrency(grossOperatingProfit) }}</strong></td>
               </tr>
 
               <tr class="section-row">
-                <td colspan="2"><strong>Operating Expenses (OPEX)</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.opex') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Salaries & Statutory Employee Benefits (PF/ESI)</td>
-                <td class="amount-cell negative">(₹32,00,000)</td>
+                <td style="padding-left: 24px;">{{ $t('financial.opexSalaries') }}</td>
+                <td class="amount-cell negative">({{ formatCurrency(figures.salaries) }})</td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Administrative & Facility Operations</td>
-                <td class="amount-cell negative">(₹5,00,000)</td>
+                <td style="padding-left: 24px;">{{ $t('financial.opexAdmin') }}</td>
+                <td class="amount-cell negative">({{ formatCurrency(figures.admin) }})</td>
               </tr>
               <tr class="subtotal-row">
-                <td><strong>Total Operating Expenses (C)</strong></td>
-                <td class="amount-cell negative"><strong>(₹37,00,000)</strong></td>
+                <td><strong>{{ $t('financial.opexTotalC') }}</strong></td>
+                <td class="amount-cell negative"><strong>({{ formatCurrency(totalOpex) }})</strong></td>
               </tr>
 
               <tr class="final-row">
-                <td><strong>Net Operating Profit Before Tax</strong></td>
-                <td class="amount-cell grand-total">₹35,00,000</td>
+                <td><strong>{{ $t('financial.netProfitBeforeTax') }}</strong></td>
+                <td class="amount-cell grand-total">{{ formatCurrency(netOperatingProfit) }}</td>
               </tr>
             </tbody>
           </table>
@@ -83,70 +83,70 @@
       <div class="glass-card statement-card">
         <div class="card-header">
           <div>
-            <h3>Balance Sheet</h3>
-            <span class="card-subtitle">As of September 28, 2026</span>
+            <h3>{{ $t('financial.balanceSheetTitle') }}</h3>
+            <span class="card-subtitle">{{ $t('financial.balanceSheetPeriod') }}</span>
           </div>
-          <span class="badge badge-success">Assets = Liabilities + Equity</span>
+          <span class="badge badge-success">{{ $t('financial.balanceSheetEquality') }}</span>
         </div>
 
         <div class="table-container">
           <table class="sutra-table">
             <tbody>
               <tr class="section-row">
-                <td colspan="2"><strong>Assets</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.assets') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Cash and Operating Bank Accounts (HDFC)</td>
-                <td class="amount-cell">₹40,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.assetCash') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.cash) }}</td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Trade Accounts Receivable</td>
-                <td class="amount-cell">₹50,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.assetAR') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.ar) }}</td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Finished Goods & Equipment Inventory</td>
-                <td class="amount-cell">₹30,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.assetInventory') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.inventory) }}</td>
               </tr>
               <tr class="highlight-row">
-                <td><strong>Total Assets</strong></td>
-                <td class="amount-cell grand-total">₹1,20,00,000</td>
+                <td><strong>{{ $t('financial.totalAssets') }}</strong></td>
+                <td class="amount-cell grand-total">{{ formatCurrency(totalAssets) }}</td>
               </tr>
 
               <tr class="section-row">
-                <td colspan="2"><strong>Liabilities</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.liabilities') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Trade Accounts Payable</td>
-                <td class="amount-cell">₹25,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.liabAP') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.ap) }}</td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Output GST & TDS Statutory Taxes Payable</td>
-                <td class="amount-cell">₹10,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.liabTaxes') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.taxes) }}</td>
               </tr>
               <tr class="subtotal-row">
-                <td><strong>Total Liabilities</strong></td>
-                <td class="amount-cell"><strong>₹35,00,000</strong></td>
+                <td><strong>{{ $t('financial.totalLiabilities') }}</strong></td>
+                <td class="amount-cell"><strong>{{ formatCurrency(totalLiabilities) }}</strong></td>
               </tr>
 
               <tr class="section-row">
-                <td colspan="2"><strong>Shareholders' Equity</strong></td>
+                <td colspan="2"><strong>{{ $t('financial.equity') }}</strong></td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Paid-up Common Share Capital</td>
-                <td class="amount-cell">₹50,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.equityCapital') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.capital) }}</td>
               </tr>
               <tr>
-                <td style="padding-left: 24px;">Retained Earnings (Current Period)</td>
-                <td class="amount-cell">₹35,00,000</td>
+                <td style="padding-left: 24px;">{{ $t('financial.equityRetained') }}</td>
+                <td class="amount-cell">{{ formatCurrency(figures.retainedEarnings) }}</td>
               </tr>
               <tr class="subtotal-row">
-                <td><strong>Total Equity</strong></td>
-                <td class="amount-cell"><strong>₹85,00,000</strong></td>
+                <td><strong>{{ $t('financial.totalEquity') }}</strong></td>
+                <td class="amount-cell"><strong>{{ formatCurrency(totalEquity) }}</strong></td>
               </tr>
 
               <tr class="final-row">
-                <td><strong>Total Liabilities & Equity</strong></td>
-                <td class="amount-cell grand-total">₹1,20,00,000</td>
+                <td><strong>{{ $t('financial.totalLiabEquity') }}</strong></td>
+                <td class="amount-cell grand-total">{{ formatCurrency(totalLiabilitiesAndEquity) }}</td>
               </tr>
             </tbody>
           </table>
@@ -155,6 +155,37 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+import { useI18n } from '../i18n';
+
+const { t, formatCurrency, formatPercent, currencySymbol, currentCurrency } = useI18n();
+
+const figures = ref({
+  revenue: 12000000,
+  cogs: 4800000,
+  salaries: 3200000,
+  admin: 500000,
+  cash: 4000000,
+  ar: 5000000,
+  inventory: 3000000,
+  ap: 2500000,
+  taxes: 1000000,
+  capital: 5000000,
+  retainedEarnings: 3500000,
+});
+
+const grossOperatingProfit = computed(() => figures.value.revenue - figures.value.cogs);
+const totalOpex = computed(() => figures.value.salaries + figures.value.admin);
+const netOperatingProfit = computed(() => grossOperatingProfit.value - totalOpex.value);
+const operatingMargin = computed(() => (netOperatingProfit.value / figures.value.revenue) * 100);
+
+const totalAssets = computed(() => figures.value.cash + figures.value.ar + figures.value.inventory);
+const totalLiabilities = computed(() => figures.value.ap + figures.value.taxes);
+const totalEquity = computed(() => figures.value.capital + figures.value.retainedEarnings);
+const totalLiabilitiesAndEquity = computed(() => totalLiabilities.value + totalEquity.value);
+</script>
 
 <style scoped>
 .view-container {

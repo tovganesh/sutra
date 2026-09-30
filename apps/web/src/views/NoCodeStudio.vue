@@ -2,11 +2,11 @@
   <div class="view-container">
     <div class="hero-banner glass-card">
       <div class="hero-content">
-        <h2>🧩 Sutra No-Code Application & Entity Studio</h2>
-        <p>Eliminate SAP ABAP and manual database migrations. Visually design custom business entities, define fields, set validation rules, and attach workflow state machines instantly.</p>
+        <h2>🧩 {{ $t('nocode.heroTitle') }}</h2>
+        <p>{{ $t('nocode.heroSubtitle') }}</p>
       </div>
       <button class="btn btn-primary" @click="showNewEntityModal = true">
-        <Plus class="icon-sm" /> Design Custom Entity
+        <Plus class="icon-sm" /> {{ $t('nocode.designEntityBtn') }}
       </button>
     </div>
 
@@ -15,10 +15,10 @@
       <div class="glass-card schema-inspector-card">
         <div class="card-header">
           <div>
-            <h3>Active Entity Schema: {{ activeEntity.name }}</h3>
+            <h3>{{ $t('nocode.activeSchema', { name: activeEntity.name }) }}</h3>
             <span class="card-subtitle">Slug: <code>{{ activeEntity.slug }}</code> • PostgreSQL JSONB</span>
           </div>
-          <span class="badge badge-info">{{ activeEntity.fields.length }} Fields</span>
+          <span class="badge badge-info">{{ $t('nocode.fieldsCount', { count: activeEntity.fields.length }) }}</span>
         </div>
 
         <div class="fields-list">
@@ -36,7 +36,7 @@
 
         <div class="schema-footer">
           <button class="btn btn-secondary btn-sm" @click="addFieldPrompt">
-            <Plus class="icon-xs" /> Add Custom Field
+            <Plus class="icon-xs" /> {{ $t('nocode.addCustomFieldBtn') }}
           </button>
         </div>
       </div>
@@ -45,11 +45,11 @@
       <div class="glass-card records-card">
         <div class="card-header">
           <div>
-            <h3>Live Entity Records</h3>
-            <span class="card-subtitle">Data dynamically indexed and validated against schema</span>
+            <h3>{{ $t('nocode.liveRecords') }}</h3>
+            <span class="card-subtitle">{{ $t('nocode.liveRecordsSub') }}</span>
           </div>
           <button class="btn btn-primary btn-sm" @click="showNewRecordModal = true">
-            <Plus class="icon-xs" /> Add Record
+            <Plus class="icon-xs" /> {{ $t('nocode.addRecordBtn') }}
           </button>
         </div>
 
@@ -57,11 +57,11 @@
           <table class="sutra-table">
             <thead>
               <tr>
-                <th>Serial Tag</th>
-                <th>Description</th>
-                <th>Purchase Cost</th>
-                <th>Status</th>
-                <th>Manufacturing Plant</th>
+                <th>{{ $t('nocode.colSerialTag') }}</th>
+                <th>{{ $t('nocode.colDescription') }}</th>
+                <th>{{ $t('nocode.colPurchaseCost') }}</th>
+                <th>{{ $t('nocode.colStatus') }}</th>
+                <th>{{ $t('nocode.colLocation') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -86,24 +86,24 @@
     <div v-if="showNewRecordModal" class="modal-backdrop" @click.self="showNewRecordModal = false">
       <div class="glass-card modal-content">
         <div class="card-header">
-          <h3>Create New {{ activeEntity.name }}</h3>
+          <h3>{{ $t('nocode.modalTitle', { name: activeEntity.name }) }}</h3>
           <button class="btn-close" @click="showNewRecordModal = false">✕</button>
         </div>
         <div class="form-group">
-          <label>Serial Tag:</label>
+          <label>{{ $t('nocode.modalTagLabel') }}</label>
           <input type="text" v-model="newRecord.assetTag" class="input-control" placeholder="e.g. ROBOT-PUN-9901" />
         </div>
         <div class="form-group">
-          <label>Machine Description:</label>
+          <label>{{ $t('nocode.modalDescLabel') }}</label>
           <input type="text" v-model="newRecord.description" class="input-control" placeholder="e.g. Automated 6-Axis Welding Robot" />
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Cost (INR):</label>
+            <label>{{ $t('nocode.modalCostLabel', { symbol: currencySymbol }) }}</label>
             <input type="number" v-model.number="newRecord.purchaseCost" class="input-control" />
           </div>
           <div class="form-group">
-            <label>Operational Status:</label>
+            <label>{{ $t('nocode.modalStatusLabel') }}</label>
             <select v-model="newRecord.operationalStatus" class="input-control">
               <option value="ACTIVE">ACTIVE</option>
               <option value="MAINTENANCE">MAINTENANCE</option>
@@ -112,12 +112,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Plant Location:</label>
+          <label>{{ $t('nocode.modalLocationLabel') }}</label>
           <input type="text" v-model="newRecord.locationSite" class="input-control" placeholder="e.g. Plant 3 - Talegaon, Pune" />
         </div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" @click="showNewRecordModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="saveRecord">Commit Record</button>
+          <button class="btn btn-secondary" @click="showNewRecordModal = false">{{ $t('common.cancel') }}</button>
+          <button class="btn btn-primary" @click="saveRecord">{{ $t('nocode.saveRecordBtn') }}</button>
         </div>
       </div>
     </div>
@@ -125,8 +125,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Plus } from 'lucide-vue-next';
+import { useI18n } from '../i18n';
+
+const { t, formatCurrency, currencySymbol } = useI18n();
 
 const showNewEntityModal = ref(false);
 const showNewRecordModal = ref(false);
@@ -137,7 +140,7 @@ const activeEntity = ref({
   fields: [
     { name: 'assetTag', label: 'Asset Serial Tag', type: 'text', required: true },
     { name: 'description', label: 'Machine Description', type: 'text', required: true },
-    { name: 'purchaseCost', label: 'Purchase Cost (INR)', type: 'currency', required: true },
+    { name: 'purchaseCost', label: 'Purchase Cost', type: 'currency', required: true },
     { name: 'operationalStatus', label: 'Operational Status', type: 'select', required: true },
     { name: 'locationSite', label: 'Manufacturing Plant Location', type: 'text', required: true },
   ],
@@ -178,13 +181,9 @@ const newRecord = ref({
   locationSite: '',
 });
 
-function formatCurrency(num: number): string {
-  return '₹' + num.toLocaleString('en-IN');
-}
-
 function saveRecord() {
   if (!newRecord.value.assetTag || !newRecord.value.description) {
-    alert('Please complete mandatory fields');
+    alert(t('common.error') + ': Please complete mandatory fields');
     return;
   }
   records.value.push({

@@ -20,13 +20,13 @@
       <div class="glass-card chart-card">
         <div class="card-header">
           <div>
-            <h3>Operating Revenue & Cash Flow Trajectory</h3>
-            <span class="card-subtitle">Real-time General Ledger telemetry (FY 2026-27)</span>
+            <h3>{{ $t('dashboard.chart.title') }}</h3>
+            <span class="card-subtitle">{{ $t('dashboard.chart.subtitle') }}</span>
           </div>
           <div class="chart-legend">
-            <span class="legend-item"><span class="dot blue"></span> Revenue</span>
-            <span class="legend-item"><span class="dot purple"></span> Cash Inflow</span>
-            <span class="legend-item"><span class="dot cyan"></span> Net Margin</span>
+            <span class="legend-item"><span class="dot blue"></span> {{ $t('dashboard.chart.revenue') }}</span>
+            <span class="legend-item"><span class="dot purple"></span> {{ $t('dashboard.chart.cashInflow') }}</span>
+            <span class="legend-item"><span class="dot cyan"></span> {{ $t('dashboard.chart.netMargin') }}</span>
           </div>
         </div>
 
@@ -90,41 +90,41 @@
       <div class="glass-card parity-card">
         <div class="card-header">
           <div>
-            <h3>SAP S/4HANA vs Sutra Architecture</h3>
-            <span class="card-subtitle">Zero proprietary lock-in</span>
+            <h3>{{ $t('dashboard.parity.title') }}</h3>
+            <span class="card-subtitle">{{ $t('dashboard.parity.subtitle') }}</span>
           </div>
-          <span class="badge badge-success">Apache 2.0 Open Source</span>
+          <span class="badge badge-success">{{ $t('dashboard.parity.badge') }}</span>
         </div>
 
         <div class="table-container">
           <table class="sutra-table">
             <thead>
               <tr>
-                <th>Legacy SAP Module</th>
-                <th>Sutra Modern Engine</th>
-                <th>Architecture Shift</th>
+                <th>{{ $t('dashboard.parity.colCapability') }}</th>
+                <th>{{ $t('dashboard.parity.colSap') }}</th>
+                <th>{{ $t('dashboard.parity.colSutra') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td><strong>FI / CO</strong></td>
-                <td>Sutra Ledger & Tax Core</td>
+                <td>Sutra Ledger &amp; Tax Core</td>
                 <td>Double-entry, India GST/TDS native, PostgreSQL</td>
               </tr>
               <tr>
                 <td><strong>MM / SD</strong></td>
-                <td>Sutra Supply & Commerce</td>
+                <td>Sutra Supply &amp; Commerce</td>
                 <td>MinIO S3 document vault, Valkey queues</td>
               </tr>
               <tr>
-                <td><strong>Z-Tables & ABAP</strong></td>
+                <td><strong>Z-Tables &amp; ABAP</strong></td>
                 <td>Sutra No-Code Studio</td>
-                <td>Dynamic JSONB entities & visual state machines</td>
+                <td>Dynamic JSONB entities &amp; visual state machines</td>
               </tr>
               <tr>
                 <td><strong>SAP SAC / BW</strong></td>
                 <td>Sutra Embedded OLAP</td>
-                <td>Zero-ETL real-time P&L, Balance Sheet</td>
+                <td>Zero-ETL real-time P&amp;L, Balance Sheet</td>
               </tr>
               <tr>
                 <td><strong>SAP Joule AI</strong></td>
@@ -140,49 +140,52 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed } from 'vue';
 import { TrendingUp, Clock, Scale, Sparkles } from 'lucide-vue-next';
+import { useI18n } from '../i18n';
 
-const kpis = ref([
+const { t, formatCurrency } = useI18n();
+
+const kpis = computed(() => [
   {
     id: 1,
-    title: 'Gross Operating Revenue',
-    value: '₹1,20,00,000',
+    title: t('dashboard.kpis.revenue'),
+    value: formatCurrency(12000000),
     icon: TrendingUp,
     accentColor: '#3b82f6',
     trendType: 'positive',
     trendIcon: '↑',
-    trendText: '+14.2% YoY (FY26-27)',
+    trendText: t('dashboard.kpis.revenueTrend'),
   },
   {
     id: 2,
-    title: 'Days Sales Outstanding (DSO)',
-    value: '42 Days',
+    title: t('dashboard.kpis.dso'),
+    value: `42 ${t('dashboard.kpis.daysUnit')}`,
     icon: Clock,
     accentColor: '#10b981',
     trendType: 'positive',
     trendIcon: '↓',
-    trendText: '6 days faster vs benchmark',
+    trendText: t('dashboard.kpis.dsoTrend'),
   },
   {
     id: 3,
-    title: 'Current Ratio (Liquidity)',
+    title: t('dashboard.kpis.liquidity'),
     value: '3.43x',
     icon: Scale,
     accentColor: '#8b5cf6',
     trendType: 'neutral',
     trendIcon: '⚖️',
-    trendText: 'Optimal working capital buffer',
+    trendText: t('dashboard.kpis.liquidityTrend'),
   },
   {
     id: 4,
-    title: 'Net Operating Margin',
+    title: t('dashboard.kpis.margin'),
     value: '29.17%',
     icon: Sparkles,
     accentColor: '#06b6d4',
     trendType: 'positive',
     trendIcon: '💎',
-    trendText: 'Net Profit: ₹35,00,000',
+    trendText: t('dashboard.kpis.netProfitTrend', { amount: formatCurrency(3500000) }),
   },
 ]);
 </script>
