@@ -12,6 +12,7 @@ import {
   ProfitCenter,
   VarianceAnalysisResult,
 } from './controlling-types.js';
+import { StandardGlAccount, SystemDefaults } from '../common/constants.js';
 
 export class ControllingEngine {
   private costCenters: Map<string, CostCenter> = new Map();
@@ -43,7 +44,7 @@ export class ControllingEngine {
       name: 'Chassis Stamping & Body Shop',
       category: 'PRODUCTION',
       manager: 'Plant Production Head',
-      currency: 'INR',
+      currency: SystemDefaults.DEFAULT_CURRENCY,
       profitCenterCode: 'PC-EV-COMMERCIAL',
       budgetAnnual: 48000000,
       actualIncurred: 36500000,
@@ -54,7 +55,7 @@ export class ControllingEngine {
       name: 'Powertrain & Final Robotic Assembly',
       category: 'PRODUCTION',
       manager: 'Final Assembly Line Manager',
-      currency: 'INR',
+      currency: SystemDefaults.DEFAULT_CURRENCY,
       profitCenterCode: 'PC-EV-COMMERCIAL',
       budgetAnnual: 72000000,
       actualIncurred: 54200000,
@@ -65,7 +66,7 @@ export class ControllingEngine {
       name: 'Enterprise IT, Cloud & Robotics Telemetry',
       category: 'SHARED_SERVICE',
       manager: 'Chief Information Officer',
-      currency: 'INR',
+      currency: SystemDefaults.DEFAULT_CURRENCY,
       profitCenterCode: 'PC-EV-COMMERCIAL',
       budgetAnnual: 18000000,
       actualIncurred: 12000000,
@@ -76,7 +77,7 @@ export class ControllingEngine {
       name: 'Central Warehouse & Finished Vehicle Logistics',
       category: 'LOGISTICS',
       manager: 'Head of Supply Chain Logistics',
-      currency: 'INR',
+      currency: SystemDefaults.DEFAULT_CURRENCY,
       profitCenterCode: 'PC-EV-COMMERCIAL',
       budgetAnnual: 24000000,
       actualIncurred: 19800000,
@@ -158,7 +159,7 @@ export class ControllingEngine {
 
     // Credit sender cost center (Secondary Cost Element: 610000 Assessment Outflow)
     journalLines.push({
-      accountCode: '610000',
+      accountCode: StandardGlAccount.SECONDARY_COST_ALLOCATION,
       accountName: 'Secondary Cost Assessment (Overhead Allocation Outflow)',
       costCenter: sender.code,
       debit: 0,
@@ -182,7 +183,7 @@ export class ControllingEngine {
 
       // Debit receiver cost center (Secondary Cost Element: 610000 Assessment Inflow)
       journalLines.push({
-        accountCode: '610000',
+        accountCode: StandardGlAccount.SECONDARY_COST_ALLOCATION,
         accountName: `Secondary Cost Assessment (${sender.code} -> ${receiver.code})`,
         costCenter: receiver.code,
         debit: allocatedAmount,

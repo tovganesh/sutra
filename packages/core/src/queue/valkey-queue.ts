@@ -3,6 +3,8 @@
  * Provides asynchronous job dispatching, workflow event messaging, and task worker queues.
  */
 
+import { SystemDefaults } from '../common/constants.js';
+
 export interface QueueJob<T = Record<string, unknown>> {
   id: string;
   queueName: string;
@@ -18,7 +20,7 @@ export class ValkeyQueueService {
   private inMemoryQueues: Map<string, Array<QueueJob>> = new Map();
   private subscribers: Map<string, Array<JobHandler>> = new Map();
 
-  constructor(private valkeyUrl: string = 'valkey://localhost:6379') {}
+  constructor(private valkeyUrl: string = SystemDefaults.DEFAULT_VALKEY_URL) {}
 
   /**
    * Enqueues a job for background execution (e.g. NIC E-Invoice submission, PDF generation).
@@ -26,7 +28,7 @@ export class ValkeyQueueService {
   public async enqueue<T = Record<string, unknown>>(
     queueName: string,
     payload: T,
-    maxRetries = 3
+    maxRetries: number = SystemDefaults.DEFAULT_MAX_RETRIES
   ): Promise<QueueJob<T>> {
     const job: QueueJob<T> = {
       id: `job-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,

@@ -18,6 +18,7 @@ import {
   TdsSection,
   type TdsSectionType,
   TdsRatePercent,
+  StandardGlAccount,
 } from '../common/constants.js';
 
 export interface VendorMaster {
@@ -263,7 +264,7 @@ export class ProcureToPayEngine {
       poNumber,
       receivedItems,
       totalGrnValue: Math.round(totalGrnValue * 100) / 100,
-      grIrClearingAccount: '210500',
+      grIrClearingAccount: StandardGlAccount.GRIR_CLEARING,
       receivedAt: new Date().toISOString(),
     };
 
@@ -374,7 +375,7 @@ export class ProcureToPayEngine {
     const journalLines: JournalLineInput[] = [
       {
         accountId: 'ACC-GRIR-CLEAR',
-        accountCode: '210500',
+        accountCode: StandardGlAccount.GRIR_CLEARING,
         accountName: 'Goods Receipt / Invoice Receipt (GR/IR) Clearing',
         debit: taxableAmount,
         credit: 0,
@@ -385,7 +386,7 @@ export class ProcureToPayEngine {
     if (cgst > 0) {
       journalLines.push({
         accountId: 'ACC-ITC-CGST',
-        accountCode: '130100',
+        accountCode: StandardGlAccount.INPUT_CGST,
         accountName: 'Input Central GST (CGST) Tax Credit',
         debit: cgst,
         credit: 0,
@@ -396,7 +397,7 @@ export class ProcureToPayEngine {
     if (sgst > 0) {
       journalLines.push({
         accountId: 'ACC-ITC-SGST',
-        accountCode: '130200',
+        accountCode: StandardGlAccount.INPUT_SGST,
         accountName: 'Input State GST (SGST) Tax Credit',
         debit: sgst,
         credit: 0,
@@ -407,7 +408,7 @@ export class ProcureToPayEngine {
     if (igst > 0) {
       journalLines.push({
         accountId: 'ACC-ITC-IGST',
-        accountCode: '130300',
+        accountCode: StandardGlAccount.INPUT_IGST,
         accountName: 'Input Integrated GST (IGST) Tax Credit',
         debit: igst,
         credit: 0,
@@ -418,7 +419,7 @@ export class ProcureToPayEngine {
     if (tdsDeductionAmount > 0) {
       journalLines.push({
         accountId: 'ACC-TDS-PAYABLE',
-        accountCode: '220500',
+        accountCode: StandardGlAccount.TDS_PAYABLE,
         accountName: `TDS Payable u/s ${tdsSection}`,
         debit: 0,
         credit: tdsDeductionAmount,
@@ -428,7 +429,7 @@ export class ProcureToPayEngine {
 
     journalLines.push({
       accountId: 'ACC-AP-VENDOR',
-      accountCode: '210100',
+      accountCode: StandardGlAccount.AP_DOMESTIC,
       accountName: `Accounts Payable - ${po.vendor.name}`,
       debit: 0,
       credit: netPayableToVendor,

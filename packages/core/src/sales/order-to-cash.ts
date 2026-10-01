@@ -13,6 +13,7 @@ import {
   InventoryMovementType,
   SystemDefaults,
   GstRate,
+  StandardGlAccount,
 } from '../common/constants.js';
 
 export interface CustomerMaster {
@@ -344,7 +345,7 @@ export class OrderToCashEngine {
     const journalLines: JournalLineInput[] = [
       {
         accountId: 'ACC-AR-001',
-        accountCode: '110000',
+        accountCode: StandardGlAccount.AR_DOMESTIC,
         accountName: `Accounts Receivable - ${order.customer.name}`,
         debit: order.grandTotal,
         credit: 0,
@@ -352,7 +353,7 @@ export class OrderToCashEngine {
       },
       {
         accountId: 'ACC-REV-001',
-        accountCode: '410000',
+        accountCode: StandardGlAccount.SALES_REVENUE,
         accountName: 'Domestic Sales Revenue',
         debit: 0,
         credit: order.taxableValue,
@@ -363,7 +364,7 @@ export class OrderToCashEngine {
     if (order.cgst > 0) {
       journalLines.push({
         accountId: 'ACC-TAX-CGST-OUT',
-        accountCode: '220100',
+        accountCode: StandardGlAccount.OUTPUT_CGST,
         accountName: 'Output Central GST (CGST) Payable',
         debit: 0,
         credit: order.cgst,
@@ -374,7 +375,7 @@ export class OrderToCashEngine {
     if (order.sgst > 0) {
       journalLines.push({
         accountId: 'ACC-TAX-SGST-OUT',
-        accountCode: '220200',
+        accountCode: StandardGlAccount.OUTPUT_SGST,
         accountName: 'Output State GST (SGST) Payable',
         debit: 0,
         credit: order.sgst,
@@ -385,7 +386,7 @@ export class OrderToCashEngine {
     if (order.igst > 0) {
       journalLines.push({
         accountId: 'ACC-TAX-IGST-OUT',
-        accountCode: '220300',
+        accountCode: StandardGlAccount.OUTPUT_IGST,
         accountName: 'Output Integrated GST (IGST) Payable',
         debit: 0,
         credit: order.igst,

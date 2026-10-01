@@ -11,6 +11,12 @@ import {
   StockMovementResult,
   StorageLocationStock,
 } from './inventory-types.js';
+import {
+  MaterialType,
+  InventoryMovementType,
+  StandardGlAccount,
+  SystemDefaults,
+} from '../common/constants.js';
 
 export class InventoryEngine {
   private materials: Map<string, MaterialMaster> = new Map();
@@ -26,7 +32,7 @@ export class InventoryEngine {
         sku: 'ROH-STEEL-001',
         name: 'Cold-Rolled Steel Coils (CRCA 1.2mm)',
         description: 'Prime grade cold-rolled steel coils for chassis manufacturing',
-        materialType: 'ROH',
+        materialType: MaterialType.RAW_MATERIAL,
         baseUom: 'KG',
         hsnCode: '7209',
         standardPrice: 65.0,
@@ -35,9 +41,9 @@ export class InventoryEngine {
         safetyStock: 2000,
         reorderPoint: 4000,
         valuationClass: '3000',
-        glInventoryAccount: '120100', // Raw Materials Inventory
-        glConsumptionAccount: '510100', // Raw Material Consumption
-        glCogsAccount: '500100', // Cost of Goods Sold
+        glInventoryAccount: StandardGlAccount.INVENTORY_RAW_MATERIALS,
+        glConsumptionAccount: StandardGlAccount.RAW_MATERIAL_CONSUMPTION,
+        glCogsAccount: StandardGlAccount.COGS,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -45,7 +51,7 @@ export class InventoryEngine {
         sku: 'HALB-AXLE-001',
         name: 'Sub-Assembly Rear Axle Hub',
         description: 'Precision machined rear axle sub-assembly with bearings',
-        materialType: 'HALB',
+        materialType: MaterialType.SEMI_FINISHED,
         baseUom: 'EA',
         hsnCode: '8708',
         standardPrice: 1850.0,
@@ -54,9 +60,9 @@ export class InventoryEngine {
         safetyStock: 50,
         reorderPoint: 100,
         valuationClass: '7900',
-        glInventoryAccount: '120200', // Work In Progress / Semi-Finished
+        glInventoryAccount: StandardGlAccount.INVENTORY_WIP,
         glConsumptionAccount: '510200',
-        glCogsAccount: '500100',
+        glCogsAccount: StandardGlAccount.COGS,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -64,7 +70,7 @@ export class InventoryEngine {
         sku: 'FERT-EVTRK-001',
         name: 'Sutra E-Titan 1.5T Commercial EV',
         description: 'Fully assembled light commercial electric freight truck',
-        materialType: 'FERT',
+        materialType: MaterialType.FINISHED_PRODUCT,
         baseUom: 'EA',
         hsnCode: '8704',
         standardPrice: 950000.0,
@@ -73,9 +79,9 @@ export class InventoryEngine {
         safetyStock: 10,
         reorderPoint: 15,
         valuationClass: '7920',
-        glInventoryAccount: '120300', // Finished Goods Inventory
+        glInventoryAccount: StandardGlAccount.INVENTORY_FINISHED_GOODS,
         glConsumptionAccount: '510300',
-        glCogsAccount: '500100', // Cost of Goods Sold
+        glCogsAccount: StandardGlAccount.COGS,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -83,8 +89,8 @@ export class InventoryEngine {
 
     for (const m of defaults) {
       this.materials.set(m.sku, m);
-      this.stockLocations.set(`PLANT-1000:SLOC-0001:${m.sku}`, {
-        plantId: 'PLANT-1000',
+      this.stockLocations.set(`${SystemDefaults.DEFAULT_PLANT_ID}:SLOC-0001:${m.sku}`, {
+        plantId: SystemDefaults.DEFAULT_PLANT_ID,
         storageLocationId: 'SLOC-0001',
         sku: m.sku,
         unrestrictedQty: m.totalStock,
@@ -154,7 +160,7 @@ export class InventoryEngine {
     const round2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
 
     switch (input.movementType) {
-      case '101': {
+      case InventoryMovementType.GR_PURCHASE_ORDER: {
         // Goods Receipt for Purchase Order
         const unitCost = input.unitCost ?? material.standardPrice;
         newMap = this.calculateNewMovingAveragePrice(previousStock, previousMap, input.quantity, unitCost);
@@ -171,7 +177,7 @@ export class InventoryEngine {
             description: `Goods Receipt Mvt 101 PO:${input.referenceDocument ?? 'N/A'} for ${material.sku}`,
           },
           {
-            accountCode: '210500', // GR/IR Clearing Account (Liability)
+            accountCode: StandardGlAccount.GRIR_CLEARING, // GR/IR Clearing Account (Liability)
             accountName: 'Goods Receipt / Invoice Receipt (GR/IR) Clearing',
             debit: 0,
             credit: totalValuation,
@@ -181,7 +187,7 @@ export class InventoryEngine {
         break;
       }
 
-      case '102': {
+      case InventoryMovementType.GR_REVERSAL: {
         // Goods Receipt Reversal
         if (previousStock < input.quantity) {
           throw new Error(`Cannot reverse goods receipt: available stock (${previousStock}) is less than reversal quantity (${input.quantity})`);
@@ -191,7 +197,7 @@ export class InventoryEngine {
         // Accounting: Dr GR/IR Clearing Account, Cr Inventory Account
         journalLines.push(
           {
-            accountCode: '210500',
+            accountCode: StandardGlAccount.GRIR_CLEARING,
             accountName: 'Goods Receipt / Invoice Receipt (GR/IR) Clearing',
             debit: totalValuation,
             credit: 0,
@@ -208,7 +214,7 @@ export class InventoryEngine {
         break;
       }
 
-      case '201': {
+      case InventoryMovementType.GI_COST_CENTER: {
         // Goods Issue for Cost Center / Internal Consumption
         if (previousStock < input.quantity) {
           throw new Error(`Insufficient stock for consumption. Available: ${previousStock}, Requested: ${input.quantity}`);
@@ -222,8 +228,8 @@ export class InventoryEngine {
             accountName: `Raw Material / Goods Consumption Expense`,
             debit: totalValuation,
             credit: 0,
-            costCenter: input.costCenter ?? 'CC-OPERATIONS',
-            description: `Consumption Mvt 201 for ${material.sku} to CC: ${input.costCenter ?? 'CC-OPERATIONS'}`,
+            costCenter: input.costCenter ?? SystemDefaults.DEFAULT_COST_CENTER,
+            description: `Consumption Mvt 201 for ${material.sku} to CC: ${input.costCenter ?? SystemDefaults.DEFAULT_COST_CENTER}`,
           },
           {
             accountCode: material.glInventoryAccount,
@@ -236,7 +242,7 @@ export class InventoryEngine {
         break;
       }
 
-      case '311': {
+      case InventoryMovementType.TRANSFER_STORAGE_LOCATION: {
         // Storage Location to Storage Location Transfer (Valuation unchanged)
         if (previousStock < input.quantity) {
           throw new Error(`Insufficient stock for transfer. Available: ${previousStock}, Requested: ${input.quantity}`);
@@ -246,7 +252,7 @@ export class InventoryEngine {
         break;
       }
 
-      case '601': {
+      case InventoryMovementType.GI_SALES_DELIVERY: {
         // Goods Issue for Sales Delivery (Outbound Delivery)
         if (previousStock < input.quantity) {
           throw new Error(`Insufficient stock for sales delivery. Available: ${previousStock}, Requested: ${input.quantity}`);

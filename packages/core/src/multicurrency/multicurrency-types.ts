@@ -4,6 +4,8 @@
  * parallel accounting ledgers (0L Leading vs 2L IFRS/US GAAP), and global tax jurisdiction plugins.
  */
 
+import { SubledgerEntryType } from '../common/constants.js';
+
 export type CurrencyCode = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AED' | 'SGD' | 'JPY';
 
 export type ExchangeRateType = 'SPOT' | 'CLOSING' | 'MONTHLY_AVERAGE';
@@ -52,7 +54,7 @@ export interface ParallelJournalEntry {
 export interface OpenMonetaryItem {
   itemId: string;
   documentNumber: string;
-  itemType: 'RECEIVABLE' | 'PAYABLE';
+  itemType: SubledgerEntryType;
   counterpartyName: string;
   foreignCurrency: CurrencyCode;
   foreignAmount: number;

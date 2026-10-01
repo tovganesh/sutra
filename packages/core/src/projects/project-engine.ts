@@ -12,7 +12,7 @@ import {
   CwipSettlementResult,
 } from './project-types.js';
 import { FixedAssetEngine } from '../assets/fixed-asset-engine.js';
-import { ProjectStatus, WbsStatus, AssetStatus } from '../common/constants.js';
+import { ProjectStatus, WbsStatus, AssetStatus, StandardGlAccount } from '../common/constants.js';
 
 export class ProjectSystemsEngine {
   private projects: Map<string, ProjectMaster> = new Map();
@@ -292,7 +292,7 @@ export class ProjectSystemsEngine {
       costCenter: proj.responsibleCostCenter,
       glJournal: {
         entryNumber: glEntryNumber,
-        debitAccount: '140100', // Capital Asset (Plant & Machinery / Building)
+        debitAccount: StandardGlAccount.FIXED_ASSET_CAPITAL, // Capital Asset (Plant & Machinery / Building)
         creditAccount: proj.cwipAccountId, // 140800 CWIP Asset Clearing
         amount: totalSettledCost,
       },
