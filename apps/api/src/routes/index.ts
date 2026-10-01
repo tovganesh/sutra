@@ -1,0 +1,48 @@
+import { Router } from 'express';
+import healthRoutes from './health.routes';
+import authRoutes from './auth.routes';
+import complianceRoutes from './compliance.routes';
+import ledgerRoutes from './ledger.routes';
+import inventoryRoutes from './inventory.routes';
+import salesRoutes from './sales.routes';
+import procurementRoutes from './procurement.routes';
+import manufacturingRoutes from './manufacturing.routes';
+import assetRoutes from './asset.routes';
+import qualityRoutes from './quality.routes';
+import controllingRoutes from './controlling.routes';
+import maintenanceRoutes from './maintenance.routes';
+import treasuryRoutes from './treasury.routes';
+import hcmRoutes from './hcm.routes';
+import projectRoutes from './project.routes';
+import warehouseRoutes from './warehouse.routes';
+import multicurrencyRoutes from './multicurrency.routes';
+import transportationRoutes from './transportation.routes';
+import nocodeRoutes from './nocode.routes';
+import analyticsRoutes from './analytics.routes';
+import aiRoutes from './ai.routes';
+
+const apiRouter = Router();
+
+apiRouter.use(healthRoutes);
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/compliance', complianceRoutes);
+apiRouter.use('/ledger', ledgerRoutes);
+apiRouter.use('/inventory', inventoryRoutes);
+apiRouter.use('/sales', salesRoutes);
+apiRouter.use('/procurement', procurementRoutes);
+apiRouter.use('/manufacturing', manufacturingRoutes);
+apiRouter.use('/assets', assetRoutes);
+apiRouter.use('/quality', qualityRoutes);
+apiRouter.use('/controlling', controllingRoutes);
+apiRouter.use('/pm', maintenanceRoutes);
+apiRouter.use('/trm', treasuryRoutes);
+apiRouter.use('/hcm', hcmRoutes);
+apiRouter.use('/projects', projectRoutes);
+apiRouter.use('/warehouse', warehouseRoutes);
+apiRouter.use('/multicurrency', multicurrencyRoutes);
+apiRouter.use('/transportation', transportationRoutes);
+apiRouter.use('/nocode', nocodeRoutes);
+apiRouter.use('/analytics', analyticsRoutes);
+apiRouter.use('/ai', aiRoutes);
+
+export default apiRouter;
