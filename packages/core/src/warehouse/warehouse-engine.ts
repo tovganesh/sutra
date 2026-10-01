@@ -16,7 +16,7 @@ import {
   StockTransferRequest,
   CycleCountRecord,
 } from './warehouse-types.js';
-import { WarehouseTaskStatus } from '../common/constants.js';
+import { WarehouseTaskStatus, StandardGlAccount } from '../common/constants.js';
 
 export class WarehouseEngine {
   private bins: Map<string, StorageBin> = new Map();
@@ -394,13 +394,13 @@ export class WarehouseEngine {
     if (varianceQty < 0) {
       // Shortage / Shrinkage expense
       glVoucherLines.push({
-        accountCode: '540100',
+        accountCode: StandardGlAccount.INVENTORY_SHRINKAGE_EXPENSE,
         accountName: 'Inventory Shrinkage & Discrepancy Expense',
         debit: varianceVal,
         credit: 0,
       });
       glVoucherLines.push({
-        accountCode: '120100',
+        accountCode: StandardGlAccount.INVENTORY_RAW_MATERIALS,
         accountName: `Inventory Clearing Adjustment (${countData.sku})`,
         debit: 0,
         credit: varianceVal,
@@ -408,13 +408,13 @@ export class WarehouseEngine {
     } else if (varianceQty > 0) {
       // Overage / Inventory Gain
       glVoucherLines.push({
-        accountCode: '120100',
+        accountCode: StandardGlAccount.INVENTORY_RAW_MATERIALS,
         accountName: `Inventory Clearing Adjustment (${countData.sku})`,
         debit: varianceVal,
         credit: 0,
       });
       glVoucherLines.push({
-        accountCode: '430100',
+        accountCode: StandardGlAccount.INVENTORY_GAIN_OVERAGE,
         accountName: 'Inventory Count Overage / Gain',
         debit: 0,
         credit: varianceVal,

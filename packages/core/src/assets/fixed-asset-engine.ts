@@ -5,7 +5,7 @@
  */
 
 import { GeneralLedgerEngine, JournalLineInput } from '../ledger/ledger-engine.js';
-import { AssetStatus, type AssetStatusType } from '../common/constants.js';
+import { AssetStatus, type AssetStatusType, StandardGlAccount } from '../common/constants.js';
 
 export type AssetClass =
   | 'BUILDINGS'
@@ -174,7 +174,7 @@ export class FixedAssetEngine {
       // Debit Depreciation Expense for Cost Center
       journalLines.push({
         accountId: 'ACC-DEP-EXP',
-        accountCode: '530100',
+        accountCode: StandardGlAccount.DEPRECIATION_EXPENSE,
         accountName: `Depreciation Expense - ${asset.assetClass}`,
         debit: monthlyDep,
         credit: 0,
@@ -188,7 +188,7 @@ export class FixedAssetEngine {
     // Credit Accumulated Depreciation
     journalLines.push({
       accountId: 'ACC-ACCUM-DEP',
-      accountCode: '140900',
+      accountCode: StandardGlAccount.ACCUMULATED_DEPRECIATION,
       accountName: 'Accumulated Depreciation Contra Asset',
       debit: 0,
       credit: totalDepreciation,

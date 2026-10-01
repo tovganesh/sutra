@@ -31,6 +31,12 @@ export const SubledgerStatus = {
 export type SubledgerStatusType = (typeof SubledgerStatus)[keyof typeof SubledgerStatus];
 export type SubledgerStatus = SubledgerStatusType;
 
+export const SubledgerEntryType = {
+  RECEIVABLE: 'RECEIVABLE',
+  PAYABLE: 'PAYABLE',
+} as const;
+export type SubledgerEntryType = (typeof SubledgerEntryType)[keyof typeof SubledgerEntryType];
+
 export const PurchaseOrderStatus = {
   DRAFT: 'DRAFT',
   APPROVED: 'APPROVED',
@@ -208,6 +214,66 @@ export const InventoryMovementType = {
 export type InventoryMovementTypeCode = (typeof InventoryMovementType)[keyof typeof InventoryMovementType];
 export type InventoryMovementType = InventoryMovementTypeCode;
 
+export const MaterialType = {
+  RAW_MATERIAL: 'ROH',
+  SEMI_FINISHED: 'HALB',
+  FINISHED_PRODUCT: 'FERT',
+  TRADING_GOODS: 'HAWA',
+  SERVICES: 'DIEN',
+} as const;
+export type MaterialTypeCode = (typeof MaterialType)[keyof typeof MaterialType];
+
+export const StockType = {
+  UNRESTRICTED: 'UNRESTRICTED',
+  QUALITY_INSPECTION: 'QUALITY_INSPECTION',
+  BLOCKED: 'BLOCKED',
+  RESERVED: 'RESERVED',
+} as const;
+export type StockTypeCode = (typeof StockType)[keyof typeof StockType];
+
+export const StandardGlAccount = {
+  AR_DOMESTIC: '110000',
+  INVENTORY_RAW_MATERIALS: '120100',
+  INVENTORY_WIP: '120200',
+  INVENTORY_FINISHED_GOODS: '120300',
+  INPUT_CGST: '130100',
+  INPUT_SGST: '130200',
+  INPUT_IGST: '130300',
+  FIXED_ASSET_CAPITAL: '140100',
+  CWIP_ASSET_CLEARING: '140800',
+  ACCUMULATED_DEPRECIATION: '170100',
+  AP_DOMESTIC: '210100',
+  AP_CARRIER: '210400',
+  GRIR_CLEARING: '210500',
+  TDS_SECTION_194C_PAYABLE: '210600',
+  OUTPUT_CGST: '220100',
+  OUTPUT_SGST: '220200',
+  OUTPUT_IGST: '220300',
+  TDS_PAYABLE: '220500',
+  SALES_REVENUE: '410000',
+  INVENTORY_GAIN_OVERAGE: '430100',
+  COGS: '500100',
+  RAW_MATERIAL_CONSUMPTION: '510100',
+  FREIGHT_OUTWARD_EXPENSE: '520100',
+  DEPRECIATION_EXPENSE: '520200',
+  INVENTORY_SHRINKAGE_EXPENSE: '540100',
+  SECONDARY_COST_ALLOCATION: '610000',
+} as const;
+export type StandardGlAccountCode = (typeof StandardGlAccount)[keyof typeof StandardGlAccount];
+
+export const ParallelLedgerType = {
+  LEADING: 'LEADING',
+  NON_LEADING: 'NON_LEADING',
+} as const;
+export type ParallelLedgerTypeCode = (typeof ParallelLedgerType)[keyof typeof ParallelLedgerType];
+
+export const ExchangeRateCategory = {
+  SPOT: 'SPOT',
+  CLOSING: 'CLOSING',
+  AVERAGE: 'AVERAGE',
+} as const;
+export type ExchangeRateCategoryType = (typeof ExchangeRateCategory)[keyof typeof ExchangeRateCategory];
+
 // =================================================================
 // 3. Statutory, Tax & TDS Constants
 // =================================================================
@@ -244,7 +310,11 @@ export const SystemDefaults = {
   DEFAULT_COUNTRY_CODE: 'IN',
   DEFAULT_SUPPLIER_STATE_CODE: '27', // Maharashtra
   DEFAULT_SUPPLIER_GSTIN: '27AABCS1429B1ZB',
+  DEFAULT_COST_CENTER: 'CC-OPERATIONS',
+  DEFAULT_VALKEY_URL: 'valkey://localhost:6379',
+  DEFAULT_MAX_RETRIES: 3,
   E_WAY_BILL_THRESHOLD_INR: 50000,
   TDS_SECTION_194Q_THRESHOLD_INR: 5000000, // ₹50 Lakhs
 } as const;
+
 

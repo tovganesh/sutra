@@ -5,9 +5,16 @@
  * DSO (Days Sales Outstanding) and DPO (Days Payable Outstanding) metrics.
  */
 
+import {
+  SubledgerStatus,
+  type SubledgerStatusType,
+  SubledgerEntryType,
+  SystemDefaults,
+} from '../common/constants.js';
+
 export interface SubledgerItem {
   id: string;
-  type: 'RECEIVABLE' | 'PAYABLE';
+  type: SubledgerEntryType;
   partyId: string;
   partyName: string;
   invoiceNumber: string;
@@ -17,7 +24,7 @@ export interface SubledgerItem {
   paidAmount: number;
   outstandingBalance: number;
   currency: string;
-  status: 'OPEN' | 'PARTIALLY_PAID' | 'PAID' | 'DISPUTED';
+  status: SubledgerStatusType;
 }
 
 export interface AgingBucketSummary {
@@ -73,7 +80,7 @@ export class SubledgerEngine {
       // Receivables (AR)
       {
         id: 'AR-001',
-        type: 'RECEIVABLE',
+        type: SubledgerEntryType.RECEIVABLE,
         partyId: 'CUST-MAH-001',
         partyName: 'Tata Motors Fleet Solutions Ltd',
         invoiceNumber: 'INV-2026-0089',
@@ -82,12 +89,12 @@ export class SubledgerEngine {
         grossAmount: 4500000,
         paidAmount: 0,
         outstandingBalance: 4500000,
-        currency: 'INR',
-        status: 'OPEN',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.OPEN,
       },
       {
         id: 'AR-002',
-        type: 'RECEIVABLE',
+        type: SubledgerEntryType.RECEIVABLE,
         partyId: 'CUST-BLR-002',
         partyName: 'Bangalore Metro Rail Logistics Corp',
         invoiceNumber: 'INV-2026-0041',
@@ -96,12 +103,12 @@ export class SubledgerEngine {
         grossAmount: 12000000,
         paidAmount: 2000000,
         outstandingBalance: 10000000,
-        currency: 'INR',
-        status: 'PARTIALLY_PAID',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.PARTIALLY_PAID,
       },
       {
         id: 'AR-003',
-        type: 'RECEIVABLE',
+        type: SubledgerEntryType.RECEIVABLE,
         partyId: 'CUST-PUN-003',
         partyName: 'Bharat Forge Heavy Engineering',
         invoiceNumber: 'INV-2025-1102',
@@ -110,14 +117,14 @@ export class SubledgerEngine {
         grossAmount: 3200000,
         paidAmount: 0,
         outstandingBalance: 3200000,
-        currency: 'INR',
-        status: 'OPEN',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.OPEN,
       },
 
       // Payables (AP)
       {
         id: 'AP-001',
-        type: 'PAYABLE',
+        type: SubledgerEntryType.PAYABLE,
         partyId: 'VEND-JINDAL-001',
         partyName: 'Jindal Steel & Power Ltd',
         invoiceNumber: 'V-INV-9921',
@@ -126,12 +133,12 @@ export class SubledgerEngine {
         grossAmount: 7800000,
         paidAmount: 0,
         outstandingBalance: 7800000,
-        currency: 'INR',
-        status: 'OPEN',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.OPEN,
       },
       {
         id: 'AP-002',
-        type: 'PAYABLE',
+        type: SubledgerEntryType.PAYABLE,
         partyId: 'VEND-MICROTECH-002',
         partyName: 'MicroTech Precision Forgings MSME',
         invoiceNumber: 'V-INV-4412',
@@ -140,12 +147,12 @@ export class SubledgerEngine {
         grossAmount: 1450000,
         paidAmount: 0,
         outstandingBalance: 1450000,
-        currency: 'INR',
-        status: 'OPEN',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.OPEN,
       },
       {
         id: 'AP-003',
-        type: 'PAYABLE',
+        type: SubledgerEntryType.PAYABLE,
         partyId: 'VEND-LUBRICANTS-003',
         partyName: 'Castrol India Industrial Oils',
         invoiceNumber: 'V-INV-8120',
@@ -154,8 +161,8 @@ export class SubledgerEngine {
         grossAmount: 850000,
         paidAmount: 0,
         outstandingBalance: 850000,
-        currency: 'INR',
-        status: 'OPEN',
+        currency: SystemDefaults.DEFAULT_CURRENCY,
+        status: SubledgerStatus.OPEN,
       },
     ];
 
@@ -177,7 +184,7 @@ export class SubledgerEngine {
 
     item.paidAmount = newPaid;
     item.outstandingBalance = newOutstanding;
-    item.status = newOutstanding === 0 ? 'PAID' : 'PARTIALLY_PAID';
+    item.status = newOutstanding === 0 ? SubledgerStatus.PAID : SubledgerStatus.PARTIALLY_PAID;
 
     this.items.set(id, item);
     return item;
@@ -225,7 +232,7 @@ export class SubledgerEngine {
       if (item.outstandingBalance <= 0) continue;
 
       const ageDays = calcDaysDiff(item.invoiceDate);
-      const isAr = item.type === 'RECEIVABLE';
+      const isAr = item.type === SubledgerEntryType.RECEIVABLE;
       const targetSummary = isAr ? arSummary : apSummary;
       const targetMap = isAr ? arDebtorsMap : apVendorsMap;
 

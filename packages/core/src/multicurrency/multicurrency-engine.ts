@@ -13,7 +13,13 @@ import {
   OpenMonetaryItem,
   ForexRevaluationResult,
   GlobalTaxJurisdictionPlugin,
-} from './multicurrency-types';
+} from './multicurrency-types.js';
+import {
+  ParallelLedgerType,
+  ExchangeRateCategory,
+  SubledgerEntryType,
+  SystemDefaults,
+} from '../common/constants.js';
 
 export class MultiCurrencyEngine {
   private rates: Map<string, ExchangeRate> = new Map();
@@ -249,18 +255,18 @@ export class MultiCurrencyEngine {
 
   private seedDefaults() {
     // Standard exchange rates (Base currency: INR)
-    this.setExchangeRate('USD', 'INR', 83.50, 'SPOT');
-    this.setExchangeRate('USD', 'INR', 84.00, 'CLOSING');
-    this.setExchangeRate('EUR', 'INR', 91.20, 'SPOT');
-    this.setExchangeRate('GBP', 'INR', 108.50, 'SPOT');
-    this.setExchangeRate('AED', 'INR', 22.75, 'SPOT');
+    this.setExchangeRate('USD', SystemDefaults.DEFAULT_CURRENCY, 83.50, ExchangeRateCategory.SPOT);
+    this.setExchangeRate('USD', SystemDefaults.DEFAULT_CURRENCY, 84.00, ExchangeRateCategory.CLOSING);
+    this.setExchangeRate('EUR', SystemDefaults.DEFAULT_CURRENCY, 91.20, ExchangeRateCategory.SPOT);
+    this.setExchangeRate('GBP', SystemDefaults.DEFAULT_CURRENCY, 108.50, ExchangeRateCategory.SPOT);
+    this.setExchangeRate('AED', SystemDefaults.DEFAULT_CURRENCY, 22.75, ExchangeRateCategory.SPOT);
 
     // Standard Ledgers (SAP FI-GL Parallel Ledgers)
     this.registerLedger({
       ledgerCode: '0L',
       name: 'Leading Ledger (Local GAAP & Indian AS)',
-      ledgerType: 'LEADING',
-      baseCurrency: 'INR',
+      ledgerType: ParallelLedgerType.LEADING,
+      baseCurrency: SystemDefaults.DEFAULT_CURRENCY,
       description: 'Primary statutory ledger adhering to MCA Companies Act & Ind AS.',
       isActive: true,
     });
@@ -268,7 +274,7 @@ export class MultiCurrencyEngine {
     this.registerLedger({
       ledgerCode: '2L',
       name: 'Non-Leading Ledger (IFRS & US GAAP)',
-      ledgerType: 'NON_LEADING',
+      ledgerType: ParallelLedgerType.NON_LEADING,
       baseCurrency: 'USD',
       description: 'Parallel global consolidation ledger for international parent reporting.',
       isActive: true,
@@ -278,7 +284,7 @@ export class MultiCurrencyEngine {
     this.addOpenMonetaryItem({
       itemId: 'ITEM-EXP-USD-01',
       documentNumber: 'EXP-INV-2026-0081',
-      itemType: 'RECEIVABLE',
+      itemType: SubledgerEntryType.RECEIVABLE,
       counterpartyName: 'Tesla Energy Logistics Inc (USA)',
       foreignCurrency: 'USD',
       foreignAmount: 100000,
@@ -289,7 +295,7 @@ export class MultiCurrencyEngine {
     this.addOpenMonetaryItem({
       itemId: 'ITEM-IMP-USD-02',
       documentNumber: 'IMP-PO-2026-0422',
-      itemType: 'PAYABLE',
+      itemType: SubledgerEntryType.PAYABLE,
       counterpartyName: 'Nvidia AI Robotics Hardware Corp (USA)',
       foreignCurrency: 'USD',
       foreignAmount: 40000,

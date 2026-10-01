@@ -12,7 +12,7 @@ import {
   ProofOfDeliverySubmission,
   ProofOfDeliveryResult,
 } from './transportation-types.js';
-import { VehicleStatus, FreightOrderStatus } from '../common/constants.js';
+import { VehicleStatus, FreightOrderStatus, StandardGlAccount } from '../common/constants.js';
 
 export class TransportationEngine {
   private carriers: Map<string, CarrierMaster> = new Map();
@@ -304,13 +304,16 @@ export class TransportationEngine {
     });
 
     // Generate balanced double-entry General Ledger settlement voucher
-    const expenseAccountCode = order.orderType === 'INBOUND_PURCHASE' ? '120100' : '520100';
+    const expenseAccountCode =
+      order.orderType === 'INBOUND_PURCHASE'
+        ? StandardGlAccount.INVENTORY_RAW_MATERIALS
+        : StandardGlAccount.FREIGHT_OUTWARD_EXPENSE;
     const expenseAccountName =
       order.orderType === 'INBOUND_PURCHASE'
         ? 'Raw Materials Inventory Landed Cost - Freight Inward'
         : 'Freight Outward & Distribution Logistics Expense';
 
-    const glVoucherLines = [
+    const glVoucherLines: Array<{ accountCode: string; accountName: string; debit: number; credit: number }> = [
       {
         accountCode: expenseAccountCode,
         accountName: expenseAccountName,
@@ -318,7 +321,7 @@ export class TransportationEngine {
         credit: 0,
       },
       {
-        accountCode: '210400',
+        accountCode: StandardGlAccount.AP_CARRIER,
         accountName: `Accounts Payable - Carrier (${order.carrierName})`,
         debit: 0,
         credit: order.netPayableToCarrier,
@@ -327,7 +330,7 @@ export class TransportationEngine {
 
     if (order.tdsWithheld > 0) {
       glVoucherLines.push({
-        accountCode: '210600',
+        accountCode: StandardGlAccount.TDS_SECTION_194C_PAYABLE,
         accountName: `TDS Payable on Transporters & Contractors (Sec 194C @ ${order.tdsRatePercent}%)`,
         debit: 0,
         credit: order.tdsWithheld,
