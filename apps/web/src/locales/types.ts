@@ -102,6 +102,7 @@ export interface LocaleMessage {
         ewm: { sap: string; sutra: string };
         parallelLedger: { sap: string; sutra: string };
         tm: { sap: string; sutra: string };
+        gts: { sap: string; sutra: string };
         abap: { sap: string; sutra: string };
         joule: { sap: string; sutra: string };
       };
@@ -376,6 +377,7 @@ export interface LocaleMessage {
       warehouse: string;
       multicurrency: string;
       transportation: string;
+      customs: string;
     };
     panels: {
       materialMaster: string;
@@ -419,6 +421,11 @@ export interface LocaleMessage {
       activeFreightOrders: string;
       approvedTransporters: string;
       fleetVehicles: string;
+      customsGlobalTrade: string;
+      importDutyLandedCost: string;
+      activeBillOfEntryFilings: string;
+      exportLutManager: string;
+      exportShippingBills: string;
     };
     panelSubs: {
       materialMaster: string;
@@ -454,6 +461,11 @@ export interface LocaleMessage {
       forexReval: string;
       countryTaxRules: string;
       transportFleet: string;
+      customsGlobalTrade: string;
+      importDutyLandedCost: string;
+      activeBillOfEntryFilings: string;
+      exportLutManager: string;
+      exportShippingBills: string;
     };
     cols: {
       sku: string;
@@ -598,6 +610,10 @@ export interface LocaleMessage {
       dispatch: string;
       verifyPod: string;
       deliveredSettled: string;
+      calculateLandedCost: string;
+      verifyLutArn: string;
+      registerShippingBill: string;
+      fastTrackClearance: string;
     };
     badges: {
       liveWaybill: string;
@@ -605,6 +621,10 @@ export interface LocaleMessage {
       realTimeStatus: string;
       outboundSales: string;
       inboundPurchase: string;
+      clearedOoc: string;
+      underAssessment: string;
+      rule96aValidated: string;
+      customsHold: string;
     };
     messages: {
       enterPodOtp: string;
@@ -630,6 +650,40 @@ export interface LocaleMessage {
       ratePerKg: string;
       rateFlat: string;
       tdsLabel: string;
+    };
+    customs: {
+      activeBoeFiling: string;
+      fastTrackClearance: string;
+      customsPaidOutflow: string;
+      icegateDirectDebit: string;
+      creditableItc: string;
+      gstr3bAutoPopulated: string;
+      lutStatus: string;
+      rule96aCompliant: string;
+      billsOfEntryCount: string;
+      assessableCifValue: string;
+      bcdRate: string;
+      swsRate: string;
+      igstRate: string;
+      antiDumping: string;
+      dutyWaterfall: string;
+      totalCustomsDuty: string;
+      totalLandedCost: string;
+      capitalizedInventoryCost: string;
+      creditableGstItc: string;
+      voucherDrInventory: string;
+      voucherDrItc: string;
+      voucherCrCustoms: string;
+      voucherCrSupplier: string;
+      lutArnInput: string;
+      exporterGstinInput: string;
+      financialYearInput: string;
+      lutVerifiedSuccess: string;
+      exportZeroRatedNotice: string;
+      portNhavaSheva: string;
+      portChennai: string;
+      portMundra: string;
+      portDelhiAir: string;
     };
   };
   nocode: {
