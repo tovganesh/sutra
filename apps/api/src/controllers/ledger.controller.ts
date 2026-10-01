@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus, GeneralLedgerEngine } from '@sutra/core';
+import { HttpStatus, GeneralLedgerEngine, SystemDefaults } from '@sutra/core';
 import { subledgerEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -13,7 +13,7 @@ export class LedgerController {
     }
 
     const result = GeneralLedgerEngine.postJournalEntry({
-      tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+      tenantId: tenantId || SystemDefaults.DEFAULT_TENANT_ID,
       entryNumber,
       postingDate: postingDate || new Date().toISOString().split('T')[0],
       reference,

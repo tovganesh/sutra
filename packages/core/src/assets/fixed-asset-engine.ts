@@ -5,6 +5,7 @@
  */
 
 import { GeneralLedgerEngine, JournalLineInput } from '../ledger/ledger-engine.js';
+import { AssetStatus, type AssetStatusType } from '../common/constants.js';
 
 export type AssetClass =
   | 'BUILDINGS'
@@ -27,7 +28,7 @@ export interface FixedAssetMaster {
   depreciationMethod: DepreciationMethod;
   accumulatedDepreciation: number;
   currentBookValue: number;
-  status: 'ACTIVE' | 'RETIRED' | 'UNDER_CONSTRUCTION';
+  status: AssetStatusType;
 }
 
 export interface DepreciationRunResult {
@@ -66,7 +67,7 @@ export class FixedAssetEngine {
         depreciationMethod: 'SLM',
         accumulatedDepreciation: 617500, // ~1.5 years
         currentBookValue: 5882500,
-        status: 'ACTIVE',
+        status: AssetStatus.ACTIVE,
       },
       {
         assetId: 'AST-SRV-HANA-02',
@@ -80,7 +81,7 @@ export class FixedAssetEngine {
         depreciationMethod: 'SLM',
         accumulatedDepreciation: 886666,
         currentBookValue: 1913334,
-        status: 'ACTIVE',
+        status: AssetStatus.ACTIVE,
       },
       {
         assetId: 'AST-FLEET-LOG-03',
@@ -94,7 +95,7 @@ export class FixedAssetEngine {
         depreciationMethod: 'WDV',
         accumulatedDepreciation: 1250000,
         currentBookValue: 2950000,
-        status: 'ACTIVE',
+        status: AssetStatus.ACTIVE,
       },
     ];
 
@@ -121,7 +122,7 @@ export class FixedAssetEngine {
    * WDV: (Current Book Value * Annual WDV Rate) / 12
    */
   public calculateMonthlyDepreciation(asset: FixedAssetMaster): number {
-    if (asset.status !== 'ACTIVE' || asset.currentBookValue <= asset.salvageValue) {
+    if (asset.status !== AssetStatus.ACTIVE || asset.currentBookValue <= asset.salvageValue) {
       return 0;
     }
 
@@ -153,7 +154,7 @@ export class FixedAssetEngine {
     const journalLines: JournalLineInput[] = [];
 
     for (const asset of this.assets.values()) {
-      if (asset.status !== 'ACTIVE') continue;
+      if (asset.status !== AssetStatus.ACTIVE) continue;
 
       const monthlyDep = this.calculateMonthlyDepreciation(asset);
       if (monthlyDep <= 0) continue;

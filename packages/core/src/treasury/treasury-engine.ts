@@ -15,6 +15,7 @@ import {
   BankReconciliationStatement,
   CashLiquidityForecast,
 } from './treasury-types.js';
+import { BankStatementStatus } from '../common/constants.js';
 
 export class TreasuryEngine {
   private houseBanks: Map<string, HouseBank> = new Map();
@@ -115,7 +116,7 @@ export class TreasuryEngine {
       openingBalance: 12450000,
       closingBalance: 12880000,
       format: 'MT940',
-      status: 'IMPORTED',
+      status: BankStatementStatus.IMPORTED,
       lines: [
         {
           lineId: 'BSL-001',
@@ -261,7 +262,7 @@ export class TreasuryEngine {
       openingBalance: openingBal,
       closingBalance: closingBal,
       format: 'MT940',
-      status: 'IMPORTED',
+      status: BankStatementStatus.IMPORTED,
       lines,
     };
 
@@ -361,10 +362,10 @@ export class TreasuryEngine {
 
     statement.status =
       unmatchedCount === 0
-        ? 'RECONCILED'
+        ? BankStatementStatus.RECONCILED
         : matchedCount > 0
-        ? 'PARTIALLY_RECONCILED'
-        : 'IMPORTED';
+        ? BankStatementStatus.PARTIALLY_RECONCILED
+        : BankStatementStatus.IMPORTED;
 
     const acc = this.bankAccounts.get(statement.accountId);
     if (acc) {

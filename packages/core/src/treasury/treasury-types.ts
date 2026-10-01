@@ -5,6 +5,8 @@
  * Bank Reconciliation Statement (BRS), and Cash Liquidity Forecasting.
  */
 
+import { type BankStatementStatusType } from '../common/constants.js';
+
 export type BankAccountType = 
   | 'CURRENT' 
   | 'SAVINGS' 
@@ -16,10 +18,7 @@ export type StatementFormat =
   | 'CAMT_053' 
   | 'CSV';
 
-export type StatementStatus = 
-  | 'IMPORTED' 
-  | 'PARTIALLY_RECONCILED' 
-  | 'RECONCILED';
+export type StatementStatus = BankStatementStatusType;
 
 export type LineReconciliationStatus = 
   | 'UNMATCHED' 

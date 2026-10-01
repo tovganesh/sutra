@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, SystemDefaults } from '@sutra/core';
 import { procureToPayEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -17,12 +17,12 @@ export class ProcurementController {
 
     try {
       const po = procureToPayEngine.createPurchaseOrder({
-        tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId: input.tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         poNumber: input.poNumber,
         vendorId: input.vendorId,
-        supplierStateCode: input.supplierStateCode || '27',
+        supplierStateCode: input.supplierStateCode || SystemDefaults.DEFAULT_SUPPLIER_STATE_CODE,
         items: input.items,
-        deliveryPlant: input.deliveryPlant || 'PLANT-1000',
+        deliveryPlant: input.deliveryPlant || SystemDefaults.DEFAULT_PLANT_ID,
       });
       res.status(HttpStatus.CREATED).json(po);
     } catch (err: unknown) {
@@ -54,7 +54,7 @@ export class ProcurementController {
 
     try {
       const verification = procureToPayEngine.verifyVendorInvoice({
-        tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId: input.tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         vendorInvoiceNumber: input.vendorInvoiceNumber,
         poNumber: input.poNumber,
         grnNumber: input.grnNumber,

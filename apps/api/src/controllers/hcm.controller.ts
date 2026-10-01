@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, EmployeeStatus } from '@sutra/core';
 import { hcmEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -18,7 +18,7 @@ export class HcmController {
     const emp = hcmEngine.registerEmployee({
       ...req.body,
       employmentType: req.body.employmentType || 'FULL_TIME',
-      status: req.body.status || 'ACTIVE',
+      status: req.body.status || EmployeeStatus.ACTIVE,
       dateOfJoining: req.body.dateOfJoining || new Date().toISOString().split('T')[0],
     });
     res.status(HttpStatus.CREATED).json(emp);

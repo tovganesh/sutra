@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, AssetStatus, SystemDefaults } from '@sutra/core';
 import { fixedAssetEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -17,7 +17,7 @@ export class AssetController {
 
     fixedAssetEngine.registerAsset({
       ...asset,
-      status: asset.status || 'ACTIVE',
+      status: asset.status || AssetStatus.ACTIVE,
     });
 
     res.status(HttpStatus.CREATED).json({
@@ -32,7 +32,7 @@ export class AssetController {
 
     try {
       const result = fixedAssetEngine.executeMonthlyDepreciationRun(
-        tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         targetPeriod
       );
       res.status(HttpStatus.CREATED).json(result);

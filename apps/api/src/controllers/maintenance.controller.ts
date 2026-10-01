@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, EquipmentStatus } from '@sutra/core';
 import { maintenanceEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -29,7 +29,7 @@ export class MaintenanceController {
     }
     const eq = maintenanceEngine.registerEquipment({
       ...req.body,
-      status: req.body.status || 'OPERATIONAL',
+      status: req.body.status || EquipmentStatus.OPERATIONAL,
       operatingHours: req.body.operatingHours || 0,
       modelYear: req.body.modelYear || new Date().getFullYear(),
     });

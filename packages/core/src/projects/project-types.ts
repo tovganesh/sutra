@@ -5,24 +5,13 @@
  * and Capital Work-in-Progress (CWIP) settlement into Fixed Asset Accounting.
  */
 
+import { type ProjectStatusType, type WbsStatusType } from '../common/constants.js';
+
 export type ProjectType = 
   | 'CAPEX' 
   | 'OPEX' 
   | 'CUSTOMER_PROJECT' 
   | 'R_AND_D';
-
-export type ProjectStatus = 
-  | 'CREATED' 
-  | 'APPROVED' 
-  | 'IN_PROGRESS' 
-  | 'COMPLETED' 
-  | 'CLOSED';
-
-export type WbsStatus = 
-  | 'PLANNED' 
-  | 'RELEASED' 
-  | 'IN_PROGRESS' 
-  | 'COMPLETED';
 
 export interface WbsElement {
   wbsCode: string; // e.g. PRJ-EV-GIGA/01/01
@@ -33,7 +22,7 @@ export interface WbsElement {
   budgetAllocated: number;
   budgetCommitted: number; // Reserved through Purchase Orders
   actualCostIncurred: number; // Actual spend via vendor invoices / timesheets
-  status: WbsStatus;
+  status: WbsStatusType;
 }
 
 export interface ProjectMilestone {
@@ -51,7 +40,7 @@ export interface ProjectMaster {
   name: string;
   description: string;
   projectType: ProjectType;
-  status: ProjectStatus;
+  status: ProjectStatusType;
   startDate: string;
   endDate: string;
   projectManager: string;

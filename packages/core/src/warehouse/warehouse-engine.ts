@@ -15,7 +15,8 @@ import {
   BinPickAllocation,
   StockTransferRequest,
   CycleCountRecord,
-} from './warehouse-types';
+} from './warehouse-types.js';
+import { WarehouseTaskStatus } from '../common/constants.js';
 
 export class WarehouseEngine {
   private bins: Map<string, StorageBin> = new Map();
@@ -171,7 +172,7 @@ export class WarehouseEngine {
       sku: request.sku,
       batchNumber: request.batchNumber,
       quantity: request.quantity,
-      status: 'CONFIRMED',
+      status: WarehouseTaskStatus.CONFIRMED,
       confirmedAt: new Date().toISOString(),
     };
   }
@@ -262,7 +263,7 @@ export class WarehouseEngine {
       sku: request.sku,
       totalQuantityPicked: request.quantityRequested,
       allocations,
-      status: 'CONFIRMED',
+      status: WarehouseTaskStatus.CONFIRMED,
       confirmedAt: new Date().toISOString(),
     };
   }
@@ -349,7 +350,7 @@ export class WarehouseEngine {
       sku: request.sku,
       batchNumber: request.batchNumber,
       quantity: request.quantity,
-      status: 'CONFIRMED',
+      status: WarehouseTaskStatus.CONFIRMED,
     };
   }
 

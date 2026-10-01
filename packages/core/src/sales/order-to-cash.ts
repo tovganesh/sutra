@@ -7,6 +7,13 @@
 
 import { InventoryEngine } from '../inventory/inventory-engine.js';
 import { GeneralLedgerEngine, JournalLineInput } from '../ledger/ledger-engine.js';
+import {
+  SalesOrderStatus,
+  type SalesOrderStatusType,
+  InventoryMovementType,
+  SystemDefaults,
+  GstRate,
+} from '../common/constants.js';
 
 export interface CustomerMaster {
   customerId: string;
@@ -43,7 +50,7 @@ export interface SalesOrderInput {
 
 export interface SalesOrderResult {
   orderNumber: string;
-  status: 'CONFIRMED' | 'REJECTED';
+  status: SalesOrderStatusType;
   customer: CustomerMaster;
   items: Array<SalesOrderItemInput & { lineTotal: number }>;
   subtotal: number;
@@ -172,7 +179,7 @@ export class OrderToCashEngine {
       if (material.totalStock < item.quantity) {
         return {
           orderNumber: input.orderNumber,
-          status: 'REJECTED',
+          status: SalesOrderStatus.REJECTED,
           customer,
           items: [],
           subtotal: 0,
@@ -209,7 +216,7 @@ export class OrderToCashEngine {
     if (projectedOutstanding > customer.creditLimit) {
       return {
         orderNumber: input.orderNumber,
-        status: 'REJECTED',
+        status: SalesOrderStatus.REJECTED,
         customer,
         items: computedItems,
         subtotal: round2(subtotal),
@@ -236,10 +243,10 @@ export class OrderToCashEngine {
     let igst = 0;
 
     if (isInterState) {
-      igst = round2(taxableValue * 0.18);
+      igst = round2(taxableValue * GstRate.STANDARD_IGST);
     } else {
-      cgst = round2(taxableValue * 0.09);
-      sgst = round2(taxableValue * 0.09);
+      cgst = round2(taxableValue * GstRate.STANDARD_CGST);
+      sgst = round2(taxableValue * GstRate.STANDARD_SGST);
     }
 
     const totalTax = round2(cgst + sgst + igst);
@@ -247,7 +254,7 @@ export class OrderToCashEngine {
 
     const result: SalesOrderResult = {
       orderNumber: input.orderNumber,
-      status: 'CONFIRMED',
+      status: SalesOrderStatus.CONFIRMED,
       customer,
       items: computedItems,
       subtotal: round2(subtotal),
@@ -277,7 +284,7 @@ export class OrderToCashEngine {
       throw new Error(`Sales Order '${orderNumber}' not found.`);
     }
 
-    if (order.status !== 'CONFIRMED') {
+    if (order.status !== SalesOrderStatus.CONFIRMED) {
       throw new Error(`Cannot deliver Sales Order '${orderNumber}' in status '${order.status}'.`);
     }
 
@@ -287,7 +294,7 @@ export class OrderToCashEngine {
 
     for (const item of order.items) {
       const movement = this.inventoryEngine.executeStockMovement({
-        movementType: '601',
+        movementType: InventoryMovementType.GI_SALES_DELIVERY,
         sku: item.sku,
         quantity: item.quantity,
         referenceDocument: `${orderNumber}:${deliveryDocId}`,
@@ -402,7 +409,7 @@ export class OrderToCashEngine {
       : undefined;
 
     // E-Way Bill is statutorily mandated in India when consignment value > ₹50,000
-    const eWayBillRequired = order.grandTotal > 50000;
+    const eWayBillRequired = order.grandTotal > SystemDefaults.E_WAY_BILL_THRESHOLD_INR;
 
     return {
       invoiceNumber,
@@ -415,7 +422,7 @@ export class OrderToCashEngine {
       totalInvoiceAmount: order.grandTotal,
       eInvoiceIrn,
       eWayBillRequired,
-      eWayBillThreshold: 50000,
+      eWayBillThreshold: SystemDefaults.E_WAY_BILL_THRESHOLD_INR,
       glPostingSuccess: postResult.success,
       journalLines,
       generatedAt: new Date().toISOString(),

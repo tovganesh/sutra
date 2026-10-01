@@ -12,6 +12,7 @@ import {
   CwipSettlementResult,
 } from './project-types.js';
 import { FixedAssetEngine } from '../assets/fixed-asset-engine.js';
+import { ProjectStatus, WbsStatus, AssetStatus } from '../common/constants.js';
 
 export class ProjectSystemsEngine {
   private projects: Map<string, ProjectMaster> = new Map();
@@ -28,7 +29,7 @@ export class ProjectSystemsEngine {
       name: 'Gigafactory Battery Assembly Line 2 Expansion',
       description: 'Capital construction of 5 GWh automated lithium battery pack packaging facility',
       projectType: 'CAPEX',
-      status: 'IN_PROGRESS',
+      status: ProjectStatus.IN_PROGRESS,
       startDate: '2026-01-10',
       endDate: '2026-12-31',
       projectManager: 'Vikram Joshi (Director of Project Engineering)',
@@ -46,7 +47,7 @@ export class ProjectSystemsEngine {
           budgetAllocated: 30000000,
           budgetCommitted: 8000000,
           actualCostIncurred: 20000000,
-          status: 'IN_PROGRESS',
+          status: WbsStatus.IN_PROGRESS,
         },
         {
           wbsCode: 'PRJ-EV-GIGA/02',
@@ -56,7 +57,7 @@ export class ProjectSystemsEngine {
           budgetAllocated: 35000000,
           budgetCommitted: 15000000,
           actualCostIncurred: 12000000,
-          status: 'IN_PROGRESS',
+          status: WbsStatus.IN_PROGRESS,
         },
         {
           wbsCode: 'PRJ-EV-GIGA/03',
@@ -66,7 +67,7 @@ export class ProjectSystemsEngine {
           budgetAllocated: 10000000,
           budgetCommitted: 5000000,
           actualCostIncurred: 3000000,
-          status: 'RELEASED',
+          status: WbsStatus.RELEASED,
         },
       ],
       milestones: [
@@ -239,7 +240,7 @@ export class ProjectSystemsEngine {
     if (!proj) {
       throw new Error(`Project ${projectId} not found`);
     }
-    if (proj.status === 'CLOSED') {
+    if (proj.status === ProjectStatus.CLOSED) {
       throw new Error(`Project ${projectId} is already closed`);
     }
 
@@ -268,14 +269,14 @@ export class ProjectSystemsEngine {
           depreciationMethod: 'SLM',
           accumulatedDepreciation: 0,
           currentBookValue: totalSettledCost,
-          status: 'ACTIVE',
+          status: AssetStatus.ACTIVE,
         });
       } catch {
         // Continue if asset already registered
       }
     }
 
-    proj.status = 'COMPLETED';
+    proj.status = ProjectStatus.COMPLETED;
     proj.capitalizedAssetTag = assetTag;
 
     const settlementId = `SETTLE-${projectId}-${count}`;

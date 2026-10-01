@@ -37,4 +37,5 @@ export * from './multicurrency/multicurrency-engine.js';
 export * from './transportation/transportation-types.js';
 export * from './transportation/transportation-engine.js';
 export * from './common/http-status.js';
+export * from './common/constants.js';
 

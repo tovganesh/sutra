@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, SystemDefaults } from '@sutra/core';
 import { manufacturingEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -25,11 +25,11 @@ export class ManufacturingController {
 
     try {
       const order = manufacturingEngine.planProductionOrder({
-        tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId: input.tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         orderNumber: input.orderNumber,
         targetSku: input.targetSku,
         targetQuantity: Number(input.targetQuantity),
-        plantId: input.plantId || 'PLANT-1000',
+        plantId: input.plantId || SystemDefaults.DEFAULT_PLANT_ID,
         startDate: input.startDate || new Date().toISOString().split('T')[0],
         targetCompletionDate: input.targetCompletionDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       });
@@ -48,7 +48,7 @@ export class ManufacturingController {
 
     try {
       const confirmation = manufacturingEngine.confirmProductionOrder(
-        tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         orderNumber,
         Number(quantityCompleted)
       );

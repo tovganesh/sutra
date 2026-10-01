@@ -2,6 +2,11 @@
  * Sutra Transportation Management (SAP TM) & Fleet Logistics Engine Types
  */
 
+import {
+  type VehicleStatusType,
+  type FreightOrderStatusType,
+} from '../common/constants.js';
+
 export type FreightRateModel = 'PER_KM' | 'PER_KG' | 'FLAT_TRIP';
 
 export type VehicleCategory =
@@ -10,10 +15,6 @@ export type VehicleCategory =
   | 'LIGHT_COMMERCIAL_14FT'
   | 'COLD_CHAIN_REEFER'
   | 'FLATBED_TRAILER';
-
-export type VehicleStatus = 'AVAILABLE' | 'IN_TRANSIT' | 'MAINTENANCE';
-
-export type FreightOrderStatus = 'PLANNED' | 'DISPATCHED' | 'IN_TRANSIT' | 'ARRIVED' | 'DELIVERED';
 
 export type FreightOrderType = 'OUTBOUND_SALES' | 'INBOUND_PURCHASE' | 'INTER_PLANT_TRANSFER';
 
@@ -43,7 +44,7 @@ export interface VehicleMaster {
   driverPhone: string;
   driverLicenseNumber: string;
   gpsTrackingImei?: string;
-  status: VehicleStatus;
+  status: VehicleStatusType;
   currentLocationCity: string;
 }
 
@@ -89,7 +90,7 @@ export interface FreightOrder {
   cargoDescription: string;
   associatedDocType: string;
   associatedDocNumber: string;
-  status: FreightOrderStatus;
+  status: FreightOrderStatusType;
   baseFreightCost: number;
   fuelSurcharge: number;
   tollCharges: number;

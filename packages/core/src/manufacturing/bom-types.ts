@@ -3,6 +3,8 @@
  * Equivalent to SAP PP Bill of Materials (BOM), Work Centers, Routings, and Production Orders.
  */
 
+import { type ProductionOrderStatusType } from '../common/constants.js';
+
 export interface BomComponentItem {
   componentSku: string;
   quantityRequired: number; // Quantity per 1 unit of parent
@@ -53,7 +55,7 @@ export interface ProductionOrderInput {
 
 export interface ProductionOrderResult {
   orderNumber: string;
-  status: 'PLANNED' | 'RELEASED' | 'CONFIRMED' | 'CLOSED';
+  status: ProductionOrderStatusType;
   targetSku: string;
   targetQuantity: number;
   plantId: string;

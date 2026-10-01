@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, SystemDefaults } from '@sutra/core';
 import { controllingEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -28,7 +28,7 @@ export class ControllingController {
         ruleId,
         period,
         amountToAllocate: amountToAllocate ? Number(amountToAllocate) : undefined,
-        tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId: tenantId || SystemDefaults.DEFAULT_TENANT_ID,
       });
       res.status(HttpStatus.CREATED).json(result);
     } catch (err: unknown) {
