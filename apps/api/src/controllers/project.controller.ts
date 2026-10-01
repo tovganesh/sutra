@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, ProjectStatus, WbsStatus } from '@sutra/core';
 import { projectSystemsEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -16,7 +16,7 @@ export class ProjectController {
     }
     const proj = projectSystemsEngine.createProject({
       ...req.body,
-      status: req.body.status || 'APPROVED',
+      status: req.body.status || ProjectStatus.APPROVED,
       startDate: req.body.startDate || new Date().toISOString().split('T')[0],
       endDate: req.body.endDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
       totalApprovedBudget: Number(totalApprovedBudget),
@@ -56,7 +56,7 @@ export class ProjectController {
         budgetAllocated: Number(budgetAllocated),
         budgetCommitted: 0,
         actualCostIncurred: 0,
-        status: req.body.status || 'RELEASED',
+        status: req.body.status || WbsStatus.RELEASED,
       });
       res.status(HttpStatus.CREATED).json(wbs);
     } catch (err: unknown) {

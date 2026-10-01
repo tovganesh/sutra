@@ -7,6 +7,13 @@
 import crypto from 'node:crypto';
 import { InventoryEngine } from '../inventory/inventory-engine.js';
 import {
+  QualityLotStatus,
+  QualityUsageDecision,
+  BatchStatus,
+  InventoryMovementType,
+  type InventoryMovementTypeCode,
+} from '../common/constants.js';
+import {
   BatchGenealogyTrace,
   BatchRecord,
   CertificateOfAnalysis,
@@ -146,7 +153,7 @@ export class QualityEngine {
       referenceDocument: params.referenceDocument,
       characteristics,
       results: [],
-      status: 'CREATED',
+      status: QualityLotStatus.CREATED,
       createdAt: new Date().toISOString(),
     };
 
@@ -158,7 +165,7 @@ export class QualityEngine {
         batchNumber: params.batchNumber,
         materialSku: params.materialSku,
         plantId: params.plantId,
-        status: 'IN_QUALITY',
+        status: BatchStatus.IN_QUALITY,
         manufacturingDate: new Date().toISOString().split('T')[0],
         totalQuantity: params.quantity,
         parentBatches: [],
@@ -228,7 +235,7 @@ export class QualityEngine {
     }
 
     lot.results = recorded;
-    lot.status = 'RESULTS_RECORDED';
+    lot.status = QualityLotStatus.RESULTS_RECORDED;
     return lot;
   }
 
@@ -250,17 +257,17 @@ export class QualityEngine {
       throw new Error(`Cannot post Usage Decision for Lot '${params.lotId}' without recording test results first.`);
     }
 
-    let movementType: '321' | '350' | '551' = '321';
+    let movementType: InventoryMovementTypeCode = InventoryMovementType.TRANSFER_QI_TO_UNRESTRICTED;
     let decisionCode = 'UD-ACC-UNRESTRICTED';
 
-    if (params.decision === 'ACCEPTED') {
-      movementType = '321'; // Quality Inspection to Unrestricted Stock
+    if (params.decision === QualityUsageDecision.ACCEPTED) {
+      movementType = InventoryMovementType.TRANSFER_QI_TO_UNRESTRICTED; // Quality Inspection to Unrestricted Stock
       decisionCode = 'UD-ACC-UNRESTRICTED';
-    } else if (params.decision === 'REJECTED') {
-      movementType = '350'; // Quality Inspection to Blocked Stock
+    } else if (params.decision === QualityUsageDecision.REJECTED) {
+      movementType = InventoryMovementType.TRANSFER_QI_TO_BLOCKED; // Quality Inspection to Blocked Stock
       decisionCode = 'UD-REJ-BLOCKED';
-    } else if (params.decision === 'SCRAPPED') {
-      movementType = '551'; // Scrap from Quality Inspection
+    } else if (params.decision === QualityUsageDecision.SCRAPPED) {
+      movementType = InventoryMovementType.GI_SCRAP; // Scrap from Quality Inspection
       decisionCode = 'UD-SCRAP-EXPENSED';
     } else {
       throw new Error(`Invalid Usage Decision: '${params.decision}'. Must be ACCEPTED, REJECTED, or SCRAPPED.`);
@@ -276,17 +283,17 @@ export class QualityEngine {
     };
 
     lot.usageDecision = usageDecision;
-    lot.status = 'UD_COMPLETED';
+    lot.status = QualityLotStatus.UD_COMPLETED;
 
     // Update batch status
     const batch = this.batchRegistry.get(lot.batchNumber);
     if (batch) {
-      if (params.decision === 'ACCEPTED') {
-        batch.status = 'UNRESTRICTED';
-      } else if (params.decision === 'REJECTED') {
-        batch.status = 'BLOCKED';
-      } else if (params.decision === 'SCRAPPED') {
-        batch.status = 'RESTRICTED';
+      if (params.decision === QualityUsageDecision.ACCEPTED) {
+        batch.status = BatchStatus.UNRESTRICTED;
+      } else if (params.decision === QualityUsageDecision.REJECTED) {
+        batch.status = BatchStatus.BLOCKED;
+      } else if (params.decision === QualityUsageDecision.SCRAPPED) {
+        batch.status = BatchStatus.RESTRICTED;
       }
     }
 

@@ -11,6 +11,7 @@ import {
   StatutoryDeductions,
   PayrollRunResult,
 } from './hcm-types.js';
+import { EmployeeStatus } from '../common/constants.js';
 
 export class HcmEngine {
   private employees: Map<string, EmployeeMaster> = new Map();
@@ -30,7 +31,7 @@ export class HcmEngine {
       designation: 'Senior Automation Engineer',
       costCenter: 'CC-MFG-BODY',
       employmentType: 'FULL_TIME',
-      status: 'ACTIVE',
+      status: EmployeeStatus.ACTIVE,
       dateOfJoining: '2022-04-01',
       panNumber: 'ABCPS1234D',
       aadhaarToken: 'AADH-****-9821',
@@ -54,7 +55,7 @@ export class HcmEngine {
       designation: 'Quality Control Lead',
       costCenter: 'CC-MFG-ASSY',
       employmentType: 'FULL_TIME',
-      status: 'ACTIVE',
+      status: EmployeeStatus.ACTIVE,
       dateOfJoining: '2023-01-15',
       panNumber: 'AYEPS5678K',
       aadhaarToken: 'AADH-****-4412',
@@ -78,7 +79,7 @@ export class HcmEngine {
       designation: 'Assembly Line Technician',
       costCenter: 'CC-MFG-ASSY',
       employmentType: 'FULL_TIME',
-      status: 'ACTIVE',
+      status: EmployeeStatus.ACTIVE,
       dateOfJoining: '2024-06-01',
       panNumber: 'BKTPR9912M',
       aadhaarToken: 'AADH-****-1109',
@@ -269,7 +270,7 @@ export class HcmEngine {
     const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
     for (const emp of this.employees.values()) {
-      if (emp.status === 'TERMINATED') continue;
+      if (emp.status === EmployeeStatus.TERMINATED) continue;
 
       const slip = this.calculateEmployeeSalary(emp.employeeId, month);
       payslips.push(slip);

@@ -6,6 +6,7 @@
 
 import { InventoryEngine } from '../inventory/inventory-engine.js';
 import { GeneralLedgerEngine, JournalLineInput } from '../ledger/ledger-engine.js';
+import { ProductionOrderStatus, InventoryMovementType } from '../common/constants.js';
 import {
   BillOfMaterials,
   ProductionConfirmationResult,
@@ -175,7 +176,7 @@ export class ManufacturingEngine {
 
     const result: ProductionOrderResult = {
       orderNumber: input.orderNumber,
-      status: 'RELEASED',
+      status: ProductionOrderStatus.RELEASED,
       targetSku: input.targetSku,
       targetQuantity: input.targetQuantity,
       plantId: input.plantId,
@@ -236,7 +237,7 @@ export class ManufacturingEngine {
     for (const comp of order.componentsRequired) {
       const issueQty = round2(comp.totalRequiredQty * factor);
       const movement = this.inventoryEngine.executeStockMovement({
-        movementType: '201',
+        movementType: InventoryMovementType.GI_COST_CENTER,
         sku: comp.sku,
         quantity: issueQty,
         referenceDocument: orderNumber,
@@ -253,7 +254,7 @@ export class ManufacturingEngine {
 
     // 2. Goods Receipt for Finished Goods (Movement 101)
     const grnMovement = this.inventoryEngine.executeStockMovement({
-      movementType: '101',
+      movementType: InventoryMovementType.GR_PURCHASE_ORDER,
       sku: order.targetSku,
       quantity: quantityCompleted,
       unitCost: unitFinishedCost,
@@ -305,7 +306,7 @@ export class ManufacturingEngine {
       lines: journalLines,
     });
 
-    order.status = 'CONFIRMED';
+    order.status = ProductionOrderStatus.CONFIRMED;
     this.productionOrders.set(orderNumber, order);
 
     return {

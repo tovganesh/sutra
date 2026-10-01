@@ -5,6 +5,12 @@
  * preventive maintenance plans, and MTBF/MTTR reliability metrics.
  */
 
+import {
+  type EquipmentStatusType,
+  type MaintenanceNotificationStatusType,
+  type MaintenanceOrderStatusType,
+} from '../common/constants.js';
+
 export type EquipmentCategory = 
   | 'MACHINERY' 
   | 'VEHICLE' 
@@ -12,12 +18,6 @@ export type EquipmentCategory =
   | 'ELECTRICAL' 
   | 'HVAC' 
   | 'INSTRUMENTATION';
-
-export type EquipmentStatus = 
-  | 'OPERATIONAL' 
-  | 'IN_MAINTENANCE' 
-  | 'BREAKDOWN' 
-  | 'DECOMMISSIONED';
 
 export type NotificationType = 
   | 'BREAKDOWN' 
@@ -30,18 +30,6 @@ export type MaintenancePriority =
   | 'HIGH' 
   | 'MEDIUM' 
   | 'LOW';
-
-export type NotificationStatus = 
-  | 'NEW' 
-  | 'IN_PROCESS' 
-  | 'ORDER_CREATED' 
-  | 'COMPLETED';
-
-export type WorkOrderStatus = 
-  | 'CREATED' 
-  | 'RELEASED' 
-  | 'TECHNICALLY_COMPLETED' 
-  | 'CLOSED';
 
 export type MaintenanceOrderType = 
   | 'CORRECTIVE' 
@@ -65,7 +53,7 @@ export interface EquipmentMaster {
   manufacturer: string;
   modelYear: number;
   category: EquipmentCategory;
-  status: EquipmentStatus;
+  status: EquipmentStatusType;
   operatingHours: number;
   fixedAssetTag?: string; // Link to SAP FI-AA Fixed Asset
   costCenter: string;
@@ -81,7 +69,7 @@ export interface MaintenanceNotification {
   shortDescription: string;
   reportedBy: string;
   reportedAt: string;
-  status: NotificationStatus;
+  status: MaintenanceNotificationStatusType;
   breakdownDurationHours?: number;
   workOrderNumber?: string;
 }
@@ -100,7 +88,7 @@ export interface MaintenanceWorkOrder {
   notificationNumber?: string;
   equipmentNumber: string;
   orderType: MaintenanceOrderType;
-  status: WorkOrderStatus;
+  status: MaintenanceOrderStatusType;
   scheduledStart: string;
   scheduledEnd: string;
   assignedTechnician: string;

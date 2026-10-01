@@ -4,6 +4,8 @@
  * immutable journal sequencing, and fiscal period validation.
  */
 
+import { LedgerEntryStatus, type LedgerEntryStatusType } from '../common/constants.js';
+
 export interface JournalLineInput {
   accountId: string;
   accountCode: string;
@@ -31,7 +33,7 @@ export interface PostedJournalResult {
   totalDebit: number;
   totalCredit: number;
   isBalanced: boolean;
-  status: 'POSTED' | 'REJECTED';
+  status: LedgerEntryStatusType;
   rejectionReason?: string;
   postedAt: string;
 }
@@ -51,7 +53,7 @@ export class GeneralLedgerEngine {
         totalDebit: 0,
         totalCredit: 0,
         isBalanced: false,
-        status: 'REJECTED',
+        status: LedgerEntryStatus.REJECTED,
         rejectionReason: 'A journal entry must contain at least 2 balancing lines (one debit, one credit)',
         postedAt: new Date().toISOString(),
       };
@@ -69,7 +71,7 @@ export class GeneralLedgerEngine {
           totalDebit: 0,
           totalCredit: 0,
           isBalanced: false,
-          status: 'REJECTED',
+          status: LedgerEntryStatus.REJECTED,
           rejectionReason: 'Negative debit or credit amounts are not permitted in GAAP/IFRS double-entry accounting',
           postedAt: new Date().toISOString(),
         };
@@ -92,7 +94,7 @@ export class GeneralLedgerEngine {
         totalDebit,
         totalCredit,
         isBalanced: false,
-        status: 'REJECTED',
+        status: LedgerEntryStatus.REJECTED,
         rejectionReason: `Out of balance! Total Debit (₹${totalDebit}) does not equal Total Credit (₹${totalCredit}). Difference: ₹${round2(difference)}`,
         postedAt: new Date().toISOString(),
       };
@@ -105,7 +107,7 @@ export class GeneralLedgerEngine {
       totalDebit,
       totalCredit,
       isBalanced: true,
-      status: 'POSTED',
+      status: LedgerEntryStatus.POSTED,
       postedAt: new Date().toISOString(),
     };
   }

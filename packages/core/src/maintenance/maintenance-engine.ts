@@ -15,6 +15,11 @@ import {
   WorkOrderSparePart,
 } from './maintenance-types.js';
 import { InventoryEngine } from '../inventory/inventory-engine.js';
+import {
+  EquipmentStatus,
+  MaintenanceNotificationStatus,
+  MaintenanceOrderStatus,
+} from '../common/constants.js';
 
 export class MaintenanceEngine {
   private functionalLocations: Map<string, FunctionalLocation> = new Map();
@@ -47,7 +52,7 @@ export class MaintenanceEngine {
       manufacturer: 'KUKA Robotics GmbH',
       modelYear: 2023,
       category: 'MACHINERY',
-      status: 'OPERATIONAL',
+      status: EquipmentStatus.OPERATIONAL,
       operatingHours: 4250,
       fixedAssetTag: 'AST-CNC-001',
       costCenter: 'CC-MFG-100',
@@ -62,7 +67,7 @@ export class MaintenanceEngine {
       manufacturer: 'Schuler AG',
       modelYear: 2021,
       category: 'MACHINERY',
-      status: 'OPERATIONAL',
+      status: EquipmentStatus.OPERATIONAL,
       operatingHours: 8900,
       fixedAssetTag: 'AST-PRESS-002',
       costCenter: 'CC-MFG-100',
@@ -153,11 +158,11 @@ export class MaintenanceEngine {
       shortDescription: input.shortDescription,
       reportedBy: input.reportedBy,
       reportedAt: new Date().toISOString(),
-      status: 'NEW',
+      status: MaintenanceNotificationStatus.NEW,
     };
 
     if (input.type === 'BREAKDOWN') {
-      eq.status = 'BREAKDOWN';
+      eq.status = EquipmentStatus.BREAKDOWN;
     }
 
     this.notifications.set(notificationNumber, notification);
@@ -207,7 +212,7 @@ export class MaintenanceEngine {
       notificationNumber: input.notificationNumber,
       equipmentNumber: input.equipmentNumber,
       orderType: input.orderType,
-      status: 'CREATED',
+      status: MaintenanceOrderStatus.CREATED,
       scheduledStart: input.scheduledStart,
       scheduledEnd: input.scheduledEnd,
       assignedTechnician: input.assignedTechnician,
@@ -224,7 +229,7 @@ export class MaintenanceEngine {
     if (input.notificationNumber) {
       const notif = this.notifications.get(input.notificationNumber);
       if (notif) {
-        notif.status = 'ORDER_CREATED';
+        notif.status = MaintenanceNotificationStatus.ORDER_CREATED;
         notif.workOrderNumber = orderNumber;
       }
     }
@@ -238,14 +243,14 @@ export class MaintenanceEngine {
     if (!wo) {
       throw new Error(`Work Order ${orderNumber} not found`);
     }
-    if (wo.status !== 'CREATED') {
+    if (wo.status !== MaintenanceOrderStatus.CREATED) {
       throw new Error(`Work Order cannot be released from status: ${wo.status}`);
     }
 
-    wo.status = 'RELEASED';
+    wo.status = MaintenanceOrderStatus.RELEASED;
     const eq = this.equipmentMap.get(wo.equipmentNumber);
-    if (eq && eq.status !== 'BREAKDOWN') {
-      eq.status = 'IN_MAINTENANCE';
+    if (eq && eq.status !== EquipmentStatus.BREAKDOWN) {
+      eq.status = EquipmentStatus.IN_MAINTENANCE;
     }
 
     return wo;
@@ -304,25 +309,25 @@ export class MaintenanceEngine {
     if (!wo) {
       throw new Error(`Work Order ${orderNumber} not found`);
     }
-    if (wo.status !== 'RELEASED') {
+    if (wo.status !== MaintenanceOrderStatus.RELEASED) {
       throw new Error(`Only RELEASED work orders can be technically completed`);
     }
 
     wo.actualLaborHours = actualLaborHours;
     wo.totalLaborCost = Math.round(actualLaborHours * wo.laborHourlyRate * 100) / 100;
     wo.totalActualCost = Math.round((wo.totalLaborCost + wo.totalMaterialCost) * 100) / 100;
-    wo.status = 'TECHNICALLY_COMPLETED';
+    wo.status = MaintenanceOrderStatus.TECHNICALLY_COMPLETED;
 
     const eq = this.equipmentMap.get(wo.equipmentNumber);
     if (eq) {
-      eq.status = 'OPERATIONAL';
+      eq.status = EquipmentStatus.OPERATIONAL;
       eq.lastMaintenanceDate = new Date().toISOString().split('T')[0];
     }
 
     if (wo.notificationNumber) {
       const notif = this.notifications.get(wo.notificationNumber);
       if (notif) {
-        notif.status = 'COMPLETED';
+        notif.status = MaintenanceNotificationStatus.COMPLETED;
         if (downtimeDurationHours !== undefined) {
           notif.breakdownDurationHours = downtimeDurationHours;
         }
@@ -349,11 +354,11 @@ export class MaintenanceEngine {
     if (!wo) {
       throw new Error(`Work Order ${orderNumber} not found`);
     }
-    if (wo.status !== 'TECHNICALLY_COMPLETED') {
+    if (wo.status !== MaintenanceOrderStatus.TECHNICALLY_COMPLETED) {
       throw new Error(`Work order must be TECHNICALLY_COMPLETED before settlement`);
     }
 
-    wo.status = 'CLOSED';
+    wo.status = MaintenanceOrderStatus.CLOSED;
     wo.settledCostCenter = wo.costCenter;
     wo.glSettlementEntry = {
       debitAccount: '510300', // Plant Machinery Maintenance & Repairs Expense

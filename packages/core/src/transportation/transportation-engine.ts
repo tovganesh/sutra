@@ -12,6 +12,7 @@ import {
   ProofOfDeliverySubmission,
   ProofOfDeliveryResult,
 } from './transportation-types.js';
+import { VehicleStatus, FreightOrderStatus } from '../common/constants.js';
 
 export class TransportationEngine {
   private carriers: Map<string, CarrierMaster> = new Map();
@@ -147,7 +148,7 @@ export class TransportationEngine {
       throw new Error(`Vehicle ${req.vehicleNumber} not found in fleet master.`);
     }
 
-    if (vehicle.status === 'IN_TRANSIT') {
+    if (vehicle.status === VehicleStatus.IN_TRANSIT) {
       throw new Error(`Vehicle ${req.vehicleNumber} is currently IN_TRANSIT on another consignment.`);
     }
 
@@ -180,7 +181,7 @@ export class TransportationEngine {
       cargoDescription: req.cargoDescription,
       associatedDocType: req.associatedDocType,
       associatedDocNumber: req.associatedDocNumber,
-      status: 'PLANNED',
+      status: FreightOrderStatus.PLANNED,
       baseFreightCost: rating.baseFreightCost,
       fuelSurcharge: rating.fuelSurcharge,
       tollCharges: rating.tollCharges,
@@ -208,20 +209,20 @@ export class TransportationEngine {
       throw new Error(`Freight Order ${orderNumber} not found.`);
     }
 
-    if (order.status !== 'PLANNED') {
+    if (order.status !== FreightOrderStatus.PLANNED) {
       throw new Error(`Freight Order ${orderNumber} is already ${order.status}. Only PLANNED orders can be dispatched.`);
     }
 
     const vehicle = this.vehicles.get(order.vehicleNumber);
     if (vehicle) {
-      vehicle.status = 'IN_TRANSIT';
+      vehicle.status = VehicleStatus.IN_TRANSIT;
     }
 
     // Generate secure 6-digit OTP for electronic Proof of Delivery (e-POD)
     const podOtp = String(Math.floor(100000 + Math.random() * 900000));
     const now = new Date().toISOString();
 
-    order.status = 'DISPATCHED';
+    order.status = FreightOrderStatus.DISPATCHED;
     order.dispatchedAt = now;
     order.podOtp = podOtp;
     order.milestones.push({
@@ -246,11 +247,11 @@ export class TransportationEngine {
       throw new Error(`Freight Order ${orderNumber} not found.`);
     }
 
-    if (order.status === 'DELIVERED') {
+    if (order.status === FreightOrderStatus.DELIVERED) {
       throw new Error(`Freight Order ${orderNumber} is already DELIVERED.`);
     }
 
-    order.status = 'IN_TRANSIT';
+    order.status = FreightOrderStatus.IN_TRANSIT;
     order.milestones.push({
       milestoneId: `MS-${order.milestones.length + 1}`,
       city,
@@ -274,7 +275,7 @@ export class TransportationEngine {
       throw new Error(`Freight Order ${submission.orderNumber} not found.`);
     }
 
-    if (order.status === 'DELIVERED') {
+    if (order.status === FreightOrderStatus.DELIVERED) {
       throw new Error(`Freight Order ${submission.orderNumber} is already confirmed delivered.`);
     }
 
@@ -283,7 +284,7 @@ export class TransportationEngine {
     }
 
     const now = new Date().toISOString();
-    order.status = 'DELIVERED';
+    order.status = FreightOrderStatus.DELIVERED;
     order.deliveredAt = now;
     order.recipientName = submission.recipientName;
     order.signatureToken = submission.signatureToken || `SIG-${Date.now()}`;
@@ -291,7 +292,7 @@ export class TransportationEngine {
     // Release vehicle back to available pool at destination
     const vehicle = this.vehicles.get(order.vehicleNumber);
     if (vehicle) {
-      vehicle.status = 'AVAILABLE';
+      vehicle.status = VehicleStatus.AVAILABLE;
       vehicle.currentLocationCity = order.destinationLocation;
     }
 
@@ -338,7 +339,7 @@ export class TransportationEngine {
     return {
       orderNumber: order.orderNumber,
       lorryReceiptNumber: order.lorryReceiptNumber,
-      status: 'DELIVERED',
+      status: FreightOrderStatus.DELIVERED,
       deliveredAt: now,
       recipientName: submission.recipientName,
       netPayableToCarrier: order.netPayableToCarrier,
@@ -410,7 +411,7 @@ export class TransportationEngine {
       driverPhone: '+91 98220 12345',
       driverLicenseNumber: 'MH12 20120034567',
       gpsTrackingImei: '862019482910394',
-      status: 'AVAILABLE',
+      status: VehicleStatus.AVAILABLE,
       currentLocationCity: 'Pune',
     });
 
@@ -425,7 +426,7 @@ export class TransportationEngine {
       driverPhone: '+91 98450 67890',
       driverLicenseNumber: 'KA01 20150012345',
       gpsTrackingImei: '863920194829102',
-      status: 'AVAILABLE',
+      status: VehicleStatus.AVAILABLE,
       currentLocationCity: 'Bengaluru',
     });
 
@@ -440,7 +441,7 @@ export class TransportationEngine {
       driverPhone: '+91 98110 54321',
       driverLicenseNumber: 'DL01 20180098765',
       gpsTrackingImei: '864810293847561',
-      status: 'AVAILABLE',
+      status: VehicleStatus.AVAILABLE,
       currentLocationCity: 'Delhi',
     });
 

@@ -5,17 +5,13 @@
  * digital payslips, and automated General Ledger payroll posting.
  */
 
+import { type EmployeeStatusType } from '../common/constants.js';
+
 export type EmploymentType = 
   | 'FULL_TIME' 
   | 'PART_TIME' 
   | 'CONTRACT' 
   | 'INTERN';
-
-export type EmployeeStatus = 
-  | 'ACTIVE' 
-  | 'ON_LEAVE' 
-  | 'PROBATION' 
-  | 'TERMINATED';
 
 export interface SalaryStructure {
   basicMonthly: number;
@@ -33,7 +29,7 @@ export interface EmployeeMaster {
   designation: string;
   costCenter: string;
   employmentType: EmploymentType;
-  status: EmployeeStatus;
+  status: EmployeeStatusType;
   dateOfJoining: string;
   panNumber: string;
   aadhaarToken: string; // Tokenized/masked for privacy

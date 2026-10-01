@@ -4,6 +4,8 @@
  * putaway strategies, FEFO/FIFO picking waves, and physical inventory cycle counting.
  */
 
+import { type WarehouseTaskStatusType } from '../common/constants.js';
+
 export type StorageBinType = 
   | 'STANDARD' 
   | 'HIGH_BAY' 
@@ -16,12 +18,6 @@ export type WarehouseTaskType =
   | 'PICKING' 
   | 'INTERNAL_TRANSFER' 
   | 'REPLENISHMENT';
-
-export type WarehouseTaskStatus = 
-  | 'OPEN' 
-  | 'IN_PROGRESS' 
-  | 'CONFIRMED' 
-  | 'CANCELLED';
 
 export interface BinStoredItem {
   sku: string;
@@ -73,7 +69,7 @@ export interface PutawayResult {
   sku: string;
   batchNumber: string;
   quantity: number;
-  status: WarehouseTaskStatus;
+  status: WarehouseTaskStatusType;
   confirmedAt: string;
 }
 
@@ -98,7 +94,7 @@ export interface PickingResult {
   sku: string;
   totalQuantityPicked: number;
   allocations: BinPickAllocation[];
-  status: WarehouseTaskStatus;
+  status: WarehouseTaskStatusType;
   confirmedAt: string;
 }
 

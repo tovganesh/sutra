@@ -3,6 +3,13 @@
  * Covers Inspection Lots, Characteristics, Usage Decisions, and Batch Genealogy.
  */
 
+import {
+  type QualityLotStatusType,
+  type QualityUsageDecisionType,
+  type BatchStatusType,
+  type InventoryMovementTypeCode,
+} from '../common/constants.js';
+
 export type InspectionOrigin =
   | '01_GOODS_RECEIPT'
   | '04_PRODUCTION'
@@ -34,12 +41,12 @@ export interface RecordedResult {
   inspector: string;
 }
 
-export type UsageDecisionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SCRAPPED';
+export type UsageDecisionStatus = QualityUsageDecisionType;
 
 export interface UsageDecision {
   decision: UsageDecisionStatus;
   decisionCode: string;
-  movementType: '321' | '350' | '551'; // 321: Unrestricted, 350: Blocked, 551: Scrap
+  movementType: InventoryMovementTypeCode; // 321: Unrestricted, 350: Blocked, 551: Scrap
   decidedBy: string;
   decidedAt: string;
   notes?: string;
@@ -56,12 +63,12 @@ export interface InspectionLot {
   referenceDocument: string;
   characteristics: InspectionCharacteristic[];
   results: RecordedResult[];
-  status: 'CREATED' | 'RESULTS_RECORDED' | 'UD_COMPLETED';
+  status: QualityLotStatusType;
   usageDecision?: UsageDecision;
   createdAt: string;
 }
 
-export type BatchStockStatus = 'UNRESTRICTED' | 'IN_QUALITY' | 'BLOCKED' | 'RESTRICTED';
+export type BatchStockStatus = BatchStatusType;
 
 export interface BatchRecord {
   batchNumber: string;

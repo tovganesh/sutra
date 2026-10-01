@@ -7,6 +7,18 @@
 
 import { InventoryEngine } from '../inventory/inventory-engine.js';
 import { GeneralLedgerEngine, JournalLineInput } from '../ledger/ledger-engine.js';
+import {
+  PurchaseOrderStatus,
+  type PurchaseOrderStatusType,
+  ThreeWayMatchStatus,
+  type ThreeWayMatchStatusType,
+  InventoryMovementType,
+  SystemDefaults,
+  GstRate,
+  TdsSection,
+  type TdsSectionType,
+  TdsRatePercent,
+} from '../common/constants.js';
 
 export interface VendorMaster {
   vendorId: string;
@@ -43,7 +55,7 @@ export interface PurchaseOrderInput {
 
 export interface PurchaseOrderResult {
   poNumber: string;
-  status: 'APPROVED' | 'DRAFT';
+  status: PurchaseOrderStatusType;
   vendor: VendorMaster;
   items: Array<PurchaseOrderItemInput & { lineTotal: number }>;
   taxableTotal: number;
@@ -70,7 +82,7 @@ export interface GoodsReceiptNoteResult {
 
 export interface ThreeWayMatchResult {
   matched: boolean;
-  status: 'PERFECT_MATCH' | 'PRICE_VARIANCE' | 'QUANTITY_VARIANCE' | 'DISCREPANCY';
+  status: ThreeWayMatchStatusType;
   poPrice: number;
   invoicePrice: number;
   orderedQty: number;
@@ -193,12 +205,12 @@ export class ProcureToPayEngine {
     });
 
     const isInterState = input.supplierStateCode !== vendor.stateCode;
-    const estimatedGst = round2(taxableTotal * 0.18); // 18% standard rate
+    const estimatedGst = round2(taxableTotal * GstRate.STANDARD_TOTAL); // 18% standard rate
     const totalPoValue = round2(taxableTotal + estimatedGst);
 
     const result: PurchaseOrderResult = {
       poNumber: input.poNumber,
-      status: 'APPROVED',
+      status: PurchaseOrderStatus.APPROVED,
       vendor,
       items: itemsWithTotals,
       taxableTotal: round2(taxableTotal),
@@ -228,7 +240,7 @@ export class ProcureToPayEngine {
 
     for (const item of po.items) {
       const movement = this.inventoryEngine.executeStockMovement({
-        movementType: '101',
+        movementType: InventoryMovementType.GR_PURCHASE_ORDER,
         sku: item.sku,
         quantity: item.quantity,
         unitCost: item.unitPrice,
@@ -304,12 +316,12 @@ export class ProcureToPayEngine {
     const quantityDiscrepancy = totalInvoicedQty - totalReceivedQty;
 
     const toleranceAllowed = priceVariancePercent <= 1.0 && quantityDiscrepancy <= 0;
-    let matchStatus: ThreeWayMatchResult['status'] = 'PERFECT_MATCH';
+    let matchStatus: ThreeWayMatchStatusType = ThreeWayMatchStatus.PERFECT_MATCH;
 
     if (quantityDiscrepancy > 0) {
-      matchStatus = 'QUANTITY_VARIANCE';
+      matchStatus = ThreeWayMatchStatus.QUANTITY_VARIANCE;
     } else if (priceVariancePercent > 1.0) {
-      matchStatus = 'PRICE_VARIANCE';
+      matchStatus = ThreeWayMatchStatus.PRICE_VARIANCE;
     }
 
     const threeWayMatch: ThreeWayMatchResult = {
@@ -329,29 +341,22 @@ export class ProcureToPayEngine {
     const taxableAmount = round2(totalInvoicePrice);
 
     // GST Input Tax Credit calculation
-    const isInterState = po.vendor.stateCode !== '27'; // Assume company is 27 MH
+    const isInterState = po.vendor.stateCode !== SystemDefaults.DEFAULT_SUPPLIER_STATE_CODE;
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
 
     if (isInterState) {
-      igst = round2(taxableAmount * 0.18);
+      igst = round2(taxableAmount * GstRate.STANDARD_IGST);
     } else {
-      cgst = round2(taxableAmount * 0.09);
-      sgst = round2(taxableAmount * 0.09);
+      cgst = round2(taxableAmount * GstRate.STANDARD_CGST);
+      sgst = round2(taxableAmount * GstRate.STANDARD_SGST);
     }
     const totalGst = round2(cgst + sgst + igst);
 
     // TDS Withholding calculation
-    let tdsRate = 0;
-    const tdsSection = input.applyTdsSection ?? '194Q';
-    if (tdsSection === '194Q') {
-      tdsRate = 0.1; // 0.1% on purchase of goods > 50L
-    } else if (tdsSection === '194C') {
-      tdsRate = 2.0; // 2% for contractors (corporate)
-    } else if (tdsSection === '194J') {
-      tdsRate = 10.0; // 10% for professional fees
-    }
+    const tdsSection = (input.applyTdsSection as TdsSectionType) ?? TdsSection.SEC_194Q;
+    const tdsRate = TdsRatePercent[tdsSection] ?? 0;
 
     const tdsDeductionAmount = round2((taxableAmount * tdsRate) / 100);
     const netPayableToVendor = round2(taxableAmount + totalGst - tdsDeductionAmount);

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, SystemDefaults } from '@sutra/core';
 import { authRegistry } from '../services/engine.registry';
 import { tReq } from '../helpers/i18n.helper';
 import { sendError } from '../helpers/response.helper';
@@ -20,7 +20,7 @@ export class AuthController {
         {
           email,
           password,
-          tenantId: tenantId || '00000000-0000-0000-0000-000000000001',
+          tenantId: tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         },
         providerId
       );

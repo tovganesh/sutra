@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { HttpStatus } from '@sutra/core';
+import { HttpStatus, SalesOrderStatus, SystemDefaults } from '@sutra/core';
 import { orderToCashEngine } from '../services/engine.registry';
 import { sendError } from '../helpers/response.helper';
 import { tReq } from '../helpers/i18n.helper';
@@ -17,16 +17,16 @@ export class SalesController {
 
     try {
       const order = orderToCashEngine.createSalesOrder({
-        tenantId: input.tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId: input.tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         orderNumber: input.orderNumber,
         customerId: input.customerId,
-        supplierGstin: input.supplierGstin || '27AABCS1429B1ZB',
-        supplierStateCode: input.supplierStateCode || '27',
+        supplierGstin: input.supplierGstin || SystemDefaults.DEFAULT_SUPPLIER_GSTIN,
+        supplierStateCode: input.supplierStateCode || SystemDefaults.DEFAULT_SUPPLIER_STATE_CODE,
         items: input.items,
         deliveryAddress: input.deliveryAddress || 'Default Warehouse Delivery Address',
       });
 
-      if (order.status === 'REJECTED') {
+      if (order.status === SalesOrderStatus.REJECTED) {
         return res.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
           error: 'SalesOrderRejected',
           reason: order.rejectionReason,
@@ -64,7 +64,7 @@ export class SalesController {
 
     try {
       const invoice = orderToCashEngine.generateBillingInvoice(
-        tenantId || '00000000-0000-0000-0000-000000000001',
+        tenantId || SystemDefaults.DEFAULT_TENANT_ID,
         orderNumber
       );
       res.status(HttpStatus.CREATED).json(invoice);
