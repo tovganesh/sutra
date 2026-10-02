@@ -1,6 +1,18 @@
 import { Request, Response } from 'express';
-import { FinancialReportGenerator, KPIEvaluator } from '@sutra/analytics';
-import { sampleBalances } from '../helpers/store.helper';
+import {
+  FinancialReportGenerator,
+  KPIEvaluator,
+  CashFlowEngine,
+  ProfitabilityEngine,
+  DuPontEngine,
+  SegmentCategory,
+} from '@sutra/analytics';
+import {
+  sampleBalances,
+  sampleCashFlowInput,
+  sampleProfitabilitySegments,
+  sampleDuPontInput,
+} from '../helpers/store.helper';
 
 export class AnalyticsController {
   public static getKpis(req: Request, res: Response) {
@@ -40,4 +52,42 @@ export class AnalyticsController {
     );
     res.json(bs);
   }
+
+  public static getCashFlow(req: Request, res: Response) {
+    const cashFlow = CashFlowEngine.generateStatement(sampleCashFlowInput);
+    res.json({
+      currency: 'INR',
+      statement: cashFlow,
+    });
+  }
+
+  public static getProfitabilitySegments(req: Request, res: Response) {
+    const category = req.query.category as SegmentCategory | undefined;
+    const report = ProfitabilityEngine.generateCopaReport(
+      sampleProfitabilitySegments,
+      '2026-04-01',
+      '2027-03-31'
+    );
+
+    if (category) {
+      const filtered = ProfitabilityEngine.filterByCategory(report, category);
+      res.json({
+        ...report,
+        segments: filtered,
+      });
+      return;
+    }
+
+    res.json(report);
+  }
+
+  public static getDuPont(req: Request, res: Response) {
+    const dupont = DuPontEngine.analyze(sampleDuPontInput);
+    res.json({
+      asOf: new Date().toISOString(),
+      currency: 'INR',
+      analysis: dupont,
+    });
+  }
 }
+

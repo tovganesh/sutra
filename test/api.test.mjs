@@ -553,7 +553,43 @@ describe('Sutra Backend Architecture & API Suite', () => {
       const bsRes = await fetch(`${baseUrl}/api/v1/analytics/balance-sheet`);
       assert.equal(bsRes.status, 200);
     });
+
+    test('generates IAS 7 Cash Flow Statement with audit reconciliation', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/analytics/cash-flow`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.currency, 'INR');
+      assert.ok(data.statement);
+      assert.equal(data.statement.summary.isReconciled, true);
+      assert.ok(data.statement.operatingActivities.netOperatingCashFlow > 0);
+      assert.ok(data.statement.summary.freeCashFlowToFirm > 0);
+    });
+
+    test('evaluates CO-PA margin and segment profitability with dimension filtering', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/analytics/profitability/segments`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.segments.length > 0);
+      assert.ok(data.summary.totalOperatingProfit > 0);
+      assert.ok(data.summary.topPerformingSegment);
+
+      const filteredRes = await fetch(`${baseUrl}/api/v1/analytics/profitability/segments?category=PRODUCT_LINE`);
+      assert.equal(filteredRes.status, 200);
+      const filteredData = await filteredRes.json();
+      assert.ok(filteredData.segments.every((s) => s.category === 'PRODUCT_LINE'));
+    });
+
+    test('computes DuPont ROE and ROA decomposition metrics', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/analytics/dupont`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.currency, 'INR');
+      assert.ok(data.analysis.threeStep.returnOnEquityPercent > 0);
+      assert.ok(data.analysis.threeStep.returnOnAssetsPercent > 0);
+      assert.equal(data.analysis.healthAssessment.leverageRisk, 'LOW');
+    });
   });
+
 
   describe('20. Gen AI Copilot Endpoints', () => {
     test('interprets natural language ERP query', async () => {
