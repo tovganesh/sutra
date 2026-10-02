@@ -5,6 +5,7 @@ import {
   CashFlowEngine,
   ProfitabilityEngine,
   DuPontEngine,
+  ConsolidationEngine,
   SegmentCategory,
 } from '@sutra/analytics';
 import {
@@ -12,6 +13,7 @@ import {
   sampleCashFlowInput,
   sampleProfitabilitySegments,
   sampleDuPontInput,
+  sampleConsolidationEntities,
 } from '../helpers/store.helper';
 
 export class AnalyticsController {
@@ -88,6 +90,33 @@ export class AnalyticsController {
       currency: 'INR',
       analysis: dupont,
     });
+  }
+
+  public static getConsolidation(req: Request, res: Response) {
+    const statements = ConsolidationEngine.generateConsolidatedStatements({
+      period: 'FY 2026-27 (Q2)',
+      groupCurrency: 'INR',
+      inventoryMarkupPercent: 0.20,
+      entities: sampleConsolidationEntities,
+    });
+
+    res.json(statements);
+  }
+
+  public static runConsolidation(req: Request, res: Response) {
+    const { period, inventoryMarkupPercent, entities } = req.body;
+    const targetEntities = entities && Array.isArray(entities) && entities.length > 0
+      ? entities
+      : sampleConsolidationEntities;
+
+    const statements = ConsolidationEngine.generateConsolidatedStatements({
+      period: period || 'FY 2026-27 (Q2)',
+      groupCurrency: 'INR',
+      inventoryMarkupPercent: inventoryMarkupPercent ?? 0.20,
+      entities: targetEntities,
+    });
+
+    res.json(statements);
   }
 }
 

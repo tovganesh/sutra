@@ -44,6 +44,13 @@
       >
         ⚡ {{ $t('financial.tabs.dupont') }}
       </button>
+      <button
+        class="subtab-btn"
+        :class="{ active: activeTab === 'consolidation' }"
+        @click="activeTab = 'consolidation'"
+      >
+        🏢 {{ $t('financial.tabs.consolidation') }}
+      </button>
     </div>
 
     <!-- TAB 1: EXECUTIVE OVERVIEW & SENSITIVITY SIMULATOR -->
@@ -849,6 +856,330 @@
         </div>
       </div>
     </template>
+
+    <!-- TAB 5: GROUP FINANCIAL CONSOLIDATION & INTERCOMPANY ELIMINATION (IFRS 10) -->
+    <template v-if="activeTab === 'consolidation'">
+      <!-- Consolidation KPIs -->
+      <div class="kpi-grid">
+        <div class="glass-card kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">{{ $t('financial.consolidation.eliminatedTrading') }}</span>
+            <ArrowRightLeft class="kpi-icon-svg" style="color: #3b82f6;" />
+          </div>
+          <div class="kpi-value text-accent">{{ formatCurrency(consolidationData.kpis.eliminatedTradingVolume) }}</div>
+          <div class="kpi-trend neutral">
+            <span>IFRS 10.B86(c) Sales vs COGS</span>
+          </div>
+        </div>
+
+        <div class="glass-card kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">{{ $t('financial.consolidation.eliminatedProfit') }}</span>
+            <ShieldCheck class="kpi-icon-svg" style="color: #10b981;" />
+          </div>
+          <div class="kpi-value text-green">{{ formatCurrency(consolidationData.kpis.eliminatedUnrealizedProfit) }}</div>
+          <div class="kpi-trend positive">
+            <span>{{ Math.round(consolidationMarkup * 100) }}% Mark-up Cleared from Stock</span>
+          </div>
+        </div>
+
+        <div class="glass-card kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">{{ $t('financial.consolidation.eliminatedDebt') }}</span>
+            <Scale class="kpi-icon-svg" style="color: #8b5cf6;" />
+          </div>
+          <div class="kpi-value text-accent">{{ formatCurrency(consolidationData.kpis.eliminatedBalanceSheetDebt) }}</div>
+          <div class="kpi-trend neutral">
+            <span>IC Receivables vs Payables</span>
+          </div>
+        </div>
+
+        <div class="glass-card kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">{{ $t('financial.consolidation.groupNetWorth') }}</span>
+            <Building2 class="kpi-icon-svg" style="color: #06b6d4;" />
+          </div>
+          <div class="kpi-value">{{ formatCurrency(consolidationData.kpis.groupNetWorth) }}</div>
+          <div class="kpi-trend positive">
+            <span>Parent + {{ consolidationData.kpis.subsidiariesCount }} Operating Subs</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audit Gate Banner -->
+      <div class="glass-card audit-banner" :class="{ 'banner-success': consolidationData.balanceSheet.isBalanced }">
+        <div class="audit-banner-content">
+          <CheckCircle2 class="icon-sm" style="color: #10b981;" />
+          <div>
+            <strong>{{ $t('financial.consolidation.reconciliationStatus') }}:</strong>
+            <span> {{ $t('financial.consolidation.balancedNotice') }}</span>
+          </div>
+        </div>
+        <div class="audit-banner-meta font-mono">
+          <span>Status: {{ consolidationData.status }}</span>
+        </div>
+      </div>
+
+      <!-- Group Structure & Intercompany Reconciliation Grid -->
+      <div class="grid-2-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+        <!-- Group Structure Card -->
+        <div class="glass-card statement-card">
+          <div class="card-header">
+            <div class="insights-title-row">
+              <Building2 class="icon-sm" style="color: #3b82f6;" />
+              <div>
+                <h3>{{ $t('financial.consolidation.groupStructure') }}</h3>
+                <p class="card-subtitle">{{ $t('financial.consolidation.groupStructureDesc') }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="statement-table">
+              <thead>
+                <tr>
+                  <th>Entity</th>
+                  <th>Country</th>
+                  <th>Currency</th>
+                  <th>Ownership</th>
+                  <th>Method</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="ent in consolidationData.entities" :key="ent.entityId">
+                  <td>
+                    <div class="font-bold">{{ ent.legalName }}</div>
+                    <div class="cell-subtext font-mono">{{ ent.entityId }}</div>
+                  </td>
+                  <td>{{ ent.country }}</td>
+                  <td class="font-mono">{{ ent.functionalCurrency }}</td>
+                  <td>
+                    <span class="badge" :class="ent.ownershipPercentage === 100 ? 'badge-success' : 'badge-warning'">
+                      {{ ent.ownershipPercentage }}%
+                    </span>
+                  </td>
+                  <td class="font-mono text-accent" style="font-size: 11px;">
+                    {{ ent.consolidationMethod }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Intercompany Reconciliation Audit Card -->
+        <div class="glass-card statement-card">
+          <div class="card-header">
+            <div class="insights-title-row">
+              <ArrowRightLeft class="icon-sm" style="color: #10b981;" />
+              <div>
+                <h3>{{ $t('financial.consolidation.intercompanyRecon') }}</h3>
+                <p class="card-subtitle">{{ $t('financial.consolidation.intercompanyReconDesc') }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="statement-table">
+              <thead>
+                <tr>
+                  <th>Trading Partner Pair</th>
+                  <th>Recorded AR</th>
+                  <th>Partner AP</th>
+                  <th>Variance</th>
+                  <th>Audit Gate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(recon, idx) in consolidationData.reconciliations" :key="idx">
+                  <td>
+                    <div class="font-mono font-bold">{{ recon.entityAId }} &harr; {{ recon.entityBId }}</div>
+                  </td>
+                  <td class="font-mono text-right">{{ formatCurrency(recon.receivableRecordedByA) }}</td>
+                  <td class="font-mono text-right">{{ formatCurrency(recon.payableRecordedByB) }}</td>
+                  <td class="font-mono text-right" :class="recon.variance === 0 ? 'text-green' : 'text-danger'">
+                    {{ formatCurrency(recon.variance) }}
+                  </td>
+                  <td>
+                    <span class="badge" :class="recon.isBalanced ? 'badge-success' : 'badge-danger'">
+                      {{ recon.isBalanced ? 'BALANCED' : 'DISCREPANCY' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Automated Intercompany Elimination Journal -->
+      <div class="glass-card statement-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div class="insights-title-row">
+            <FileText class="icon-sm" style="color: #f59e0b;" />
+            <div>
+              <h3>{{ $t('financial.consolidation.eliminationJournal') }}</h3>
+              <p class="card-subtitle">{{ $t('financial.consolidation.eliminationJournalDesc') }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="statement-table">
+            <thead>
+              <tr>
+                <th>Voucher ID</th>
+                <th>Standard</th>
+                <th>Type</th>
+                <th>Debit Account</th>
+                <th>Credit Account</th>
+                <th class="text-right">Elimination Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="elim in consolidationData.eliminations" :key="elim.eliminationId">
+                <td class="font-mono text-accent">{{ elim.eliminationId }}</td>
+                <td class="font-mono" style="font-size: 11px;">{{ elim.governingStandard }}</td>
+                <td>
+                  <span class="badge badge-info" style="font-size: 11px;">{{ elim.type }}</span>
+                </td>
+                <td class="font-mono">{{ elim.accountDebited }}</td>
+                <td class="font-mono">{{ elim.accountCredited }}</td>
+                <td class="font-mono text-right font-bold text-accent">{{ formatCurrency(elim.amount) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Multi-Entity Consolidation Worksheet -->
+      <div class="glass-card statement-card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div class="insights-title-row">
+            <Layers class="icon-sm" style="color: #06b6d4;" />
+            <div>
+              <h3>{{ $t('financial.consolidation.worksheetTitle') }}</h3>
+              <p class="card-subtitle">{{ $t('financial.consolidation.worksheetDesc') }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="statement-table">
+            <thead>
+              <tr>
+                <th>Line Item</th>
+                <th class="text-right">Parent Holding</th>
+                <th class="text-right">Sub (Europe)</th>
+                <th class="text-right">Sub (Americas)</th>
+                <th class="text-right">Aggregated</th>
+                <th class="text-right">Elim Debit</th>
+                <th class="text-right">Elim Credit</th>
+                <th class="text-right">Consolidated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in consolidationData.worksheet" :key="row.accountCode">
+                <td>
+                  <div class="font-bold">{{ row.lineItem }}</div>
+                  <div class="cell-subtext font-mono">GL {{ row.accountCode }}</div>
+                </td>
+                <td class="font-mono text-right">{{ formatCurrency(row.entityValues['ENTITY-HOLDING-01'] || 0) }}</td>
+                <td class="font-mono text-right">{{ formatCurrency(row.entityValues['ENTITY-SUB-EU-02'] || 0) }}</td>
+                <td class="font-mono text-right">{{ formatCurrency(row.entityValues['ENTITY-SUB-US-03'] || 0) }}</td>
+                <td class="font-mono text-right font-bold">{{ formatCurrency(row.aggregatedTotal) }}</td>
+                <td class="font-mono text-right text-accent">{{ row.eliminationDebit > 0 ? formatCurrency(row.eliminationDebit) : '-' }}</td>
+                <td class="font-mono text-right text-accent">{{ row.eliminationCredit > 0 ? formatCurrency(row.eliminationCredit) : '-' }}</td>
+                <td class="font-mono text-right font-bold text-green">{{ formatCurrency(row.consolidatedTotal) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Side-by-Side Consolidated Statements (P&L and Balance Sheet) -->
+      <div class="grid-2-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- Consolidated P&L -->
+        <div class="glass-card statement-card">
+          <div class="card-header">
+            <h3>{{ $t('financial.consolidation.consolidatedPnl') }}</h3>
+            <span class="badge badge-success">IFRS 10 Audited</span>
+          </div>
+          <div class="statement-rows">
+            <div class="statement-row">
+              <span>Consolidated Revenue</span>
+              <span class="font-mono font-bold">{{ formatCurrency(consolidationData.incomeStatement.totalRevenue) }}</span>
+            </div>
+            <div class="statement-row sub-row text-danger">
+              <span>Less: Consolidated COGS</span>
+              <span class="font-mono">- {{ formatCurrency(consolidationData.incomeStatement.costOfGoodsSold) }}</span>
+            </div>
+            <div class="statement-row highlight-row text-green">
+              <span>Consolidated Gross Profit</span>
+              <span class="font-mono font-bold">{{ formatCurrency(consolidationData.incomeStatement.grossProfit) }} ({{ consolidationData.incomeStatement.grossMarginPercent.toFixed(1) }}%)</span>
+            </div>
+            <div class="statement-row sub-row text-danger">
+              <span>Less: Operating Expenses (SG&A)</span>
+              <span class="font-mono">- {{ formatCurrency(consolidationData.incomeStatement.operatingExpenses) }}</span>
+            </div>
+            <div class="statement-row highlight-row text-accent">
+              <span>Consolidated Operating Profit (EBIT)</span>
+              <span class="font-mono font-bold">{{ formatCurrency(consolidationData.incomeStatement.operatingProfit) }} ({{ consolidationData.incomeStatement.operatingMarginPercent.toFixed(1) }}%)</span>
+            </div>
+            <div class="statement-row sub-row">
+              <span>{{ $t('financial.consolidation.nciProfit') }} (20% Sub US)</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.incomeStatement.profitAttributableToNci) }}</span>
+            </div>
+            <div class="statement-row total-row font-bold">
+              <span>Profit Attributable to Parent Equity</span>
+              <span class="font-mono text-green">{{ formatCurrency(consolidationData.incomeStatement.profitAttributableToParent) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consolidated Balance Sheet -->
+        <div class="glass-card statement-card">
+          <div class="card-header">
+            <h3>{{ $t('financial.consolidation.consolidatedBs') }}</h3>
+            <span class="badge badge-info">Ind AS 110 Compliant</span>
+          </div>
+          <div class="statement-rows">
+            <div class="statement-row">
+              <span>Cash &amp; Equivalents</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.cashAndEquivalents) }}</span>
+            </div>
+            <div class="statement-row">
+              <span>Trade Accounts Receivable</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.accountsReceivable) }}</span>
+            </div>
+            <div class="statement-row">
+              <span>Inventories (Net of Unrealized Margin)</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.inventory) }}</span>
+            </div>
+            <div class="statement-row">
+              <span>Property, Plant &amp; Equipment (Fixed Assets)</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.fixedAssets) }}</span>
+            </div>
+            <div class="statement-row total-row font-bold text-accent">
+              <span>Total Consolidated Assets</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.totalAssets) }}</span>
+            </div>
+            <div class="statement-row sub-row text-danger">
+              <span>Trade Payables &amp; Accrued Liabilities</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.totalLiabilities) }}</span>
+            </div>
+            <div class="statement-row sub-row">
+              <span>{{ $t('financial.consolidation.nciEquity') }}</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.nonControllingInterest) }}</span>
+            </div>
+            <div class="statement-row sub-row">
+              <span>Equity Attributable to Parent Shareholders</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.equityAttributableToParent) }}</span>
+            </div>
+            <div class="statement-row total-row font-bold text-green">
+              <span>Total Liabilities &amp; Group Equity</span>
+              <span class="font-mono">{{ formatCurrency(consolidationData.balanceSheet.totalLiabilities + consolidationData.balanceSheet.totalEquity) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -866,13 +1197,16 @@ import {
   Award,
   ShieldCheck,
   CheckCircle2,
+  Building2,
+  ArrowRightLeft,
+  FileText,
 } from 'lucide-vue-next';
 import { useI18n } from '../i18n';
 
 const { t, formatCurrency, formatPercent, currencySymbol, currentCurrency } = useI18n();
 
-// Tab state: 'overview' | 'cashFlow' | 'profitability' | 'dupont'
-const activeTab = ref<'overview' | 'cashFlow' | 'profitability' | 'dupont'>('overview');
+// Tab state: 'overview' | 'cashFlow' | 'profitability' | 'dupont' | 'consolidation'
+const activeTab = ref<'overview' | 'cashFlow' | 'profitability' | 'dupont' | 'consolidation'>('overview');
 
 // ---------------------------------------------------------
 // TAB 1: EXECUTIVE OVERVIEW & SENSITIVITY SIMULATOR STATE
@@ -1262,6 +1596,292 @@ const dupontData = ref({
       'Double-digit ROE of 41.18% substantially outperforms the cost of enterprise capital.',
     ],
   },
+});
+
+// ---------------------------------------------------------
+// TAB 5: GROUP FINANCIAL CONSOLIDATION STATE (IFRS 10)
+// ---------------------------------------------------------
+const consolidationMarkup = ref(0.20);
+
+const consolidationData = ref({
+  status: 'RECONCILED',
+  period: 'FY2025-Q4',
+  groupCurrency: 'INR',
+  kpis: {
+    eliminatedTradingVolume: 15000000,
+    eliminatedUnrealizedProfit: 1000000,
+    eliminatedBalanceSheetDebt: 13000000,
+    groupRevenue: 90000000,
+    groupNetWorth: 104000000,
+    subsidiariesCount: 2,
+  },
+  balanceSheet: {
+    cashAndEquivalents: 32500000,
+    accountsReceivable: 27000000,
+    inventory: 27500000,
+    fixedAssets: 46500000,
+    totalAssets: 133500000,
+    accountsPayable: 17200000,
+    otherLiabilities: 12300000,
+    totalLiabilities: 29500000,
+    equityAttributableToParent: 100000000,
+    nonControllingInterest: 4000000,
+    totalEquity: 104000000,
+    isBalanced: true,
+    reconciliationDifference: 0,
+  },
+  incomeStatement: {
+    totalRevenue: 90000000,
+    costOfGoodsSold: 31000000,
+    grossProfit: 59000000,
+    grossMarginPercent: 65.6,
+    operatingExpenses: 23700000,
+    operatingProfit: 35300000,
+    operatingMarginPercent: 39.2,
+    profitAttributableToParent: 33940000,
+    profitAttributableToNci: 1360000,
+  },
+  entities: [
+    {
+      entityId: 'ENTITY-HOLDING-01',
+      legalName: 'Sutra Global Enterprises Ltd (Parent Holding)',
+      country: 'India',
+      functionalCurrency: 'INR',
+      ownershipPercentage: 100,
+      consolidationMethod: 'FULL_CONSOLIDATION',
+      isParent: true,
+    },
+    {
+      entityId: 'ENTITY-SUB-EU-02',
+      legalName: 'Sutra Advanced Engineering GmbH (Europe)',
+      country: 'Germany',
+      functionalCurrency: 'EUR',
+      ownershipPercentage: 100,
+      consolidationMethod: 'FULL_CONSOLIDATION',
+      isParent: false,
+    },
+    {
+      entityId: 'ENTITY-SUB-US-03',
+      legalName: 'Sutra Robotics Inc (Americas - 80% Majority)',
+      country: 'United States',
+      functionalCurrency: 'USD',
+      ownershipPercentage: 80,
+      consolidationMethod: 'FULL_CONSOLIDATION',
+      isParent: false,
+    },
+  ],
+  reconciliations: [
+    {
+      entityAId: 'ENTITY-HOLDING-01',
+      entityBId: 'ENTITY-SUB-EU-02',
+      receivableRecordedByA: 4000000,
+      payableRecordedByB: 4000000,
+      variance: 0,
+      isBalanced: true,
+    },
+    {
+      entityAId: 'ENTITY-HOLDING-01',
+      entityBId: 'ENTITY-SUB-US-03',
+      receivableRecordedByA: 2500000,
+      payableRecordedByB: 2500000,
+      variance: 0,
+      isBalanced: true,
+    },
+  ],
+  eliminations: [
+    {
+      eliminationId: 'ELIM-TRD-001',
+      type: 'TRADING_REVENUE_COGS',
+      description: 'Elimination of intercompany product sales and corresponding cost of goods sold',
+      governingStandard: 'IFRS 10.B86(c) / Ind AS 110.B86(c)',
+      accountDebited: '410000 Intercompany Sales Revenue',
+      accountCredited: '510000 Intercompany Cost of Goods Sold',
+      amount: 15000000,
+    },
+    {
+      eliminationId: 'ELIM-BAL-002',
+      type: 'BALANCES_RECEIVABLE_PAYABLE',
+      description: 'Elimination of intercompany current trade accounts receivable and payable',
+      governingStandard: 'IFRS 10.B86(b) / Ind AS 110.B86(b)',
+      accountDebited: '210200 Intercompany Accounts Payable',
+      accountCredited: '120200 Intercompany Accounts Receivable',
+      amount: 6500000,
+    },
+    {
+      eliminationId: 'ELIM-INV-003',
+      type: 'UNREALIZED_INVENTORY_PROFIT',
+      description: 'Elimination of unrealized upstream/downstream inventory margin (20% mark-up)',
+      governingStandard: 'IFRS 10.B86(c) / Ind AS 110.B86(c)',
+      accountDebited: '510000 Cost of Goods Sold (Unrealized Profit Adjustment)',
+      accountCredited: '120100 Inventory Valuation Reserve',
+      amount: 1000000,
+    },
+    {
+      eliminationId: 'ELIM-NCI-004',
+      type: 'NON_CONTROLLING_INTEREST',
+      description: 'Recognition of 20% Non-Controlling Interest in Sutra Robotics Inc',
+      governingStandard: 'IFRS 10.B94 / Ind AS 110.B94',
+      accountDebited: '320100 Consolidated Retained Earnings',
+      accountCredited: '330100 Non-Controlling Interest (Equity)',
+      amount: 4000000,
+    },
+  ],
+  worksheet: [
+    {
+      accountCode: '410000',
+      lineItem: 'Revenue from Operations',
+      category: 'INCOME_STATEMENT',
+      entityValues: {
+        'ENTITY-HOLDING-01': 55000000,
+        'ENTITY-SUB-EU-02': 28000000,
+        'ENTITY-SUB-US-03': 22000000,
+      },
+      aggregatedTotal: 105000000,
+      eliminationDebit: 15000000,
+      eliminationCredit: 0,
+      consolidatedTotal: 90000000,
+    },
+    {
+      accountCode: '510000',
+      lineItem: 'Cost of Goods Sold (COGS)',
+      category: 'INCOME_STATEMENT',
+      entityValues: {
+        'ENTITY-HOLDING-01': 22000000,
+        'ENTITY-SUB-EU-02': 13000000,
+        'ENTITY-SUB-US-03': 10000000,
+      },
+      aggregatedTotal: 45000000,
+      eliminationDebit: 1000000,
+      eliminationCredit: 15000000,
+      consolidatedTotal: 31000000,
+    },
+    {
+      accountCode: '610000',
+      lineItem: 'Operating Expenses (SG&A)',
+      category: 'INCOME_STATEMENT',
+      entityValues: {
+        'ENTITY-HOLDING-01': 12000000,
+        'ENTITY-SUB-EU-02': 6500000,
+        'ENTITY-SUB-US-03': 5200000,
+      },
+      aggregatedTotal: 23700000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 23700000,
+    },
+    {
+      accountCode: '110100',
+      lineItem: 'Cash & Cash Equivalents',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 18000000,
+        'ENTITY-SUB-EU-02': 8500000,
+        'ENTITY-SUB-US-03': 6000000,
+      },
+      aggregatedTotal: 32500000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 32500000,
+    },
+    {
+      accountCode: '120100',
+      lineItem: 'Trade Accounts Receivable',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 14000000,
+        'ENTITY-SUB-EU-02': 7200000,
+        'ENTITY-SUB-US-03': 5800000,
+      },
+      aggregatedTotal: 27000000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 27000000,
+    },
+    {
+      accountCode: '120200',
+      lineItem: 'Intercompany Receivables',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 6500000,
+        'ENTITY-SUB-EU-02': 0,
+        'ENTITY-SUB-US-03': 0,
+      },
+      aggregatedTotal: 6500000,
+      eliminationDebit: 0,
+      eliminationCredit: 6500000,
+      consolidatedTotal: 0,
+    },
+    {
+      accountCode: '130100',
+      lineItem: 'Inventories (Net of Unrealized Margin)',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 12000000,
+        'ENTITY-SUB-EU-02': 9000000,
+        'ENTITY-SUB-US-03': 7500000,
+      },
+      aggregatedTotal: 28500000,
+      eliminationDebit: 0,
+      eliminationCredit: 1000000,
+      consolidatedTotal: 27500000,
+    },
+    {
+      accountCode: '150100',
+      lineItem: 'Property, Plant & Equipment',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 25000000,
+        'ENTITY-SUB-EU-02': 12000000,
+        'ENTITY-SUB-US-03': 9500000,
+      },
+      aggregatedTotal: 46500000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 46500000,
+    },
+    {
+      accountCode: '210100',
+      lineItem: 'Trade Accounts Payable',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 9500000,
+        'ENTITY-SUB-EU-02': 4200000,
+        'ENTITY-SUB-US-03': 3500000,
+      },
+      aggregatedTotal: 17200000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 17200000,
+    },
+    {
+      accountCode: '210200',
+      lineItem: 'Intercompany Payables',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 0,
+        'ENTITY-SUB-EU-02': 4000000,
+        'ENTITY-SUB-US-03': 2500000,
+      },
+      aggregatedTotal: 6500000,
+      eliminationDebit: 6500000,
+      eliminationCredit: 0,
+      consolidatedTotal: 0,
+    },
+    {
+      accountCode: '220100',
+      lineItem: 'Other Current & Non-Current Liab',
+      category: 'BALANCE_SHEET',
+      entityValues: {
+        'ENTITY-HOLDING-01': 6000000,
+        'ENTITY-SUB-EU-02': 3500000,
+        'ENTITY-SUB-US-03': 2800000,
+      },
+      aggregatedTotal: 12300000,
+      eliminationDebit: 0,
+      eliminationCredit: 0,
+      consolidatedTotal: 12300000,
+    },
+  ],
 });
 </script>
 

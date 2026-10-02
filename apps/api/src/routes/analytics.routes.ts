@@ -9,6 +9,8 @@ router.get('/balance-sheet', AnalyticsController.getBalanceSheet);
 router.get('/cash-flow', AnalyticsController.getCashFlow);
 router.get('/profitability/segments', AnalyticsController.getProfitabilitySegments);
 router.get('/dupont', AnalyticsController.getDuPont);
+router.get('/consolidation', AnalyticsController.getConsolidation);
+router.post('/consolidation/run', AnalyticsController.runConsolidation);
 
 export default router;
 

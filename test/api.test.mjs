@@ -588,6 +588,37 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.ok(data.analysis.threeStep.returnOnAssetsPercent > 0);
       assert.equal(data.analysis.healthAssessment.leverageRisk, 'LOW');
     });
+
+    test('generates IFRS 10 / Ind AS 110 Group Financial Consolidation statements', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/analytics/consolidation`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.status, 'RECONCILED');
+      assert.equal(data.groupCurrency, 'INR');
+      assert.equal(data.balanceSheet.isBalanced, true);
+      assert.equal(data.kpis.eliminatedTradingVolume, 15000000);
+      assert.equal(data.kpis.eliminatedUnrealizedProfit, 1000000);
+      assert.equal(data.kpis.subsidiariesCount, 2);
+      assert.ok(data.reconciliations.length > 0);
+      assert.ok(data.eliminations.length > 0);
+      assert.ok(data.worksheet.length >= 10);
+    });
+
+    test('executes custom on-demand consolidation run via POST /consolidation/run', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/analytics/consolidation/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          period: 'FY2026-Q1',
+          inventoryMarkupPercent: 0.25,
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.period, 'FY2026-Q1');
+      assert.equal(data.balanceSheet.isBalanced, true);
+      assert.equal(data.kpis.eliminatedUnrealizedProfit, 1250000);
+    });
   });
 
 
