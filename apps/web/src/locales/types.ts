@@ -183,6 +183,7 @@ export interface LocaleMessage {
       cashFlow: string;
       profitability: string;
       dupont: string;
+      consolidation: string;
     };
     cashFlow: {
       title: string;
@@ -268,6 +269,32 @@ export interface LocaleMessage {
       ratingExcellent: string;
       ratingGood: string;
       ratingNeedsAttention: string;
+    };
+    consolidation: {
+      title: string;
+      subtitle: string;
+      groupStructure: string;
+      groupStructureDesc: string;
+      holdingCompany: string;
+      whollyOwned: string;
+      majorityOwned: string;
+      eliminationJournal: string;
+      eliminationJournalDesc: string;
+      intercompanyRecon: string;
+      intercompanyReconDesc: string;
+      worksheetTitle: string;
+      worksheetDesc: string;
+      consolidatedPnl: string;
+      consolidatedBs: string;
+      eliminatedTrading: string;
+      eliminatedProfit: string;
+      eliminatedDebt: string;
+      groupNetWorth: string;
+      nciEquity: string;
+      nciProfit: string;
+      reconciliationStatus: string;
+      balancedNotice: string;
+      runConsolidationBtn: string;
     };
   };
 

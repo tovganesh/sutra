@@ -362,5 +362,34 @@ export const SourcingEvaluationWeights = {
   DEFAULT_LEAD_TIME_WEIGHT: 0.2,
 } as const;
 
+// =================================================================
+// 6. Group Financial Consolidation & Intercompany Elimination (IFRS 10 / Ind AS 110)
+// =================================================================
+
+export const ConsolidationStatus = {
+  DRAFT: 'DRAFT',
+  RECONCILED: 'RECONCILED',
+  POSTED: 'POSTED',
+  LOCKED: 'LOCKED',
+} as const;
+export type ConsolidationStatusType = (typeof ConsolidationStatus)[keyof typeof ConsolidationStatus];
+export type ConsolidationStatus = ConsolidationStatusType;
+
+export const IntercompanyEliminationType = {
+  BALANCES_RECEIVABLE_PAYABLE: 'BALANCES_RECEIVABLE_PAYABLE',
+  TRADING_REVENUE_COGS: 'TRADING_REVENUE_COGS',
+  UNREALIZED_INVENTORY_PROFIT: 'UNREALIZED_INVENTORY_PROFIT',
+  DIVIDEND_INCOME: 'DIVIDEND_INCOME',
+  NON_CONTROLLING_INTEREST: 'NON_CONTROLLING_INTEREST',
+} as const;
+export type IntercompanyEliminationType = (typeof IntercompanyEliminationType)[keyof typeof IntercompanyEliminationType];
+
+export const ConsolidationMethod = {
+  FULL_CONSOLIDATION: 'FULL_CONSOLIDATION',
+  EQUITY_METHOD: 'EQUITY_METHOD',
+  PROPORTIONATE: 'PROPORTIONATE',
+} as const;
+export type ConsolidationMethod = (typeof ConsolidationMethod)[keyof typeof ConsolidationMethod];
+
 
 
