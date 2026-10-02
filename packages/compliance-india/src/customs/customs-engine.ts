@@ -53,17 +53,39 @@ export interface LutVerificationResult {
   summary: string;
 }
 
+export const CustomsStandardGlAccount = {
+  INVENTORY_RAW_MATERIALS_LANDED: '120100',
+  INPUT_TAX_CREDIT_IGST_IMPORTS: '130100',
+  CUSTOMS_PORT_DUTIES_PAYABLE: '210500',
+  FOREIGN_TRADE_AP_SUPPLIER: '210100',
+} as const;
+
+export const CustomsDefaults = {
+  DEFAULT_BCD_PERCENT: 10.0,
+  DEFAULT_SWS_PERCENT: 10.0,
+  DEFAULT_IGST_PERCENT: 18.0,
+  DEFAULT_CESS_PERCENT: 0.0,
+  DEFAULT_ANTI_DUMPING_DUTY: 0.0,
+} as const;
+
+export const LutVerificationStatus = {
+  ACTIVE_VALID_LUT: 'ACTIVE_VALID_LUT',
+  EXPIRED: 'EXPIRED',
+  INVALID_SYNTAX: 'INVALID_SYNTAX',
+} as const;
+export type LutVerificationStatusType = (typeof LutVerificationStatus)[keyof typeof LutVerificationStatus];
+
 export class CustomsEngine {
   /**
    * Calculates comprehensive Indian Customs Duties & Integrated GST on imported goods
    */
   public static calculateImportDuty(request: CustomsDutyCalculationRequest): CustomsDutyCalculationResult {
     const assessableValue = Math.round(request.cifValueInr * 100) / 100;
-    const bcdRate = request.basicCustomsDutyPercent !== undefined ? request.basicCustomsDutyPercent : 10.0;
-    const swsRate = request.swsPercent !== undefined ? request.swsPercent : 10.0; // 10% of BCD
-    const igstRate = request.igstPercent !== undefined ? request.igstPercent : 18.0;
-    const cessRate = request.compensationCessPercent || 0.0;
-    const antiDumping = request.antiDumpingDuty || 0.0;
+    const bcdRate = request.basicCustomsDutyPercent !== undefined ? request.basicCustomsDutyPercent : CustomsDefaults.DEFAULT_BCD_PERCENT;
+    const swsRate = request.swsPercent !== undefined ? request.swsPercent : CustomsDefaults.DEFAULT_SWS_PERCENT; // 10% of BCD
+    const igstRate = request.igstPercent !== undefined ? request.igstPercent : CustomsDefaults.DEFAULT_IGST_PERCENT;
+    const cessRate = request.compensationCessPercent || CustomsDefaults.DEFAULT_CESS_PERCENT;
+    const antiDumping = request.antiDumpingDuty || CustomsDefaults.DEFAULT_ANTI_DUMPING_DUTY;
 
     // 1. Basic Customs Duty (BCD) on Assessable Value
     const bcdAmount = Math.round(assessableValue * (bcdRate / 100) * 100) / 100;
@@ -89,25 +111,25 @@ export class CustomsEngine {
     // Balanced GL Voucher for Customs Clearance
     const glVoucherLines = [
       {
-        accountCode: '120100',
+        accountCode: CustomsStandardGlAccount.INVENTORY_RAW_MATERIALS_LANDED,
         accountName: `Raw Materials Inventory - Imported Landed Cost (HSN ${request.hsnCode})`,
         debit: assessableValue + nonCreditableDutyCost,
         credit: 0,
       },
       {
-        accountCode: '130100',
+        accountCode: CustomsStandardGlAccount.INPUT_TAX_CREDIT_IGST_IMPORTS,
         accountName: 'Input Tax Credit (ITC) - IGST Paid on Import of Goods',
         debit: creditableItc,
         credit: 0,
       },
       {
-        accountCode: '210500',
+        accountCode: CustomsStandardGlAccount.CUSTOMS_PORT_DUTIES_PAYABLE,
         accountName: 'Customs & Port Duties Payable / Clearing',
         debit: 0,
         credit: totalCustomsDuty,
       },
       {
-        accountCode: '210100',
+        accountCode: CustomsStandardGlAccount.FOREIGN_TRADE_AP_SUPPLIER,
         accountName: 'Foreign Trade Accounts Payable (Import Supplier CIF)',
         debit: 0,
         credit: assessableValue,
@@ -146,7 +168,7 @@ export class CustomsEngine {
         arn: request.lutArn,
         financialYear: request.financialYear,
         exporterGstin: request.exporterGstin,
-        status: 'INVALID_SYNTAX',
+        status: LutVerificationStatus.INVALID_SYNTAX,
         exportCategory: 'ZERO_RATED_SUPPLY_WITHOUT_PAYMENT_OF_TAX',
         governingRule: 'Rule 96A of CGST Rules 2017',
         summary: `ARN ${request.lutArn} is not a valid GSTN Letter of Undertaking format. Expected syntax: AD{StateCode}{MM}{YY}{6Digits}{Alphanumeric}.`,
@@ -158,7 +180,7 @@ export class CustomsEngine {
       arn: request.lutArn.trim().toUpperCase(),
       financialYear: request.financialYear,
       exporterGstin: request.exporterGstin,
-      status: 'ACTIVE_VALID_LUT',
+      status: LutVerificationStatus.ACTIVE_VALID_LUT,
       exportCategory: 'ZERO_RATED_SUPPLY_WITHOUT_PAYMENT_OF_TAX',
       governingRule: 'Rule 96A of CGST Rules 2017',
       summary: `LUT ARN ${request.lutArn} verified active for FY ${request.financialYear}. Goods/Services can be exported without payment of integrated tax.`,

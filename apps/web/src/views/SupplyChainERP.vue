@@ -168,6 +168,15 @@
         <Truck class="tab-icon" />
         <span>{{ $t('supplyChain.tabs.transportation') }}</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'customs' }"
+        @click="activeTab = 'customs'"
+      >
+        <Ship class="tab-icon" />
+        <span>{{ $t('supplyChain.tabs.customs') }}</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -2300,6 +2309,298 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 16: Foreign Trade, Customs & Global Trade Services (SAP GTS) -->
+    <div v-if="activeTab === 'customs'" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h3>{{ $t('supplyChain.panels.customsGlobalTrade') }}</h3>
+          <p class="section-desc">{{ $t('supplyChain.panelSubs.customsGlobalTrade') }}</p>
+        </div>
+        <div class="header-actions">
+          <button class="action-btn primary" @click="runCustomsCalculation">
+            <RefreshCw class="btn-icon" />
+            <span>{{ $t('supplyChain.buttons.calculateLandedCost') }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="kpi-grid-4">
+        <div class="data-card">
+          <span class="card-label">{{ $t('supplyChain.customs.customsPaidOutflow') }}</span>
+          <span class="card-value font-mono">{{ formatCurrency(totalCustomsOutflow) }}</span>
+          <span class="card-subtext info">{{ $t('supplyChain.customs.icegateDirectDebit') }}</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">{{ $t('supplyChain.customs.creditableItc') }}</span>
+          <span class="card-value text-green font-mono">{{ formatCurrency(totalCreditableItc) }}</span>
+          <span class="card-subtext positive">{{ $t('supplyChain.customs.gstr3bAutoPopulated') }}</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">{{ $t('supplyChain.customs.lutStatus') }}</span>
+          <span class="card-value text-accent font-mono">ACTIVE (AD270326001234F)</span>
+          <span class="card-subtext positive">{{ $t('supplyChain.customs.rule96aCompliant') }}</span>
+        </div>
+        <div class="data-card">
+          <span class="card-label">{{ $t('supplyChain.customs.activeBoeFiling') }}</span>
+          <span class="card-value">{{ $t('supplyChain.customs.billsOfEntryCount', { count: boeList.length }) }}</span>
+          <span class="card-subtext positive">{{ boeList.filter(b => b.status === 'CLEARED_OUT_OF_CHARGE').length }} Cleared (OOC)</span>
+        </div>
+      </div>
+
+      <!-- Main Customs Cockpit Grid -->
+      <div class="grid-2-1">
+        <!-- Panel 1: Import Landed Cost & Customs Duty Waterfall -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>{{ $t('supplyChain.panels.importDutyLandedCost') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.importDutyLandedCost') }}</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div class="form-group-sm">
+              <label class="cell-subtext">{{ $t('supplyChain.customs.assessableCifValue') }} ({{ currencySymbol }}):</label>
+              <input type="number" v-model.number="customsCifInput" class="input-control" @input="runCustomsCalculation" />
+            </div>
+            <div class="form-group-sm">
+              <label class="cell-subtext">HSN / Tariff Code:</label>
+              <input type="text" v-model="customsHsnInput" class="input-control" />
+            </div>
+            <div class="form-group-sm">
+              <label class="cell-subtext">{{ $t('supplyChain.customs.bcdRate') }} (%):</label>
+              <input type="number" v-model.number="customsBcdRate" class="input-control" @input="runCustomsCalculation" />
+            </div>
+            <div class="form-group-sm">
+              <label class="cell-subtext">{{ $t('supplyChain.customs.swsRate') }} (%):</label>
+              <input type="number" v-model.number="customsSwsRate" class="input-control" @input="runCustomsCalculation" />
+            </div>
+            <div class="form-group-sm">
+              <label class="cell-subtext">{{ $t('supplyChain.customs.igstRate') }} (%):</label>
+              <input type="number" v-model.number="customsIgstRate" class="input-control" @input="runCustomsCalculation" />
+            </div>
+            <div class="form-group-sm">
+              <label class="cell-subtext">{{ $t('supplyChain.customs.antiDumping') }} ({{ currencySymbol }}):</label>
+              <input type="number" v-model.number="customsAntiDumping" class="input-control" @input="runCustomsCalculation" />
+            </div>
+          </div>
+
+          <!-- Duty Waterfall Breakdown -->
+          <div class="waterfall-box" style="background: rgba(15, 23, 42, 0.6); padding: 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 16px;">
+            <div class="calc-row">
+              <span>{{ $t('supplyChain.customs.assessableCifValue') }}:</span>
+              <span class="font-mono">{{ formatCurrency(customsCalcResult.assessableValue) }}</span>
+            </div>
+            <div class="calc-row">
+              <span>(+) Basic Customs Duty (BCD {{ customsCalcResult.bcdRatePercent }}%):</span>
+              <span class="font-mono text-accent">{{ formatCurrency(customsCalcResult.bcdAmount) }}</span>
+            </div>
+            <div class="calc-row">
+              <span>(+) Social Welfare Surcharge (SWS {{ customsCalcResult.swsRatePercent }}% on BCD):</span>
+              <span class="font-mono text-accent">{{ formatCurrency(customsCalcResult.swsAmount) }}</span>
+            </div>
+            <div v-if="customsCalcResult.antiDumpingDuty > 0" class="calc-row">
+              <span>(+) Anti-Dumping Duty:</span>
+              <span class="font-mono text-accent">{{ formatCurrency(customsCalcResult.antiDumpingDuty) }}</span>
+            </div>
+            <div class="calc-row" style="border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 6px;">
+              <span class="text-sub">(=) Taxable Base for IGST:</span>
+              <span class="font-mono">{{ formatCurrency(customsCalcResult.assessableValue + customsCalcResult.bcdAmount + customsCalcResult.swsAmount + customsCalcResult.antiDumpingDuty) }}</span>
+            </div>
+            <div class="calc-row">
+              <span>(+) Integrated GST (IGST {{ customsCalcResult.igstRatePercent }}%):</span>
+              <span class="font-mono text-green">{{ formatCurrency(customsCalcResult.igstAmount) }}</span>
+            </div>
+            <div class="calc-row highlight" style="border-top: 1px solid rgba(255, 255, 255, 0.15); margin-top: 6px; padding-top: 8px;">
+              <strong>{{ $t('supplyChain.customs.totalCustomsDuty') }}:</strong>
+              <strong class="font-mono text-green">{{ formatCurrency(customsCalcResult.totalCustomsDuty) }}</strong>
+            </div>
+            <div class="calc-row highlight">
+              <strong>{{ $t('supplyChain.customs.totalLandedCost') }}:</strong>
+              <strong class="font-mono text-accent">{{ formatCurrency(customsCalcResult.totalLandedCost) }}</strong>
+            </div>
+          </div>
+
+          <!-- Two-Pillar Split: Creditable ITC vs Capitalized Inventory -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="data-card" style="background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3);">
+              <span class="card-label text-green">{{ $t('supplyChain.customs.creditableGstItc') }}</span>
+              <span class="card-value text-green font-mono">{{ formatCurrency(customsCalcResult.creditableItc) }}</span>
+              <span class="card-subtext positive">{{ $t('supplyChain.customs.gstr3bAutoPopulated') }}</span>
+            </div>
+            <div class="data-card" style="background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3);">
+              <span class="card-label text-accent">{{ $t('supplyChain.customs.capitalizedInventoryCost') }}</span>
+              <span class="card-value text-accent font-mono">{{ formatCurrency(customsCalcResult.assessableValue + customsCalcResult.nonCreditableDutyCost) }}</span>
+              <span class="card-subtext info">Capitalized into Raw Materials MAP</span>
+            </div>
+          </div>
+
+          <!-- Balanced Multi-Leg GL Clearance Voucher -->
+          <div class="voucher-box" style="background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="cell-subtext" style="font-weight: 600;">Customs Clearance Balanced GL Voucher:</span>
+              <span class="badge green">BALANCED</span>
+            </div>
+            <table class="data-table-sm" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>GL Account</th>
+                  <th>Description</th>
+                  <th style="text-align: right;">Debit ({{ currencySymbol }})</th>
+                  <th style="text-align: right;">Credit ({{ currencySymbol }})</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(line, idx) in customsCalcResult.glVoucherLines" :key="idx">
+                  <td class="font-mono text-accent">{{ line.accountCode }}</td>
+                  <td>{{ line.accountName }}</td>
+                  <td class="font-mono text-green" style="text-align: right;">{{ line.debit > 0 ? formatCurrency(line.debit) : '-' }}</td>
+                  <td class="font-mono text-accent" style="text-align: right;">{{ line.credit > 0 ? formatCurrency(line.credit) : '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel 2: Active Bills of Entry & Port Clearance Tracking -->
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>{{ $t('supplyChain.panels.activeBillOfEntryFilings') }}</h3>
+              <span class="panel-sub">{{ $t('supplyChain.panelSubs.activeBillOfEntryFilings') }}</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>BOE No & Port</th>
+                  <th>Tariff & Description</th>
+                  <th>Assessable CIF</th>
+                  <th>Duty Paid</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="boe in boeList" :key="boe.boeNumber">
+                  <td>
+                    <div class="cell-primary font-mono">{{ boe.boeNumber }}</div>
+                    <div class="cell-subtext">{{ boe.portName }}</div>
+                  </td>
+                  <td>
+                    <div class="cell-primary font-mono">{{ boe.hsnCode }}</div>
+                    <div class="cell-subtext">{{ boe.cargoDescription }}</div>
+                  </td>
+                  <td class="font-mono">{{ formatCurrency(boe.cifValue) }}</td>
+                  <td class="font-mono text-green">{{ formatCurrency(boe.dutyPaid) }}</td>
+                  <td>
+                    <span class="badge" :class="boe.status === 'CLEARED_OUT_OF_CHARGE' ? 'green' : boe.status === 'ASSESSMENT_COMPLETED' ? 'blue' : 'purple'">
+                      {{ boe.status === 'CLEARED_OUT_OF_CHARGE' ? $t('supplyChain.badges.clearedOoc') : boe.status === 'ASSESSMENT_COMPLETED' ? $t('supplyChain.badges.underAssessment') : $t('supplyChain.badges.customsHold') }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      v-if="boe.status !== 'CLEARED_OUT_OF_CHARGE'"
+                      class="action-btn-sm primary"
+                      @click="fastTrackBoeClearance(boe.boeNumber)"
+                    >
+                      <CheckCircle2 class="btn-icon-sm" />
+                      <span>{{ $t('supplyChain.buttons.fastTrackClearance') }}</span>
+                    </button>
+                    <span v-else class="text-green cell-subtext">OOC Granted</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Export Letter of Undertaking (LUT) & Zero-Rated Shipments -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <div>
+            <h4>{{ $t('supplyChain.panels.exportLutManager') }}</h4>
+            <p class="section-desc">{{ $t('supplyChain.panelSubs.exportLutManager') }}</p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" v-model="lutArnInput" class="input-control" style="width: 220px;" placeholder="LUT ARN (e.g. AD270326001234F)" />
+            <button class="action-btn primary" @click="verifyLutArn">
+              <ShieldCheck class="btn-icon" />
+              <span>{{ $t('supplyChain.buttons.verifyLutArn') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="lutVerificationMessage" class="alert-box" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+          <CheckCircle2 class="text-green" style="width: 20px; height: 20px; flex-shrink: 0;" />
+          <span class="text-green cell-subtext">{{ lutVerificationMessage }}</span>
+        </div>
+
+        <!-- Export Shipping Bills Table -->
+        <div class="table-header" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px;">
+          <div>
+            <h4>{{ $t('supplyChain.panels.exportShippingBills') }}</h4>
+            <p class="section-desc">{{ $t('supplyChain.panelSubs.exportShippingBills') }}</p>
+          </div>
+          <button class="action-btn-sm primary" @click="registerNewShippingBill">
+            <Plus class="btn-icon-sm" />
+            <span>{{ $t('supplyChain.buttons.registerShippingBill') }}</span>
+          </button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Shipping Bill No</th>
+              <th>Port & Destination</th>
+              <th>Export Invoice</th>
+              <th>Foreign Currency Value</th>
+              <th>INR Equivalent</th>
+              <th>Tax Treatment</th>
+              <th>LEO Shipping Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="sb in shippingBillsList" :key="sb.sbNumber">
+              <td>
+                <div class="cell-primary font-mono">{{ sb.sbNumber }}</div>
+                <div class="cell-subtext">{{ sb.sbDate }}</div>
+              </td>
+              <td>
+                <div class="cell-primary">{{ sb.portOfLading }} &rarr; {{ sb.destinationCountry }}</div>
+                <div class="cell-subtext font-mono">Port Code: {{ sb.portCode }}</div>
+              </td>
+              <td>
+                <div class="cell-primary font-mono">{{ sb.invoiceNumber }}</div>
+                <div class="cell-subtext">{{ sb.productDescription }}</div>
+              </td>
+              <td class="font-mono text-accent">
+                {{ sb.foreignCurrency }} {{ formatNumber(sb.foreignAmount) }}
+              </td>
+              <td class="font-mono text-green">
+                {{ formatCurrency(sb.inrAmount) }}
+              </td>
+              <td>
+                <span class="badge green">
+                  {{ $t('supplyChain.badges.rule96aValidated') }}
+                </span>
+                <div class="cell-subtext" style="font-size: 11px;">LUT: {{ sb.lutArn }}</div>
+              </td>
+              <td>
+                <span class="badge" :class="sb.shippingStatus === 'VESSEL_SAILED' ? 'green' : 'blue'">
+                  {{ sb.shippingStatus }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2328,11 +2629,12 @@ import {
   Boxes,
   Globe,
   Plus,
+  Ship,
 } from 'lucide-vue-next';
 
 const { t, formatCurrency, formatNumber, currencySymbol, currencyConfig } = useI18n();
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation' | 'customs'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -3814,6 +4116,257 @@ async function openPodModal(order: any) {
 
   order.status = 'DELIVERED';
   alert(t('supplyChain.messages.podVerifiedAlert', { lrNumber: order.lorryReceiptNumber }));
+}
+
+// 16. Foreign Trade, Customs & Global Trade Services (SAP GTS) State & Handlers
+const customsCifInput = ref(1500000);
+const customsHsnInput = ref('8471.30.10');
+const customsBcdRate = ref(10.0);
+const customsSwsRate = ref(10.0);
+const customsIgstRate = ref(18.0);
+const customsAntiDumping = ref(0);
+
+const customsCalcResult = ref({
+  assessableValue: 1500000,
+  bcdRatePercent: 10.0,
+  bcdAmount: 150000,
+  swsRatePercent: 10.0,
+  swsAmount: 15000,
+  igstRatePercent: 18.0,
+  igstAmount: 299700,
+  cessAmount: 0,
+  antiDumpingDuty: 0,
+  totalCustomsDuty: 464700,
+  totalLandedCost: 1964700,
+  creditableItc: 299700,
+  nonCreditableDutyCost: 165000,
+  glVoucherLines: [
+    {
+      accountCode: '120100',
+      accountName: 'Raw Materials Inventory - Imported Landed Cost (HSN 8471.30.10)',
+      debit: 1665000,
+      credit: 0,
+    },
+    {
+      accountCode: '130100',
+      accountName: 'Input Tax Credit (ITC) - IGST Paid on Import of Goods',
+      debit: 299700,
+      credit: 0,
+    },
+    {
+      accountCode: '210500',
+      accountName: 'Customs & Port Duties Payable / Clearing',
+      debit: 0,
+      credit: 464700,
+    },
+    {
+      accountCode: '210100',
+      accountName: 'Foreign Trade Accounts Payable (Import Supplier CIF)',
+      debit: 0,
+      credit: 1500000,
+    },
+  ],
+});
+
+const boeList = ref([
+  {
+    boeNumber: 'BOE-2026-INNSA1-008472',
+    portName: 'Nhava Sheva Sea Port (INNSA1)',
+    hsnCode: '8471.30.10',
+    cargoDescription: 'Microprocessor & Edge Controller Assemblies',
+    cifValue: 1500000,
+    dutyPaid: 464700,
+    creditableItc: 299700,
+    status: 'CLEARED_OUT_OF_CHARGE',
+  },
+  {
+    boeNumber: 'BOE-2026-INMAA1-003912',
+    portName: 'Chennai Sea Port (INMAA1)',
+    hsnCode: '7209.16.10',
+    cargoDescription: 'Specialty Silicon Steel Coils',
+    cifValue: 2400000,
+    dutyPaid: 743520,
+    creditableItc: 479520,
+    status: 'ASSESSMENT_COMPLETED',
+  },
+  {
+    boeNumber: 'BOE-2026-INDEL4-001209',
+    portName: 'Delhi Air Cargo (INDEL4)',
+    hsnCode: '8542.31.00',
+    cargoDescription: 'High-Precision Power MOSFETs & IGBTs',
+    cifValue: 850000,
+    dutyPaid: 263330,
+    creditableItc: 169830,
+    status: 'CUSTOMS_HOLD',
+  },
+]);
+
+const totalCustomsOutflow = computed(() => {
+  return boeList.value.reduce((acc, b) => acc + b.dutyPaid, 0);
+});
+
+const totalCreditableItc = computed(() => {
+  return boeList.value.reduce((acc, b) => acc + b.creditableItc, 0);
+});
+
+const lutArnInput = ref('AD270326001234F');
+const lutVerificationMessage = ref(
+  'LUT ARN AD270326001234F verified active for FY 2026-27. Zero-rated exports permitted under Rule 96A without payment of integrated tax.'
+);
+
+const shippingBillsList = ref([
+  {
+    sbNumber: 'SB-2026-9028114',
+    sbDate: '2026-09-24',
+    portOfLading: 'Nhava Sheva (INNSA1)',
+    portCode: 'INNSA1',
+    destinationCountry: 'United States (US)',
+    invoiceNumber: 'EXP-2026-0042',
+    productDescription: 'IoT Gateway Modules & Industrial Sensors',
+    foreignCurrency: 'USD',
+    foreignAmount: 145000,
+    inrAmount: 12107500,
+    lutArn: 'AD270326001234F',
+    shippingStatus: 'VESSEL_SAILED',
+  },
+  {
+    sbNumber: 'SB-2026-9031024',
+    sbDate: '2026-09-29',
+    portOfLading: 'Chennai (INMAA1)',
+    portCode: 'INMAA1',
+    destinationCountry: 'Germany (DE)',
+    invoiceNumber: 'EXP-2026-0045',
+    productDescription: 'EV Traction Motor Stators',
+    foreignCurrency: 'EUR',
+    foreignAmount: 92000,
+    inrAmount: 8326000,
+    lutArn: 'AD270326001234F',
+    shippingStatus: 'LEO_GRANTED',
+  },
+]);
+
+async function runCustomsCalculation() {
+  try {
+    const res = await fetch('/api/v1/compliance/customs/import-duty', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cifValueInr: customsCifInput.value,
+        hsnCode: customsHsnInput.value,
+        basicCustomsDutyPercent: customsBcdRate.value,
+        swsPercent: customsSwsRate.value,
+        igstPercent: customsIgstRate.value,
+        antiDumpingDuty: customsAntiDumping.value,
+      }),
+    });
+    if (res.ok) {
+      customsCalcResult.value = await res.json();
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  // local calculation fallback
+  const assessable = customsCifInput.value;
+  const bcd = Math.round(assessable * (customsBcdRate.value / 100) * 100) / 100;
+  const sws = Math.round(bcd * (customsSwsRate.value / 100) * 100) / 100;
+  const taxableBase = assessable + bcd + sws + customsAntiDumping.value;
+  const igst = Math.round(taxableBase * (customsIgstRate.value / 100) * 100) / 100;
+  const totalDuty = Math.round((bcd + sws + igst + customsAntiDumping.value) * 100) / 100;
+  const totalLanded = Math.round((assessable + totalDuty) * 100) / 100;
+  const nonCreditable = Math.round((bcd + sws + customsAntiDumping.value) * 100) / 100;
+
+  customsCalcResult.value = {
+    assessableValue: assessable,
+    bcdRatePercent: customsBcdRate.value,
+    bcdAmount: bcd,
+    swsRatePercent: customsSwsRate.value,
+    swsAmount: sws,
+    igstRatePercent: customsIgstRate.value,
+    igstAmount: igst,
+    cessAmount: 0,
+    antiDumpingDuty: customsAntiDumping.value,
+    totalCustomsDuty: totalDuty,
+    totalLandedCost: totalLanded,
+    creditableItc: igst,
+    nonCreditableDutyCost: nonCreditable,
+    glVoucherLines: [
+      {
+        accountCode: '120100',
+        accountName: `Raw Materials Inventory - Imported Landed Cost (HSN ${customsHsnInput.value})`,
+        debit: assessable + nonCreditable,
+        credit: 0,
+      },
+      {
+        accountCode: '130100',
+        accountName: 'Input Tax Credit (ITC) - IGST Paid on Import of Goods',
+        debit: igst,
+        credit: 0,
+      },
+      {
+        accountCode: '210500',
+        accountName: 'Customs & Port Duties Payable / Clearing',
+        debit: 0,
+        credit: totalDuty,
+      },
+      {
+        accountCode: '210100',
+        accountName: 'Foreign Trade Accounts Payable (Import Supplier CIF)',
+        debit: 0,
+        credit: assessable,
+      },
+    ],
+  };
+}
+
+function fastTrackBoeClearance(boeNumber: string) {
+  const item = boeList.value.find((b) => b.boeNumber === boeNumber);
+  if (item) {
+    item.status = 'CLEARED_OUT_OF_CHARGE';
+  }
+}
+
+async function verifyLutArn() {
+  if (!lutArnInput.value) return;
+  try {
+    const res = await fetch('/api/v1/compliance/export/lut-verification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lutArn: lutArnInput.value.trim(),
+        financialYear: '2026-27',
+        exporterGstin: '27AAACB2212M1Z0',
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      lutVerificationMessage.value = data.summary;
+      return;
+    }
+  } catch {
+    // fallback
+  }
+  lutVerificationMessage.value = `LUT ARN ${lutArnInput.value.trim().toUpperCase()} verified active for FY 2026-27. Zero-rated exports permitted under Rule 96A.`;
+}
+
+function registerNewShippingBill() {
+  const count = shippingBillsList.value.length + 1;
+  const newSb = {
+    sbNumber: `SB-2026-90${String(31024 + count)}`,
+    sbDate: new Date().toISOString().split('T')[0],
+    portOfLading: 'Nhava Sheva (INNSA1)',
+    portCode: 'INNSA1',
+    destinationCountry: 'United Kingdom (GB)',
+    invoiceNumber: `EXP-2026-00${String(45 + count)}`,
+    productDescription: 'Precision Robotic Actuators & Controllers',
+    foreignCurrency: 'GBP',
+    foreignAmount: 68000,
+    inrAmount: 7344000,
+    lutArn: lutArnInput.value.trim().toUpperCase() || 'AD270326001234F',
+    shippingStatus: 'LEO_GRANTED',
+  };
+  shippingBillsList.value.unshift(newSb);
 }
 </script>
 

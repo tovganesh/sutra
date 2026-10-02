@@ -9,6 +9,9 @@ import {
   IndianPayrollEngine,
   TDSEngine,
   CustomsEngine,
+  CustomsStandardGlAccount,
+  CustomsDefaults,
+  LutVerificationStatus,
 } from '../packages/compliance-india/dist/index.js';
 
 describe('Sutra India Compliance Suite', () => {
@@ -194,6 +197,12 @@ describe('Sutra India Compliance Suite', () => {
       const totalDr = result.glVoucherLines.reduce((acc, l) => acc + l.debit, 0);
       const totalCr = result.glVoucherLines.reduce((acc, l) => acc + l.credit, 0);
       assert.equal(totalDr, totalCr);
+
+      // Verify that GL vouchers use typed named constants
+      assert.equal(result.glVoucherLines[0].accountCode, CustomsStandardGlAccount.INVENTORY_RAW_MATERIALS_LANDED);
+      assert.equal(result.glVoucherLines[1].accountCode, CustomsStandardGlAccount.INPUT_TAX_CREDIT_IGST_IMPORTS);
+      assert.equal(result.glVoucherLines[2].accountCode, CustomsStandardGlAccount.CUSTOMS_PORT_DUTIES_PAYABLE);
+      assert.equal(result.glVoucherLines[3].accountCode, CustomsStandardGlAccount.FOREIGN_TRADE_AP_SUPPLIER);
     });
 
     test('validates Letter of Undertaking (LUT) under Rule 96A for zero-rated exports', () => {
@@ -203,7 +212,7 @@ describe('Sutra India Compliance Suite', () => {
         exporterGstin: '27AABCS1429B1ZU',
       });
       assert.equal(validLut.isValid, true);
-      assert.equal(validLut.status, 'ACTIVE_VALID_LUT');
+      assert.equal(validLut.status, LutVerificationStatus.ACTIVE_VALID_LUT);
 
       const invalidLut = CustomsEngine.verifyLut({
         lutArn: 'INVALID_ARN_999',
@@ -211,7 +220,7 @@ describe('Sutra India Compliance Suite', () => {
         exporterGstin: '27AABCS1429B1ZU',
       });
       assert.equal(invalidLut.isValid, false);
-      assert.equal(invalidLut.status, 'INVALID_SYNTAX');
+      assert.equal(invalidLut.status, LutVerificationStatus.INVALID_SYNTAX);
     });
   });
 });
