@@ -470,8 +470,10 @@ export interface LocaleMessage {
       multicurrency: string;
       transportation: string;
       customs: string;
+      sourcing: string;
     };
     panels: {
+
       materialMaster: string;
       stockMovement: string;
       customerMaster: string;
@@ -518,6 +520,9 @@ export interface LocaleMessage {
       activeBillOfEntryFilings: string;
       exportLutManager: string;
       exportShippingBills: string;
+      rfqManagement: string;
+      bidEvaluationMatrix: string;
+      vendorScorecards: string;
     };
     panelSubs: {
       materialMaster: string;
@@ -558,6 +563,9 @@ export interface LocaleMessage {
       activeBillOfEntryFilings: string;
       exportLutManager: string;
       exportShippingBills: string;
+      rfqManagement: string;
+      bidEvaluationMatrix: string;
+      vendorScorecards: string;
     };
     cols: {
       sku: string;
@@ -706,6 +714,10 @@ export interface LocaleMessage {
       verifyLutArn: string;
       registerShippingBill: string;
       fastTrackClearance: string;
+      newRfq: string;
+      evaluateBids: string;
+      awardBidGeneratePo: string;
+      submitQuote: string;
     };
     badges: {
       liveWaybill: string;
@@ -717,6 +729,13 @@ export interface LocaleMessage {
       underAssessment: string;
       rule96aValidated: string;
       customsHold: string;
+      awarded: string;
+      quotesReceived: string;
+      preferredPartner: string;
+      tierAPlus: string;
+      tierA: string;
+      tierB: string;
+      tierC: string;
     };
     messages: {
       enterPodOtp: string;
@@ -776,6 +795,29 @@ export interface LocaleMessage {
       portChennai: string;
       portMundra: string;
       portDelhiAir: string;
+    };
+    sourcing: {
+      activeTenders: string;
+      bidsEvaluated: string;
+      sourcingSavings: string;
+      strategicSuppliers: string;
+      commercialWeight: string;
+      technicalWeight: string;
+      leadTimeWeight: string;
+      commercialScore: string;
+      technicalScore: string;
+      speedScore: string;
+      compositeScore: string;
+      rank: string;
+      otifRate: string;
+      qualityRate: string;
+      ppmDefects: string;
+      priceIndex: string;
+      rfqNumber: string;
+      closingDate: string;
+      invitedVendors: string;
+      winningQuoteSavings: string;
+      awardedNotice: string;
     };
   };
   nocode: {

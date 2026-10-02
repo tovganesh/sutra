@@ -212,3 +212,170 @@ export const sampleDuPontInput: DuPontInput = {
   totalEquity: 8500000,
 };
 
+// =================================================================
+// Strategic Sourcing & Supplier Lifecycle (SAP SRM / Ariba)
+// =================================================================
+
+import {
+  RfqDocument,
+  VendorQuotation,
+  VendorScorecard,
+  VendorRatingTier,
+  RfqStatus,
+  VendorBidStatus,
+  SystemDefaults,
+} from '@sutra/core';
+
+export const inMemoryRfqs: Map<string, RfqDocument> = new Map();
+export const inMemoryQuotations: Map<string, VendorQuotation[]> = new Map();
+
+// Seed initial RFQ: "Precision Titanium CNC Castings"
+const initialRfq: RfqDocument = {
+  tenantId: SystemDefaults.DEFAULT_TENANT_ID,
+  rfqNumber: 'RFQ-2026-081',
+  title: 'Precision Titanium Alloy CNC Castings & Fasteners',
+  category: 'DIRECT_MATERIALS',
+  status: RfqStatus.QUOTES_RECEIVED,
+  issueDate: '2026-09-15',
+  bidClosingDate: '2026-10-15',
+  deliveryPlant: SystemDefaults.DEFAULT_PLANT_ID,
+  currency: SystemDefaults.DEFAULT_CURRENCY,
+  items: [
+    {
+      itemId: 'item-1',
+      sku: 'RAW-TI-001',
+      description: 'Aerospace Grade Titanium Round Bar 6Al-4V',
+      targetQuantity: 2500,
+      unitOfMeasure: 'KG',
+      targetUnitPrice: 1650,
+      requiredDeliveryDate: '2026-11-15',
+      hsnCode: '81089010',
+    },
+    {
+      itemId: 'item-2',
+      sku: 'COMP-FAST-44',
+      description: 'Titanium Grade 5 Hex Machine Bolts M8x40',
+      targetQuantity: 10000,
+      unitOfMeasure: 'PCS',
+      targetUnitPrice: 45,
+      requiredDeliveryDate: '2026-11-15',
+      hsnCode: '73181500',
+    },
+  ],
+  invitedVendorIds: ['VEND-001', 'VEND-002', 'VEND-003'],
+  createdBy: 'SOURCING_DIRECTOR',
+};
+
+inMemoryRfqs.set(initialRfq.rfqNumber, initialRfq);
+
+const initialQuotations: VendorQuotation[] = [
+  {
+    quotationId: 'QUO-V1-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-001',
+    vendorName: 'Tata Advanced Materials Ltd',
+    status: VendorBidStatus.SUBMITTED,
+    submissionDate: '2026-09-22',
+    paymentTermsDays: 45,
+    warrantyMonths: 24,
+    technicalComplianceScore: 96,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1600, leadTimeDays: 14, itemTotalAmount: 4000000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 45, leadTimeDays: 14, itemTotalAmount: 450000 },
+    ],
+    totalQuoteAmount: 4450000,
+    averageLeadTimeDays: 14,
+    notes: 'AS9100D certified aerospace forging with ultrasonic test reports.',
+  },
+  {
+    quotationId: 'QUO-V2-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-002',
+    vendorName: 'Bharat Forge Aerospace Division',
+    status: VendorBidStatus.SUBMITTED,
+    submissionDate: '2026-09-24',
+    paymentTermsDays: 30,
+    warrantyMonths: 18,
+    technicalComplianceScore: 92,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1520, leadTimeDays: 21, itemTotalAmount: 3800000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 40, leadTimeDays: 21, itemTotalAmount: 400000 },
+    ],
+    totalQuoteAmount: 4200000,
+    averageLeadTimeDays: 21,
+    notes: 'Lowest cost producer with ISO 17025 accredited laboratory.',
+  },
+  {
+    quotationId: 'QUO-V3-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-003',
+    vendorName: 'Precision Fasteners & Alloys Ltd',
+    status: VendorBidStatus.SUBMITTED,
+    submissionDate: '2026-09-26',
+    paymentTermsDays: 30,
+    warrantyMonths: 12,
+    technicalComplianceScore: 84,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1680, leadTimeDays: 28, itemTotalAmount: 4200000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 45, leadTimeDays: 28, itemTotalAmount: 450000 },
+    ],
+    totalQuoteAmount: 4650000,
+    averageLeadTimeDays: 28,
+    notes: 'Standard commercial quotation without custom tooling charges.',
+  },
+];
+
+inMemoryQuotations.set(initialRfq.rfqNumber, initialQuotations);
+
+export const sampleVendorScorecards: VendorScorecard[] = [
+  {
+    vendorId: 'VEND-001',
+    vendorName: 'Tata Advanced Materials Ltd',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 48,
+      otifPercentage: 97.92,
+      qualityAcceptanceRate: 99.45,
+      ppmDefectRate: 550,
+      priceCompetitivenessScore: 94.5,
+    },
+    overallScore: 97.85,
+    tier: VendorRatingTier.GRADE_A_PLUS,
+    isPreferredSupplier: true,
+    correctiveActionRequired: false,
+  },
+  {
+    vendorId: 'VEND-002',
+    vendorName: 'Bharat Forge Aerospace Division',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 36,
+      otifPercentage: 91.67,
+      qualityAcceptanceRate: 96.8,
+      ppmDefectRate: 3200,
+      priceCompetitivenessScore: 100,
+    },
+    overallScore: 95.39,
+    tier: VendorRatingTier.GRADE_A_PLUS,
+    isPreferredSupplier: true,
+    correctiveActionRequired: false,
+  },
+  {
+    vendorId: 'VEND-003',
+    vendorName: 'Precision Fasteners & Alloys Ltd',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 24,
+      otifPercentage: 79.17,
+      qualityAcceptanceRate: 91.25,
+      ppmDefectRate: 8750,
+      priceCompetitivenessScore: 88.2,
+    },
+    overallScore: 85.81,
+    tier: VendorRatingTier.GRADE_A,
+    isPreferredSupplier: true,
+    correctiveActionRequired: false,
+  },
+];
+
+

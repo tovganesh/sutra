@@ -323,4 +323,44 @@ export const SystemDefaults = {
   TDS_SECTION_194Q_THRESHOLD_INR: 5000000, // ₹50 Lakhs
 } as const;
 
+// =================================================================
+// 5. Strategic Sourcing & Supplier Lifecycle (SAP SRM / Ariba)
+// =================================================================
+
+export const RfqStatus = {
+  DRAFT: 'DRAFT',
+  ISSUED: 'ISSUED',
+  QUOTES_RECEIVED: 'QUOTES_RECEIVED',
+  EVALUATED: 'EVALUATED',
+  AWARDED: 'AWARDED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type RfqStatusType = (typeof RfqStatus)[keyof typeof RfqStatus];
+export type RfqStatus = RfqStatusType;
+
+export const VendorBidStatus = {
+  SUBMITTED: 'SUBMITTED',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  AWARDED: 'AWARDED',
+  REJECTED: 'REJECTED',
+} as const;
+export type VendorBidStatusType = (typeof VendorBidStatus)[keyof typeof VendorBidStatus];
+export type VendorBidStatus = VendorBidStatusType;
+
+export const VendorRatingTier = {
+  GRADE_A_PLUS: 'GRADE_A_PLUS',
+  GRADE_A: 'GRADE_A',
+  GRADE_B: 'GRADE_B',
+  GRADE_C: 'GRADE_C',
+} as const;
+export type VendorRatingTierType = (typeof VendorRatingTier)[keyof typeof VendorRatingTier];
+export type VendorRatingTier = VendorRatingTierType;
+
+export const SourcingEvaluationWeights = {
+  DEFAULT_COMMERCIAL_WEIGHT: 0.5,
+  DEFAULT_TECHNICAL_WEIGHT: 0.3,
+  DEFAULT_LEAD_TIME_WEIGHT: 0.2,
+} as const;
+
+
 

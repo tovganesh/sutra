@@ -604,4 +604,60 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.ok(data.answer);
     });
   });
+
+  describe('21. Strategic Sourcing & RFQ Endpoints (SAP SRM/Ariba)', () => {
+    test('retrieves active RFQ tenders and quotations', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/sourcing/rfqs`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.count > 0);
+      assert.ok(data.rfqs.some((r) => r.rfqNumber === 'RFQ-2026-081'));
+
+      const detailRes = await fetch(`${baseUrl}/api/v1/sourcing/rfqs/RFQ-2026-081`);
+      assert.equal(detailRes.status, 200);
+      const detailData = await detailRes.json();
+      assert.equal(detailData.rfq.rfqNumber, 'RFQ-2026-081');
+      assert.ok(detailData.quotations.length >= 3);
+    });
+
+    test('evaluates competitive bids using weighted composite matrix', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/sourcing/rfqs/RFQ-2026-081/evaluate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weights: { commercialWeight: 0.5, technicalWeight: 0.3, leadTimeWeight: 0.2 },
+        }),
+      });
+      assert.equal(res.status, 200);
+      const matrix = await res.json();
+      assert.equal(matrix.rfqNumber, 'RFQ-2026-081');
+      assert.ok(matrix.evaluatedBids.length >= 3);
+      assert.ok(matrix.recommendedWinningBidId);
+      assert.ok(matrix.projectedCostSavings > 0);
+    });
+
+    test('awards tender and auto-generates purchase order in P2P subledger', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/sourcing/rfqs/RFQ-2026-081/award`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quotationId: 'QUO-V1-081',
+          poPrefix: 'PO-2026',
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.rfq.status, 'AWARDED');
+      assert.equal(data.awardedQuotation.status, 'AWARDED');
+      assert.ok(data.generatedPo.poNumber.startsWith('PO-2026-'));
+    });
+
+    test('fetches supplier scorecards with OTIF, quality acceptance, and tier ratings', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/sourcing/scorecards`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.scorecards.length >= 3);
+      assert.ok(data.scorecards.some((s) => s.tier === 'GRADE_A_PLUS'));
+    });
+  });
 });

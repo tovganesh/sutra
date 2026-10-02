@@ -19,6 +19,7 @@ import multicurrencyRoutes from './multicurrency.routes';
 import transportationRoutes from './transportation.routes';
 import nocodeRoutes from './nocode.routes';
 import analyticsRoutes from './analytics.routes';
+import sourcingRoutes from './sourcing.routes';
 import aiRoutes from './ai.routes';
 
 const apiRouter = Router();
@@ -30,6 +31,7 @@ apiRouter.use('/ledger', ledgerRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/sales', salesRoutes);
 apiRouter.use('/procurement', procurementRoutes);
+apiRouter.use('/sourcing', sourcingRoutes);
 apiRouter.use('/manufacturing', manufacturingRoutes);
 apiRouter.use('/assets', assetRoutes);
 apiRouter.use('/quality', qualityRoutes);
@@ -46,3 +48,4 @@ apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/ai', aiRoutes);
 
 export default apiRouter;
+
