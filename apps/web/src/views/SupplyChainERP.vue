@@ -177,6 +177,15 @@
         <Ship class="tab-icon" />
         <span>{{ $t('supplyChain.tabs.customs') }}</span>
       </button>
+
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'sourcing' }"
+        @click="activeTab = 'sourcing'"
+      >
+        <Gavel class="tab-icon" />
+        <span>{{ $t('supplyChain.tabs.sourcing') }}</span>
+      </button>
     </div>
 
     <!-- TAB 1: Materials Management & Inventory (MM) -->
@@ -2601,6 +2610,300 @@
         </table>
       </div>
     </div>
+
+    <!-- TAB 17: Strategic Sourcing & RFQ (SRM) -->
+    <div v-if="activeTab === 'sourcing'" class="tab-content">
+      <!-- Sourcing KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">{{ $t('supplyChain.sourcing.activeTenders') }}</span>
+          <span class="kpi-val text-accent">{{ rfqsList.length }}</span>
+          <span class="kpi-sub">Direct &amp; Indirect Tenders</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">{{ $t('supplyChain.sourcing.bidsEvaluated') }}</span>
+          <span class="kpi-val text-green">{{ activeRfqQuotations.length }}</span>
+          <span class="kpi-sub">{{ activeRfq?.rfqNumber }} Sealed Bids</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">{{ $t('supplyChain.sourcing.sourcingSavings') }}</span>
+          <span class="kpi-val text-green">{{ formatCurrency(sourcingSavingsAmount) }}</span>
+          <span class="kpi-sub font-mono">-5.6% vs Target Cap</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">{{ $t('supplyChain.sourcing.strategicSuppliers') }}</span>
+          <span class="kpi-val text-accent">{{ sourcingScorecards.length }}</span>
+          <span class="kpi-sub">AS9100D &amp; IATF 16949 Audited</span>
+        </div>
+      </div>
+
+      <!-- Sourcing Banner/Notification if any -->
+      <div v-if="sourcingAwardSuccessNotice" class="alert-banner green" style="margin-bottom: 20px;">
+        <CheckCircle2 class="alert-icon" />
+        <div>
+          <strong>{{ $t('supplyChain.badges.awarded') }}:</strong>
+          <span> {{ sourcingAwardSuccessNotice }}</span>
+        </div>
+      </div>
+
+      <!-- RFQ Management Panel -->
+      <div class="panel" style="margin-bottom: 24px;">
+        <div class="panel-header">
+          <div>
+            <h3>{{ $t('supplyChain.panels.rfqManagement') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.rfqManagement') }}</span>
+          </div>
+          <button class="action-btn-sm primary" @click="createQuickDemoRfq">
+            <Plus class="btn-icon-sm" />
+            <span>{{ $t('supplyChain.buttons.newRfq') }}</span>
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ $t('supplyChain.sourcing.rfqNumber') }}</th>
+                <th>Title / Category</th>
+                <th>Target Quantity</th>
+                <th>Target Unit Price</th>
+                <th>{{ $t('supplyChain.sourcing.closingDate') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="rfq in rfqsList"
+                :key="rfq.rfqNumber"
+                :class="{ 'selected-row': activeRfq?.rfqNumber === rfq.rfqNumber }"
+                @click="selectRfq(rfq)"
+              >
+                <td class="font-mono text-accent">
+                  <div class="cell-primary">{{ rfq.rfqNumber }}</div>
+                  <div class="cell-subtext">{{ rfq.deliveryPlant }}</div>
+                </td>
+                <td>
+                  <div class="cell-primary font-bold">{{ rfq.title }}</div>
+                  <div class="cell-subtext">{{ rfq.category }} &bull; {{ rfq.items.length }} line items</div>
+                </td>
+                <td class="font-mono">
+                  {{ formatNumber(rfq.items.reduce((s, i) => s + i.targetQuantity, 0)) }}
+                </td>
+                <td class="font-mono">
+                  {{ formatCurrency(rfq.items[0]?.targetUnitPrice || 0) }}
+                </td>
+                <td class="font-mono">
+                  {{ rfq.bidClosingDate }}
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="{
+                      green: rfq.status === 'AWARDED',
+                      blue: rfq.status === 'QUOTES_RECEIVED' || rfq.status === 'EVALUATED',
+                      yellow: rfq.status === 'ISSUED',
+                      gray: rfq.status === 'DRAFT'
+                    }"
+                  >
+                    {{ rfq.status }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    class="action-btn-sm"
+                    @click.stop="selectRfq(rfq)"
+                  >
+                    <Gavel class="btn-icon-sm" />
+                    <span>{{ $t('supplyChain.buttons.evaluateBids') }}</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Comparative Bid Evaluation Matrix -->
+      <div class="panel" style="margin-bottom: 24px;">
+        <div class="panel-header">
+          <div>
+            <h3>{{ $t('supplyChain.panels.bidEvaluationMatrix') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.bidEvaluationMatrix') }}</span>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: center; font-size: 13px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="text-secondary">{{ $t('supplyChain.sourcing.commercialWeight') }}:</span>
+              <span class="badge blue font-mono">{{ Math.round(weightCommercial * 100) }}%</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="text-secondary">{{ $t('supplyChain.sourcing.technicalWeight') }}:</span>
+              <span class="badge yellow font-mono">{{ Math.round(weightTechnical * 100) }}%</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="text-secondary">{{ $t('supplyChain.sourcing.leadTimeWeight') }}:</span>
+              <span class="badge green font-mono">{{ Math.round(weightLeadTime * 100) }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ $t('supplyChain.sourcing.rank') }}</th>
+                <th>Supplier / Quote ID</th>
+                <th>Total Quote Amount</th>
+                <th>{{ $t('supplyChain.sourcing.commercialScore') }}</th>
+                <th>{{ $t('supplyChain.sourcing.technicalScore') }}</th>
+                <th>{{ $t('supplyChain.sourcing.speedScore') }}</th>
+                <th>{{ $t('supplyChain.sourcing.compositeScore') }}</th>
+                <th>{{ $t('supplyChain.cols.status') }}</th>
+                <th>Decision Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in computedBidMatrix"
+                :key="entry.quotationId"
+                :class="{ 'highlight-row': entry.rank === 1 }"
+              >
+                <td>
+                  <span
+                    class="badge"
+                    :class="entry.rank === 1 ? 'green' : 'gray'"
+                    style="font-size: 13px; font-weight: bold;"
+                  >
+                    #{{ entry.rank }}
+                  </span>
+                </td>
+                <td>
+                  <div class="cell-primary font-bold">{{ entry.vendorName }}</div>
+                  <div class="cell-subtext font-mono">{{ entry.quotationId }} &bull; {{ entry.averageLeadTimeDays }} days lead time</div>
+                </td>
+                <td class="font-mono font-bold" :class="entry.rank === 1 ? 'text-green' : ''">
+                  {{ formatCurrency(entry.totalQuoteAmount) }}
+                </td>
+                <td class="font-mono">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 50px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                      <div :style="{ width: `${entry.commercialScore}%`, height: '100%', background: '#3b82f6' }"></div>
+                    </div>
+                    <span>{{ entry.commercialScore.toFixed(1) }}</span>
+                  </div>
+                </td>
+                <td class="font-mono">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 50px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                      <div :style="{ width: `${entry.technicalScore}%`, height: '100%', background: '#f59e0b' }"></div>
+                    </div>
+                    <span>{{ entry.technicalScore.toFixed(1) }}</span>
+                  </div>
+                </td>
+                <td class="font-mono">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 50px; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                      <div :style="{ width: `${entry.leadTimeScore}%`, height: '100%', background: '#10b981' }"></div>
+                    </div>
+                    <span>{{ entry.leadTimeScore.toFixed(1) }}</span>
+                  </div>
+                </td>
+                <td class="font-mono font-bold text-accent" style="font-size: 15px;">
+                  {{ entry.compositeScore.toFixed(2) }}
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="{
+                      green: entry.status === 'AWARDED',
+                      gray: entry.status === 'REJECTED',
+                      blue: entry.status === 'SUBMITTED' || entry.status === 'UNDER_REVIEW'
+                    }"
+                  >
+                    {{ entry.status }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    v-if="entry.status !== 'AWARDED' && activeRfq?.status !== 'AWARDED'"
+                    class="action-btn-sm primary"
+                    @click="executeAwardBid(entry.quotationId)"
+                  >
+                    <CheckCircle2 class="btn-icon-sm" />
+                    <span>{{ $t('supplyChain.buttons.awardBidGeneratePo') }}</span>
+                  </button>
+                  <span v-else-if="entry.status === 'AWARDED'" class="badge green">
+                    {{ $t('supplyChain.badges.awarded') }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Supplier Lifecycle & Performance Scorecards -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>{{ $t('supplyChain.panels.vendorScorecards') }}</h3>
+            <span class="panel-sub">{{ $t('supplyChain.panelSubs.vendorScorecards') }}</span>
+          </div>
+          <span class="badge blue">
+            {{ $t('supplyChain.badges.preferredPartner') }}
+          </span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Supplier Partner</th>
+                <th>Total Shipments</th>
+                <th>{{ $t('supplyChain.sourcing.otifRate') }}</th>
+                <th>{{ $t('supplyChain.sourcing.qualityRate') }}</th>
+                <th>{{ $t('supplyChain.sourcing.ppmDefects') }}</th>
+                <th>{{ $t('supplyChain.sourcing.priceIndex') }}</th>
+                <th>Overall Score</th>
+                <th>Rating Tier</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="sc in sourcingScorecards" :key="sc.vendorId">
+                <td>
+                  <div class="cell-primary font-bold">{{ sc.vendorName }}</div>
+                  <div class="cell-subtext font-mono">{{ sc.vendorId }} &bull; Audited: {{ sc.evaluationDate }}</div>
+                </td>
+                <td class="font-mono">{{ sc.metrics.totalShipments }} orders</td>
+                <td class="font-mono text-green">{{ sc.metrics.otifPercentage }}%</td>
+                <td class="font-mono text-green">{{ sc.metrics.qualityAcceptanceRate }}%</td>
+                <td class="font-mono text-accent">{{ sc.metrics.ppmDefectRate }} PPM</td>
+                <td class="font-mono">{{ sc.metrics.priceCompetitivenessScore }}</td>
+                <td class="font-mono font-bold text-accent" style="font-size: 15px;">{{ sc.overallScore }}%</td>
+                <td>
+                  <span
+                    class="badge"
+                    :class="{
+                      green: sc.tier === 'GRADE_A_PLUS',
+                      blue: sc.tier === 'GRADE_A',
+                      yellow: sc.tier === 'GRADE_B',
+                      red: sc.tier === 'GRADE_C'
+                    }"
+                  >
+                    {{
+                      sc.tier === 'GRADE_A_PLUS' ? $t('supplyChain.badges.tierAPlus') :
+                      sc.tier === 'GRADE_A' ? $t('supplyChain.badges.tierA') :
+                      sc.tier === 'GRADE_B' ? $t('supplyChain.badges.tierB') :
+                      $t('supplyChain.badges.tierC')
+                    }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2630,11 +2933,12 @@ import {
   Globe,
   Plus,
   Ship,
+  Gavel,
 } from 'lucide-vue-next';
 
 const { t, formatCurrency, formatNumber, currencySymbol, currencyConfig } = useI18n();
 
-const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation' | 'customs'>('inventory');
+const activeTab = ref<'inventory' | 'o2c' | 'p2p' | 'subledger' | 'mfg' | 'assets' | 'quality' | 'controlling' | 'maintenance' | 'treasury' | 'hcm' | 'projects' | 'warehouse' | 'multicurrency' | 'transportation' | 'customs' | 'sourcing'>('inventory');
 
 // Materials Master State
 const materials = ref([
@@ -4367,6 +4671,333 @@ function registerNewShippingBill() {
     shippingStatus: 'LEO_GRANTED',
   };
   shippingBillsList.value.unshift(newSb);
+}
+
+// ==========================================
+// TAB 17: Strategic Sourcing & RFQ Engine (SRM)
+// ==========================================
+const weightCommercial = ref(0.5);
+const weightTechnical = ref(0.3);
+const weightLeadTime = ref(0.2);
+const sourcingAwardSuccessNotice = ref('');
+
+interface SourcingRfqItem {
+  itemId: string;
+  sku: string;
+  description: string;
+  targetQuantity: number;
+  unitOfMeasure: string;
+  targetUnitPrice: number;
+  requiredDeliveryDate: string;
+  hsnCode?: string;
+}
+
+interface SourcingRfq {
+  tenantId: string;
+  rfqNumber: string;
+  title: string;
+  category: string;
+  status: 'DRAFT' | 'ISSUED' | 'QUOTES_RECEIVED' | 'EVALUATED' | 'AWARDED' | 'CANCELLED';
+  issueDate: string;
+  bidClosingDate: string;
+  deliveryPlant: string;
+  currency: string;
+  items: SourcingRfqItem[];
+  invitedVendorIds: string[];
+  createdBy: string;
+}
+
+interface SourcingQuotationItem {
+  sku: string;
+  offeredQuantity: number;
+  quotedUnitPrice: number;
+  leadTimeDays: number;
+  itemTotalAmount: number;
+}
+
+interface SourcingQuotation {
+  quotationId: string;
+  rfqNumber: string;
+  vendorId: string;
+  vendorName: string;
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'AWARDED' | 'REJECTED';
+  submissionDate: string;
+  paymentTermsDays: number;
+  warrantyMonths: number;
+  technicalComplianceScore: number;
+  items: SourcingQuotationItem[];
+  totalQuoteAmount: number;
+  averageLeadTimeDays: number;
+  notes?: string;
+}
+
+const rfqsList = ref<SourcingRfq[]>([
+  {
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    rfqNumber: 'RFQ-2026-081',
+    title: 'Precision Titanium Alloy CNC Castings & Fasteners',
+    category: 'DIRECT_MATERIALS',
+    status: 'QUOTES_RECEIVED',
+    issueDate: '2026-09-15',
+    bidClosingDate: '2026-10-15',
+    deliveryPlant: 'PLANT-1000',
+    currency: 'INR',
+    items: [
+      {
+        itemId: 'item-1',
+        sku: 'RAW-TI-001',
+        description: 'Aerospace Grade Titanium Round Bar 6Al-4V',
+        targetQuantity: 2500,
+        unitOfMeasure: 'KG',
+        targetUnitPrice: 1650,
+        requiredDeliveryDate: '2026-11-15',
+        hsnCode: '81089010',
+      },
+      {
+        itemId: 'item-2',
+        sku: 'COMP-FAST-44',
+        description: 'Titanium Grade 5 Hex Machine Bolts M8x40',
+        targetQuantity: 10000,
+        unitOfMeasure: 'PCS',
+        targetUnitPrice: 45,
+        requiredDeliveryDate: '2026-11-15',
+        hsnCode: '73181500',
+      },
+    ],
+    invitedVendorIds: ['VEND-001', 'VEND-002', 'VEND-003'],
+    createdBy: 'SOURCING_DIRECTOR',
+  },
+]);
+
+const activeRfq = ref<SourcingRfq>(rfqsList.value[0]);
+
+const activeRfqQuotations = ref<SourcingQuotation[]>([
+  {
+    quotationId: 'QUO-V1-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-001',
+    vendorName: 'Tata Advanced Materials Ltd',
+    status: 'SUBMITTED',
+    submissionDate: '2026-09-22',
+    paymentTermsDays: 45,
+    warrantyMonths: 24,
+    technicalComplianceScore: 96,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1600, leadTimeDays: 14, itemTotalAmount: 4000000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 45, leadTimeDays: 14, itemTotalAmount: 450000 },
+    ],
+    totalQuoteAmount: 4450000,
+    averageLeadTimeDays: 14,
+    notes: 'AS9100D certified aerospace forging with ultrasonic test reports.',
+  },
+  {
+    quotationId: 'QUO-V2-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-002',
+    vendorName: 'Bharat Forge Aerospace Division',
+    status: 'SUBMITTED',
+    submissionDate: '2026-09-24',
+    paymentTermsDays: 30,
+    warrantyMonths: 18,
+    technicalComplianceScore: 92,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1520, leadTimeDays: 21, itemTotalAmount: 3800000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 40, leadTimeDays: 21, itemTotalAmount: 400000 },
+    ],
+    totalQuoteAmount: 4200000,
+    averageLeadTimeDays: 21,
+    notes: 'Lowest cost producer with ISO 17025 accredited laboratory.',
+  },
+  {
+    quotationId: 'QUO-V3-081',
+    rfqNumber: 'RFQ-2026-081',
+    vendorId: 'VEND-003',
+    vendorName: 'Precision Fasteners & Alloys Ltd',
+    status: 'SUBMITTED',
+    submissionDate: '2026-09-26',
+    paymentTermsDays: 30,
+    warrantyMonths: 12,
+    technicalComplianceScore: 84,
+    items: [
+      { sku: 'RAW-TI-001', offeredQuantity: 2500, quotedUnitPrice: 1680, leadTimeDays: 28, itemTotalAmount: 4200000 },
+      { sku: 'COMP-FAST-44', offeredQuantity: 10000, quotedUnitPrice: 45, leadTimeDays: 28, itemTotalAmount: 450000 },
+    ],
+    totalQuoteAmount: 4650000,
+    averageLeadTimeDays: 28,
+    notes: 'Standard commercial quotation without custom tooling charges.',
+  },
+]);
+
+const sourcingScorecards = ref([
+  {
+    vendorId: 'VEND-001',
+    vendorName: 'Tata Advanced Materials Ltd',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 48,
+      otifPercentage: 97.92,
+      qualityAcceptanceRate: 99.45,
+      ppmDefectRate: 550,
+      priceCompetitivenessScore: 94.5,
+    },
+    overallScore: 97.85,
+    tier: 'GRADE_A_PLUS',
+    isPreferredSupplier: true,
+  },
+  {
+    vendorId: 'VEND-002',
+    vendorName: 'Bharat Forge Aerospace Division',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 36,
+      otifPercentage: 91.67,
+      qualityAcceptanceRate: 96.8,
+      ppmDefectRate: 3200,
+      priceCompetitivenessScore: 100,
+    },
+    overallScore: 95.39,
+    tier: 'GRADE_A_PLUS',
+    isPreferredSupplier: true,
+  },
+  {
+    vendorId: 'VEND-003',
+    vendorName: 'Precision Fasteners & Alloys Ltd',
+    evaluationDate: '2026-10-01',
+    metrics: {
+      totalShipments: 24,
+      otifPercentage: 79.17,
+      qualityAcceptanceRate: 91.25,
+      ppmDefectRate: 8750,
+      priceCompetitivenessScore: 88.2,
+    },
+    overallScore: 85.81,
+    tier: 'GRADE_A',
+    isPreferredSupplier: true,
+  },
+]);
+
+const sourcingSavingsAmount = computed(() => {
+  if (!activeRfq.value) return 250000;
+  const targetTotal = activeRfq.value.items.reduce((s, i) => s + (i.targetQuantity * i.targetUnitPrice), 0);
+  const minQuote = Math.min(...activeRfqQuotations.value.map((q) => q.totalQuoteAmount));
+  return Math.max(0, targetTotal - minQuote);
+});
+
+const computedBidMatrix = computed(() => {
+  if (activeRfqQuotations.value.length === 0) return [];
+  const minPrice = Math.min(...activeRfqQuotations.value.map((q) => q.totalQuoteAmount));
+  const minLeadTime = Math.min(...activeRfqQuotations.value.map((q) => q.averageLeadTimeDays));
+
+  const scored = activeRfqQuotations.value.map((q) => {
+    const commercialScore = (minPrice / q.totalQuoteAmount) * 100;
+    const leadTimeScore = (minLeadTime / q.averageLeadTimeDays) * 100;
+    const technicalScore = q.technicalComplianceScore;
+
+    const compositeScore =
+      commercialScore * weightCommercial.value +
+      technicalScore * weightTechnical.value +
+      leadTimeScore * weightLeadTime.value;
+
+    return {
+      quotationId: q.quotationId,
+      vendorId: q.vendorId,
+      vendorName: q.vendorName,
+      totalQuoteAmount: q.totalQuoteAmount,
+      averageLeadTimeDays: q.averageLeadTimeDays,
+      status: q.status,
+      commercialScore,
+      technicalScore,
+      leadTimeScore,
+      compositeScore,
+      rank: 1,
+    };
+  });
+
+  scored.sort((a, b) => b.compositeScore - a.compositeScore);
+  scored.forEach((entry, idx) => {
+    entry.rank = idx + 1;
+  });
+
+  return scored;
+});
+
+function selectRfq(rfq: SourcingRfq) {
+  activeRfq.value = rfq;
+  sourcingAwardSuccessNotice.value = '';
+}
+
+function createQuickDemoRfq() {
+  const nextNum = rfqsList.value.length + 82;
+  const newRfqObj: SourcingRfq = {
+    tenantId: '00000000-0000-0000-0000-000000000001',
+    rfqNumber: `RFQ-2026-0${nextNum}`,
+    title: 'High-Temperature Ceramic Matrix Composite Liners',
+    category: 'DIRECT_MATERIALS',
+    status: 'ISSUED',
+    issueDate: new Date().toISOString().split('T')[0],
+    bidClosingDate: new Date(Date.now() + 21 * 86400000).toISOString().split('T')[0],
+    deliveryPlant: 'PLANT-1000',
+    currency: 'INR',
+    items: [
+      {
+        itemId: 'item-1',
+        sku: 'RAW-CMC-09',
+        description: 'Silicon Carbide Ceramic Composite Matrix 250mm',
+        targetQuantity: 500,
+        unitOfMeasure: 'PCS',
+        targetUnitPrice: 8500,
+        requiredDeliveryDate: '2026-12-01',
+      },
+    ],
+    invitedVendorIds: ['VEND-001', 'VEND-002'],
+    createdBy: 'SOURCING_DIRECTOR',
+  };
+  rfqsList.value.unshift(newRfqObj);
+  selectRfq(newRfqObj);
+}
+
+async function executeAwardBid(quotationId: string) {
+  const quote = activeRfqQuotations.value.find((q) => q.quotationId === quotationId);
+  if (!quote) return;
+
+  const rfqNum = activeRfq.value.rfqNumber;
+  const generatedPoNumber = `PO-2026-${String(Math.floor(1000 + Math.random() * 9000))}`;
+
+  try {
+    const res = await fetch(`/api/v1/sourcing/rfqs/${rfqNum}/award`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quotationId, poPrefix: 'PO-2026' }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      activeRfq.value.status = 'AWARDED';
+      quote.status = 'AWARDED';
+      activeRfqQuotations.value.forEach((q) => {
+        if (q.quotationId !== quotationId) q.status = 'REJECTED';
+      });
+      sourcingAwardSuccessNotice.value = t('supplyChain.sourcing.awardedNotice', {
+        rfqNumber: rfqNum,
+        vendor: quote.vendorName,
+        poNumber: data.generatedPo?.poNumber || generatedPoNumber,
+      });
+      return;
+    }
+  } catch {
+    // fallback
+  }
+
+  // Client-side fallback
+  activeRfq.value.status = 'AWARDED';
+  quote.status = 'AWARDED';
+  activeRfqQuotations.value.forEach((q) => {
+    if (q.quotationId !== quotationId) q.status = 'REJECTED';
+  });
+  sourcingAwardSuccessNotice.value = t('supplyChain.sourcing.awardedNotice', {
+    rfqNumber: rfqNum,
+    vendor: quote.vendorName,
+    poNumber: generatedPoNumber,
+  });
 }
 </script>
 

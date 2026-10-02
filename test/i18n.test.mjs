@@ -70,7 +70,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
       validateKeys(messages['en-IN'], messages['en-US'], 'root');
     });
 
-    test('verifies all 16 ERP cockpit submodules are localized in SupplyChain', () => {
+    test('verifies all 17 ERP cockpit submodules are localized in SupplyChain', () => {
       const requiredTabs = [
         'inventory',
         'o2c',
@@ -88,6 +88,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         'multicurrency',
         'transportation',
         'customs',
+        'sourcing',
       ];
 
       for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
