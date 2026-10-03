@@ -47,6 +47,113 @@ inMemoryRecords.set(sampleAssetEntity.slug, [
     operationalStatus: 'MAINTENANCE',
     locationSite: 'Plant 1 - Peenya, Bengaluru, Karnataka',
   },
+  {
+    id: 'asset-003',
+    assetTag: 'SMT-NOI-0081',
+    description: 'High-Speed SMT Pick & Place Assembly Line',
+    purchaseCost: 11500000,
+    warrantyExpiry: '2029-03-31',
+    operationalStatus: 'ACTIVE',
+    locationSite: 'Plant 3 - Sector 62, Noida, Uttar Pradesh',
+  },
+]);
+
+// 2. Seed: Fleet Logistics & Commercial Vehicles (SAP TM / Fleet parity)
+export const sampleFleetEntity: EntitySchemaDefinition = {
+  name: 'Fleet Logistics & Commercial Vehicles',
+  slug: 'fleet_vehicles',
+  description: 'Heavy commercial vehicle fleet, telemetry, and payload management',
+  icon: 'truck',
+  fields: [
+    { name: 'vehicleRegNumber', label: 'Registration Plate Number', type: 'text', required: true },
+    { name: 'vehicleType', label: 'Commercial Vehicle Class', type: 'select', options: ['Heavy Hauler (24T)', 'Rigid Truck (16T)', 'Medium Commercial (9T)', 'Electric Cargo Van (3.5T)'], required: true },
+    { name: 'odometerKm', label: 'Current Odometer (km)', type: 'number', required: true, min: 0 },
+    { name: 'fuelType', label: 'Propulsion / Fuel Type', type: 'select', options: ['DIESEL', 'CNG', 'EV_BATTERY', 'LNG'], required: true },
+    { name: 'assignedDriver', label: 'Primary Assigned Driver', type: 'text', required: true },
+    { name: 'activeTransit', label: 'Dispatched in Active Transit', type: 'boolean', required: true },
+  ],
+};
+
+inMemoryEntities.set(sampleFleetEntity.slug, sampleFleetEntity);
+inMemoryRecords.set(sampleFleetEntity.slug, [
+  {
+    id: 'fleet-001',
+    vehicleRegNumber: 'MH-12-RN-4821',
+    vehicleType: 'Heavy Hauler (24T)',
+    odometerKm: 148500,
+    fuelType: 'DIESEL',
+    assignedDriver: 'Harpreet Singh (DL-99401)',
+    activeTransit: true,
+  },
+  {
+    id: 'fleet-002',
+    vehicleRegNumber: 'KA-01-MJ-9022',
+    vehicleType: 'Electric Cargo Van (3.5T)',
+    odometerKm: 32100,
+    fuelType: 'EV_BATTERY',
+    assignedDriver: 'Manoj Kumar (DL-88312)',
+    activeTransit: false,
+  },
+  {
+    id: 'fleet-003',
+    vehicleRegNumber: 'DL-04-AB-6710',
+    vehicleType: 'Rigid Truck (16T)',
+    odometerKm: 89400,
+    fuelType: 'CNG',
+    assignedDriver: 'Sanjay Rawat (DL-77219)',
+    activeTransit: true,
+  },
+]);
+
+// 3. Seed: Enterprise IT Infrastructure & Assets (ITIL / ITAM parity)
+export const sampleITEntity: EntitySchemaDefinition = {
+  name: 'Enterprise IT Infrastructure & Assets',
+  slug: 'it_hardware_assets',
+  description: 'Datacenter servers, cloud edge nodes, and developer workstations',
+  icon: 'hard-drive',
+  fields: [
+    { name: 'assetCode', label: 'Hardware Asset Tag', type: 'text', required: true },
+    { name: 'deviceType', label: 'Hardware Category', type: 'select', options: ['Rack Server', 'SAN Storage Array', 'Core Switch', 'Developer Laptop', 'Edge Gateway'], required: true },
+    { name: 'hostname', label: 'FQDN / Hostname', type: 'text', required: true },
+    { name: 'ipAddress', label: 'Static IP Address', type: 'text', required: true },
+    { name: 'operatingSystem', label: 'Operating System', type: 'select', options: ['RHEL Enterprise Linux 9', 'Ubuntu Server 24.04', 'Windows Server 2022', 'macOS Sonoma'], required: true },
+    { name: 'procurementCost', label: 'Procurement Cost', type: 'currency', required: true, min: 100 },
+    { name: 'isProduction', label: 'Production Tier Workload', type: 'boolean', required: true },
+  ],
+};
+
+inMemoryEntities.set(sampleITEntity.slug, sampleITEntity);
+inMemoryRecords.set(sampleITEntity.slug, [
+  {
+    id: 'it-001',
+    assetCode: 'SRV-BLR-01',
+    deviceType: 'Rack Server',
+    hostname: 'blr-dc-core01.sutra.internal',
+    ipAddress: '10.200.10.15',
+    operatingSystem: 'RHEL Enterprise Linux 9',
+    procurementCost: 650000,
+    isProduction: true,
+  },
+  {
+    id: 'it-002',
+    assetCode: 'SAN-PUN-02',
+    deviceType: 'SAN Storage Array',
+    hostname: 'pun-san-flash02.sutra.internal',
+    ipAddress: '10.200.20.50',
+    operatingSystem: 'Ubuntu Server 24.04',
+    procurementCost: 1450000,
+    isProduction: true,
+  },
+  {
+    id: 'it-003',
+    assetCode: 'DEV-MUM-89',
+    deviceType: 'Developer Laptop',
+    hostname: 'mum-eng-macbook-89.sutra.internal',
+    ipAddress: '10.100.4.120',
+    operatingSystem: 'macOS Sonoma',
+    procurementCost: 240000,
+    isProduction: false,
+  },
 ]);
 
 // Seed sample chart of accounts balance for instant analytics

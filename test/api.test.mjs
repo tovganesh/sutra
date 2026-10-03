@@ -966,5 +966,141 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.equal(customRole.permissions.length, 3);
     });
   });
+
+  describe('12. No-Code Dynamic Entity & Schema Studio', () => {
+    test('retrieves pre-seeded enterprise schemas via GET /api/v1/nocode/schemas', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/nocode/schemas`);
+      assert.equal(res.status, 200);
+      const schemas = await res.json();
+      assert.ok(Array.isArray(schemas));
+      assert.ok(schemas.length >= 3);
+
+      const plant = schemas.find((s) => s.slug === 'plant_machinery');
+      const fleet = schemas.find((s) => s.slug === 'fleet_vehicles');
+      const it = schemas.find((s) => s.slug === 'it_hardware_assets');
+
+      assert.ok(plant);
+      assert.ok(fleet);
+      assert.ok(it);
+      assert.equal(fleet.fields.some((f) => f.name === 'vehicleRegNumber'), true);
+      assert.equal(it.fields.some((f) => f.name === 'operatingSystem'), true);
+    });
+
+    test('retrieves individual schema by slug via GET /api/v1/nocode/schemas/:slug', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/nocode/schemas/fleet_vehicles`);
+      assert.equal(res.status, 200);
+      const schema = await res.json();
+      assert.equal(schema.slug, 'fleet_vehicles');
+      assert.equal(schema.name, 'Fleet Logistics & Commercial Vehicles');
+    });
+
+    test('creates a custom business entity via POST /api/v1/nocode/schemas', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/nocode/schemas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Solar Inverter Farm',
+          slug: 'solar_inverters',
+          description: 'Photovoltaic solar generation telemetry and inverter capacity',
+          icon: 'cpu',
+          fields: [
+            { name: 'inverterTag', label: 'Inverter Serial Tag', type: 'text', required: true },
+            { name: 'ratedCapacityKw', label: 'Rated Capacity (kW)', type: 'number', required: true, min: 1 },
+            { name: 'gridConnected', label: 'Grid Feed Active', type: 'boolean', required: true },
+            { name: 'coolingType', label: 'Cooling System', type: 'select', options: ['AIR_FORCED', 'LIQUID_COOLED'], required: true },
+          ],
+        }),
+      });
+      assert.equal(res.status, 201);
+      const created = await res.json();
+      assert.equal(created.schema.slug, 'solar_inverters');
+      assert.equal(created.schema.fields.length, 4);
+    });
+
+    test('appends a new custom field to an existing schema via POST /api/v1/nocode/schemas/:slug/fields', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/nocode/schemas/solar_inverters/fields`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'warrantyYears',
+          label: 'Warranty Period (Years)',
+          type: 'number',
+          required: false,
+          min: 1,
+          max: 25,
+        }),
+      });
+      assert.equal(res.status, 201);
+      const updated = await res.json();
+      assert.equal(updated.field.name, 'warrantyYears');
+      assert.equal(updated.schema.fields.length, 5);
+    });
+
+    test('records CRUD lifecycle: creates, updates, and deletes record in dynamic entity', async () => {
+      // 1. Create Record
+      const createRes = await fetch(`${baseUrl}/api/v1/nocode/records/solar_inverters`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inverterTag: 'SOL-RAJ-INV-01',
+          ratedCapacityKw: 250,
+          gridConnected: true,
+          coolingType: 'LIQUID_COOLED',
+          warrantyYears: 10,
+        }),
+      });
+      assert.equal(createRes.status, 201);
+      const created = await createRes.json();
+      assert.ok(created.record.id);
+      assert.equal(created.record.inverterTag, 'SOL-RAJ-INV-01');
+      const recId = created.record.id;
+
+      // 2. Read Records
+      const getRes = await fetch(`${baseUrl}/api/v1/nocode/records/solar_inverters`);
+      assert.equal(getRes.status, 200);
+      const getList = await getRes.json();
+      assert.equal(getList.count, 1);
+      assert.equal(getList.records[0].id, recId);
+
+      // 3. Update Record
+      const updateRes = await fetch(`${baseUrl}/api/v1/nocode/records/solar_inverters/${recId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inverterTag: 'SOL-RAJ-INV-01-UPGRADED',
+          ratedCapacityKw: 300,
+          gridConnected: true,
+          coolingType: 'LIQUID_COOLED',
+          warrantyYears: 15,
+        }),
+      });
+      assert.equal(updateRes.status, 200);
+      const updated = await updateRes.json();
+      assert.equal(updated.record.inverterTag, 'SOL-RAJ-INV-01-UPGRADED');
+      assert.equal(updated.record.ratedCapacityKw, 300);
+
+      // 4. Delete Record
+      const delRes = await fetch(`${baseUrl}/api/v1/nocode/records/solar_inverters/${recId}`, {
+        method: 'DELETE',
+      });
+      assert.equal(delRes.status, 200);
+
+      // Verify deletion
+      const checkRes = await fetch(`${baseUrl}/api/v1/nocode/records/solar_inverters`);
+      const checkList = await checkRes.json();
+      assert.equal(checkList.count, 0);
+    });
+
+    test('deletes dynamic entity schema and records via DELETE /api/v1/nocode/schemas/:slug', async () => {
+      const delRes = await fetch(`${baseUrl}/api/v1/nocode/schemas/solar_inverters`, {
+        method: 'DELETE',
+      });
+      assert.equal(delRes.status, 200);
+
+      const checkRes = await fetch(`${baseUrl}/api/v1/nocode/schemas/solar_inverters`);
+      assert.equal(checkRes.status, 404);
+    });
+  });
 });
+
 

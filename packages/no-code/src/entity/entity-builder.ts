@@ -91,6 +91,12 @@ export class EntityValidator {
           }
           break;
 
+        case 'date':
+          if (typeof val !== 'string' || isNaN(Date.parse(val))) {
+            issues.push({ field: field.name, message: `${field.label} must be a valid date (YYYY-MM-DD).` });
+          }
+          break;
+
         case 'select':
           if (field.options && !field.options.includes(String(val))) {
             issues.push({
@@ -116,4 +122,48 @@ export class EntityValidator {
       issues,
     };
   }
+
+  /**
+   * Validates a schema definition for structural integrity and slug safety.
+   */
+  public static validateSchema(schema: EntitySchemaDefinition): { valid: boolean; issues: ValidationIssue[] } {
+    const issues: ValidationIssue[] = [];
+
+    if (!schema.name || typeof schema.name !== 'string' || schema.name.trim().length === 0) {
+      issues.push({ field: 'name', message: 'Entity name is required.' });
+    }
+
+    if (!schema.slug || typeof schema.slug !== 'string' || !/^[a-z0-9_-]+$/.test(schema.slug)) {
+      issues.push({ field: 'slug', message: 'Entity slug must only contain lowercase alphanumeric characters, dashes, and underscores.' });
+    }
+
+    if (!schema.fields || !Array.isArray(schema.fields) || schema.fields.length === 0) {
+      issues.push({ field: 'fields', message: 'Entity must contain at least one field definition.' });
+    } else {
+      const seenNames = new Set<string>();
+      for (const field of schema.fields) {
+        if (!field.name || typeof field.name !== 'string' || !/^[a-zA-Z0-9_]+$/.test(field.name)) {
+          issues.push({ field: 'fields', message: `Invalid field key '${field.name}'. Must be alphanumeric.` });
+        } else if (seenNames.has(field.name)) {
+          issues.push({ field: 'fields', message: `Duplicate field key '${field.name}' found in schema.` });
+        } else {
+          seenNames.add(field.name);
+        }
+
+        if (!field.label || typeof field.label !== 'string') {
+          issues.push({ field: 'fields', message: `Field '${field.name}' requires a human-readable label.` });
+        }
+
+        if (field.type === 'select' && (!field.options || field.options.length === 0)) {
+          issues.push({ field: 'fields', message: `Select field '${field.name}' must have at least one option.` });
+        }
+      }
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues,
+    };
+  }
 }
+
