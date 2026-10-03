@@ -1096,5 +1096,55 @@ export interface LocaleMessage {
       rawJson: string;
       hideJson: string;
     };
+    tabs: {
+      session: string;
+      users: string;
+      roles: string;
+      sso: string;
+    };
+    users: {
+      title: string;
+      subtitle: string;
+      provisionUserBtn: string;
+      colUser: string;
+      colDepartment: string;
+      colRoles: string;
+      colStatus: string;
+      colLastLogin: string;
+      colActions: string;
+      active: string;
+      inactive: string;
+      activate: string;
+      deactivate: string;
+      resetPassword: string;
+      modalTitle: string;
+      nameLabel: string;
+      tempPasswordLabel: string;
+      departmentLabel: string;
+      rolesLabel: string;
+      saveUserBtn: string;
+    };
+    roles: {
+      title: string;
+      subtitle: string;
+      createRoleBtn: string;
+      systemBadge: string;
+      customBadge: string;
+      permissionsGranted: string;
+      modalTitle: string;
+      roleIdLabel: string;
+      roleNameLabel: string;
+      roleDescLabel: string;
+      saveRoleBtn: string;
+    };
+    personas: {
+      quickSwitch: string;
+      admin: string;
+      finance: string;
+      scm: string;
+      auditor: string;
+      sales: string;
+      hr: string;
+    };
   };
 }

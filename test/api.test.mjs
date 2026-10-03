@@ -789,4 +789,182 @@ describe('Sutra Backend Architecture & API Suite', () => {
       }
     });
   });
+
+  describe('11. Identity & Access Management (IAM / SAP GRC Parity)', () => {
+    test('authenticates pre-seeded enterprise persona via POST /api/v1/auth/login', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'finance.lead@sutra.local',
+          password: 'finance123',
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.tokens);
+      assert.ok(data.tokens.accessToken);
+      assert.equal(data.user.email, 'finance.lead@sutra.local');
+      assert.equal(data.user.fullName, 'Anita Desai (VP Finance & Controller)');
+      assert.ok(data.user.roles.includes('FinanceOfficer'));
+      assert.ok(data.user.permissions.includes('ledger:post'));
+    });
+
+    test('rejects login with invalid credentials', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'finance.lead@sutra.local',
+          password: 'wrongpassword',
+        }),
+      });
+      assert.equal(res.status, 401);
+    });
+
+    test('lists enterprise users and returns permissions via GET /api/v1/auth/users', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/auth/users`);
+      assert.equal(res.status, 200);
+      const users = await res.json();
+      assert.ok(Array.isArray(users));
+      assert.ok(users.length >= 6);
+
+      const admin = users.find((u) => u.email === 'admin@sutra.local');
+      assert.ok(admin);
+      assert.equal(admin.isSuperAdmin, true);
+      assert.ok(admin.permissions.includes('*'));
+    });
+
+    test('provisions a new corporate user via POST /api/v1/auth/users', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/auth/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'tax.officer@sutra.local',
+          fullName: 'Vikram Joshi',
+          department: 'Direct & Indirect Taxation',
+          password: 'taxpassword123',
+          roles: ['FinanceOfficer'],
+        }),
+      });
+      assert.equal(res.status, 201);
+      const created = await res.json();
+      assert.equal(created.email, 'tax.officer@sutra.local');
+      assert.equal(created.department, 'Direct & Indirect Taxation');
+      assert.ok(created.permissions.includes('tax:calculate'));
+
+      // Verify that newly created user can log in immediately
+      const loginRes = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'tax.officer@sutra.local',
+          password: 'taxpassword123',
+        }),
+      });
+      assert.equal(loginRes.status, 200);
+    });
+
+    test('deactivates and reactivates user status via PATCH /api/v1/auth/users/:id/status', async () => {
+      const usersRes = await fetch(`${baseUrl}/api/v1/auth/users`);
+      const users = await usersRes.json();
+      const taxUser = users.find((u) => u.email === 'tax.officer@sutra.local');
+      assert.ok(taxUser);
+
+      // Deactivate
+      const deactRes = await fetch(`${baseUrl}/api/v1/auth/users/${taxUser.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
+      });
+      assert.equal(deactRes.status, 200);
+      const deactUser = await deactRes.json();
+      assert.equal(deactUser.isActive, false);
+
+      // Verify login is blocked
+      const blockedLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'tax.officer@sutra.local',
+          password: 'taxpassword123',
+        }),
+      });
+      assert.equal(blockedLogin.status, 401);
+
+      // Reactivate
+      const reactRes = await fetch(`${baseUrl}/api/v1/auth/users/${taxUser.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      assert.equal(reactRes.status, 200);
+    });
+
+    test('resets user password via POST /api/v1/auth/users/:id/reset-password', async () => {
+      const usersRes = await fetch(`${baseUrl}/api/v1/auth/users`);
+      const users = await usersRes.json();
+      const taxUser = users.find((u) => u.email === 'tax.officer@sutra.local');
+      assert.ok(taxUser);
+
+      const resetRes = await fetch(`${baseUrl}/api/v1/auth/users/${taxUser.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: 'brandNewPassword999' }),
+      });
+      assert.equal(resetRes.status, 200);
+
+      // Verify old password fails
+      const oldLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'tax.officer@sutra.local',
+          password: 'taxpassword123',
+        }),
+      });
+      assert.equal(oldLogin.status, 401);
+
+      // Verify new password succeeds
+      const newLogin = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'tax.officer@sutra.local',
+          password: 'brandNewPassword999',
+        }),
+      });
+      assert.equal(newLogin.status, 200);
+    });
+
+    test('lists roles and permissions, and creates custom role', async () => {
+      const permsRes = await fetch(`${baseUrl}/api/v1/auth/permissions`);
+      assert.equal(permsRes.status, 200);
+      const perms = await permsRes.json();
+      assert.ok(perms.length >= 26);
+
+      const rolesRes = await fetch(`${baseUrl}/api/v1/auth/roles`);
+      assert.equal(rolesRes.status, 200);
+      const roles = await rolesRes.json();
+      assert.ok(roles.length >= 6);
+
+      // Create custom role
+      const createRoleRes = await fetch(`${baseUrl}/api/v1/auth/roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roleId: 'CustomTreasuryAnalyst',
+          name: 'Treasury Analyst',
+          description: 'Cash management and bank reconciliation specialist',
+          permissions: ['ledger:read', 'subledger:read', 'tax:calculate'],
+        }),
+      });
+      assert.equal(createRoleRes.status, 201);
+      const customRole = await createRoleRes.json();
+      assert.equal(customRole.roleId, 'CustomTreasuryAnalyst');
+      assert.equal(customRole.isSystemRole, false);
+      assert.equal(customRole.permissions.length, 3);
+    });
+  });
 });
+

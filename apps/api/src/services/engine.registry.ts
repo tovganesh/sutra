@@ -19,17 +19,22 @@ import {
   WarehouseEngine,
   MultiCurrencyEngine,
   TransportationEngine,
+  EnterpriseUserManager,
 } from '@sutra/core';
 import { LLMFactory, TextToERPAgent, InvoiceExtractorAgent } from '@sutra/ai-agent';
 
 // 1. Pluggable Enterprise Authentication System
 export const authRegistry = new AuthPluginRegistry();
 
-// 1.1 Built-in Local JWT Auth Provider (Default)
+// 1.0 Enterprise User & Role Manager (IAM Store)
+export const userManager = new EnterpriseUserManager();
+
+// 1.1 Built-in Local JWT Auth Provider (Default with Enterprise User Directory)
 export const jwtProvider = new LocalJwtAuthProvider({
   secretKey: process.env.JWT_SECRET || 'sutra-enterprise-super-secure-jwt-secret-replace-in-production',
   issuer: 'sutra-enterprise-os',
   tokenExpirationSeconds: 86400, // 24 hours
+  userLookupFn: (email, tenantId) => userManager.lookupUserForAuth(email, tenantId),
 });
 authRegistry.registerProvider(jwtProvider);
 authRegistry.setDefaultProvider('local-jwt');

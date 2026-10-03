@@ -8,6 +8,8 @@ export * from './auth/oidc-auth-provider.js';
 export * from './auth/saml-auth-provider.js';
 export * from './auth/auth-plugin-registry.js';
 export * from './auth/auth-middleware.js';
+export * from './auth/user-types.js';
+export * from './auth/user-manager.js';
 export * from './ledger/ledger-engine.js';
 export * from './ledger/subledger-engine.js';
 export * from './queue/valkey-queue.js';
