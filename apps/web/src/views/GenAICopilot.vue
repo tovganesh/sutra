@@ -24,6 +24,7 @@
               :disabled="isSwitchingProvider"
             >
               <option value="heuristic">{{ $t('copilot.providers.heuristic') }}</option>
+              <option value="sarvam">{{ $t('copilot.providers.sarvam') }}</option>
               <option value="local">{{ $t('copilot.providers.local') }}</option>
               <option value="openai">{{ $t('copilot.providers.openai') }}</option>
               <option value="gemini">{{ $t('copilot.providers.gemini') }}</option>
@@ -78,11 +79,35 @@
           <div class="form-group">
             <label>{{ $t('copilot.activeEngine') }}</label>
             <select v-model="configTargetProvider" class="input-control">
+              <option value="sarvam">{{ $t('copilot.providers.sarvam') }}</option>
               <option value="local">{{ $t('copilot.providers.local') }}</option>
               <option value="openai">{{ $t('copilot.providers.openai') }}</option>
               <option value="gemini">{{ $t('copilot.providers.gemini') }}</option>
               <option value="bedrock">{{ $t('copilot.providers.bedrock') }}</option>
             </select>
+          </div>
+
+          <!-- Sarvam AI options -->
+          <div v-if="configTargetProvider === 'sarvam'" class="provider-fields">
+            <div class="form-group">
+              <label>{{ $t('copilot.apiKeyLabel') }}</label>
+              <input
+                type="password"
+                v-model="configPayload.apiKey"
+                class="input-control"
+                placeholder="sarvam_api_key_..."
+              />
+              <span class="field-hint">Sarvam AI API Subscription Key</span>
+            </div>
+            <div class="form-group">
+              <label>{{ $t('copilot.endpointLabel') }}</label>
+              <input
+                type="text"
+                v-model="configPayload.endpoint"
+                class="input-control"
+                placeholder="https://api.sarvam.ai"
+              />
+            </div>
           </div>
 
           <!-- Ollama local options -->
@@ -565,6 +590,11 @@ const providerModels: Record<string, Array<{ id: string; label: string }>> = {
     { id: 'anthropic.claude-3-haiku-20240307-v1:0', label: 'Claude 3 Haiku (Bedrock)' },
     { id: 'amazon.titan-text-express-v1', label: 'Amazon Titan Express' },
     { id: 'meta.llama3-70b-instruct-v1:0', label: 'Meta LLaMA 3 70B' },
+  ],
+  sarvam: [
+    { id: 'sarvam-2b', label: 'Sarvam 2B (Indic Sovereign Foundation)' },
+    { id: 'sarvam-m', label: 'Sarvam M (Indic Enterprise)' },
+    { id: 'sarvam-translate', label: 'Sarvam Translate (Indic Translation)' },
   ],
   heuristic: [
     { id: 'sutra-rules-v1', label: 'Sutra Sovereign Rule Engine' },

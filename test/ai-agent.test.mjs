@@ -7,25 +7,27 @@ import {
   OpenAIProvider,
   GeminiProvider,
   BedrockProvider,
+  SarvamAIProvider,
   TextToERPAgent,
   InvoiceExtractorAgent,
 } from '../packages/ai-agent/dist/index.js';
 
 describe('Sutra Gen AI Copilot & Sovereign AI Agent Engine', () => {
   describe('1. LLM Registry & Multi-Provider Architecture', () => {
-    test('initializes with default provider and lists all registered providers including Bedrock', () => {
+    test('initializes with default provider and lists all registered providers including Sarvam AI and Bedrock', () => {
       const registry = new LLMRegistry();
       const active = registry.getActiveProvider();
       assert.ok(active);
       assert.equal(active.id, 'heuristic');
 
       const all = registry.listProviders();
-      assert.ok(all.length >= 5);
+      assert.ok(all.length >= 6);
       assert.ok(all.some((p) => p.id === 'heuristic'));
       assert.ok(all.some((p) => p.id === 'local'));
       assert.ok(all.some((p) => p.id === 'openai'));
       assert.ok(all.some((p) => p.id === 'gemini'));
       assert.ok(all.some((p) => p.id === 'bedrock'));
+      assert.ok(all.some((p) => p.id === 'sarvam'));
     });
 
     test('OllamaProvider supports Gemma 4, Phi 4, LLaMA 3.2, and lightweight Gemma 3 270M for local testing', () => {
@@ -73,6 +75,27 @@ describe('Sutra Gen AI Copilot & Sovereign AI Agent Engine', () => {
       assert.equal(bedrock.region, 'us-west-2');
     });
 
+    test('SarvamAIProvider supports Indic sovereign models (sarvam-2b, sarvam-m, sarvam-translate) and credentials', () => {
+      const sarvam = new SarvamAIProvider();
+      assert.equal(sarvam.id, 'sarvam');
+      assert.equal(sarvam.type, 'cloud');
+      assert.ok(sarvam.supportedModels.includes('sarvam-2b'));
+      assert.ok(sarvam.supportedModels.includes('sarvam-m'));
+      assert.ok(sarvam.supportedModels.includes('sarvam-translate'));
+
+      // Check unconfigured initially
+      sarvam.setApiKey('');
+      assert.equal(sarvam.isConfigured(), false);
+
+      // Configure key and model
+      sarvam.setApiKey('sarvam_sub_key_test_12345');
+      sarvam.setModel('sarvam-m');
+      sarvam.setEndpoint('https://api.sarvam.ai');
+      assert.equal(sarvam.isConfigured(), true);
+      assert.equal(sarvam.model, 'sarvam-m');
+      assert.equal(sarvam.endpoint, 'https://api.sarvam.ai');
+    });
+
     test('configures external models and local endpoints dynamically via registry', () => {
       const registry = new LLMRegistry();
 
@@ -102,6 +125,17 @@ describe('Sutra Gen AI Copilot & Sovereign AI Agent Engine', () => {
         model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
       });
       assert.equal(configuredBedrock, true);
+
+      // Configure Sarvam AI
+      const configuredSarvam = registry.configureProvider('sarvam', {
+        apiKey: 'sarvam_sub_secret_9988',
+        model: 'sarvam-2b',
+        endpoint: 'https://api.sarvam.ai',
+      });
+      assert.equal(configuredSarvam, true);
+      const sarvam = registry.getProvider('sarvam');
+      assert.equal(sarvam.model, 'sarvam-2b');
+      assert.equal(sarvam.isConfigured(), true);
 
       // Configure Local Ollama testing model
       const configuredLocal = registry.configureProvider('local', {

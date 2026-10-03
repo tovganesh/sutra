@@ -1020,6 +1020,7 @@ export interface LocaleMessage {
       openai: string;
       gemini: string;
       bedrock: string;
+      sarvam: string;
       heuristic: string;
     };
     results: {

@@ -406,7 +406,94 @@ export class BedrockProvider implements ILLMProvider {
 }
 
 /**
- * 5. Sutra Sovereign Heuristic Core Provider
+ * 5. Sarvam AI Sovereign Indic Foundation Provider
+ * India's foundational sovereign AI platform specialized in Indic languages
+ * (Hindi, Tamil, Telugu, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia).
+ * Supports sarvam-2b, sarvam-m, and sarvam-translate.
+ */
+export class SarvamAIProvider implements ILLMProvider {
+  public id = 'sarvam';
+  public name = 'Sarvam AI (Indic Sovereign)';
+  public type: 'cloud' = 'cloud';
+  public supportedModels: string[] = [
+    'sarvam-2b',
+    'sarvam-m',
+    'sarvam-translate',
+  ];
+
+  constructor(
+    private apiKey: string = process.env.SARVAM_API_KEY || '',
+    public model: string = 'sarvam-2b',
+    public endpoint: string = process.env.SARVAM_API_ENDPOINT || 'https://api.sarvam.ai'
+  ) {}
+
+  public setApiKey(apiKey: string): void {
+    this.apiKey = apiKey.trim();
+  }
+
+  public setModel(model: string): void {
+    this.model = model.trim();
+  }
+
+  public setEndpoint(endpoint: string): void {
+    this.endpoint = endpoint.trim();
+  }
+
+  public isConfigured(): boolean {
+    return Boolean(this.apiKey && this.apiKey.trim().length > 5);
+  }
+
+  public async isAvailable(): Promise<boolean> {
+    return this.isConfigured();
+  }
+
+  public async generateText(prompt: string, systemPrompt?: string): Promise<string> {
+    if (!this.isConfigured()) {
+      throw new Error('Sarvam AI API subscription key is missing. Configure via settings or set SARVAM_API_KEY environment variable.');
+    }
+
+    const messages: LLMMessage[] = [];
+    if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: 'user', content: prompt });
+
+    const url = `${this.endpoint.replace(/\/+$/, '')}/v1/chat/completions`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-subscription-key': this.apiKey,
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Sarvam AI request failed: ${res.statusText}`);
+    }
+
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+      response?: string;
+    };
+    return data.choices?.[0]?.message?.content || data.response || '';
+  }
+
+  public async generateJSON<T>(prompt: string, schemaDescription: string): Promise<T> {
+    const text = await this.generateText(
+      `${prompt}\n\nSchema:\n${schemaDescription}`,
+      'You are an enterprise Indic ERP assistant. Output ONLY valid JSON.'
+    );
+    const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(cleaned) as T;
+  }
+}
+
+/**
+ * 6. Sutra Sovereign Heuristic Core Provider
  * Zero-dependency, offline deterministic AI engine that provides intelligent
  * enterprise responses when air-gapped or when external GPUs are unconfigured.
  */
@@ -572,12 +659,18 @@ export class LLMRegistry {
       process.env.AWS_BEDROCK_MODEL || 'anthropic.claude-3-5-sonnet-20240620-v1:0',
       process.env.AWS_BEDROCK_API_KEY || ''
     );
+    const sarvam = new SarvamAIProvider(
+      process.env.SARVAM_API_KEY || '',
+      process.env.SARVAM_MODEL || 'sarvam-2b',
+      process.env.SARVAM_API_ENDPOINT || 'https://api.sarvam.ai'
+    );
 
     this.registerProvider(heuristic);
     this.registerProvider(ollama);
     this.registerProvider(openai);
     this.registerProvider(gemini);
     this.registerProvider(bedrock);
+    this.registerProvider(sarvam);
 
     this.activeProviderId = defaultProviderId;
   }
@@ -632,6 +725,9 @@ export class LLMRegistry {
         apiKey: config.apiKey,
         model: config.model,
       });
+    } else if (provider instanceof SarvamAIProvider) {
+      if (config.apiKey) provider.setApiKey(config.apiKey);
+      if (config.endpoint) provider.setEndpoint(config.endpoint);
     }
 
     return true;
@@ -652,7 +748,7 @@ export class LLMRegistry {
         supportedModels: p.supportedModels || [p.model],
       };
 
-      if (p instanceof OllamaProvider) {
+      if (p instanceof OllamaProvider || p instanceof SarvamAIProvider) {
         status.endpoint = p.endpoint;
       } else if (p instanceof BedrockProvider) {
         status.region = p.region;
