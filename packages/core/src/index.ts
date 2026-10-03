@@ -38,6 +38,8 @@ export * from './transportation/transportation-types.js';
 export * from './transportation/transportation-engine.js';
 export * from './sourcing/sourcing-types.js';
 export * from './sourcing/sourcing-engine.js';
+export * from './credit/credit-types.js';
+export * from './credit/credit-engine.js';
 export * from './common/http-status.js';
 export * from './common/constants.js';
 

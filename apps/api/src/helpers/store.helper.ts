@@ -226,6 +226,12 @@ import {
   VendorBidStatus,
   SystemDefaults,
   ConsolidationMethod,
+  CreditManagementEngine,
+  InvoiceRecord,
+  CustomerCreditProfile,
+  CreditRating,
+  CreditBlockReason,
+  CreditCheckStatus,
 } from '@sutra/core';
 
 export const inMemoryRfqs: Map<string, RfqDocument> = new Map();
@@ -478,5 +484,153 @@ export const sampleConsolidationEntities: EntityFinancialData[] = [
     totalEquity: 20000000,
   },
 ];
+
+// =================================================================
+// Credit Risk Management & Dunning Store (SAP FSCM-CR & F150)
+// =================================================================
+
+export const sampleCreditEngine = new CreditManagementEngine();
+
+export const sampleCreditInvoices: InvoiceRecord[] = [
+  // CUST-MAH-001 (Tata Motors Fleet Solutions Ltd) - Prime AAA
+  {
+    invoiceNumber: 'INV-2026-MAH-010',
+    customerId: 'CUST-MAH-001',
+    customerName: 'Tata Motors Fleet Solutions Ltd',
+    customerEmail: 'billing@tatamotorsfleet.com',
+    invoiceDate: '2026-09-10',
+    dueDate: '2026-10-25',
+    amount: 4500000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+  // CUST-BLR-002 (Bangalore Metro Rail Logistics Corp) - Grade A, 12 days overdue (Level 1 Dunning)
+  {
+    invoiceNumber: 'INV-2026-BLR-045',
+    customerId: 'CUST-BLR-002',
+    customerName: 'Bangalore Metro Rail Logistics Corp',
+    customerEmail: 'accounts@bmrl-logistics.org',
+    invoiceDate: '2026-08-01',
+    dueDate: '2026-09-20',
+    amount: 1800000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+  {
+    invoiceNumber: 'INV-2026-BLR-046',
+    customerId: 'CUST-BLR-002',
+    customerName: 'Bangalore Metro Rail Logistics Corp',
+    customerEmail: 'accounts@bmrl-logistics.org',
+    invoiceDate: '2026-09-15',
+    dueDate: '2026-11-15',
+    amount: 10200000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+  // CUST-DEL-003 (Northern Infrastructure & Power Ltd) - 24 days overdue (Level 2 Dunning, Exposure Exceeded)
+  {
+    invoiceNumber: 'INV-2026-DEL-088',
+    customerId: 'CUST-DEL-003',
+    customerName: 'Northern Infrastructure & Power Ltd',
+    customerEmail: 'finance@northinfra-power.in',
+    invoiceDate: '2026-07-20',
+    dueDate: '2026-09-08',
+    amount: 2400000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+  {
+    invoiceNumber: 'INV-2026-DEL-089',
+    customerId: 'CUST-DEL-003',
+    customerName: 'Northern Infrastructure & Power Ltd',
+    customerEmail: 'finance@northinfra-power.in',
+    invoiceDate: '2026-08-25',
+    dueDate: '2026-10-10',
+    amount: 1800000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+  // CUST-HYD-004 (Deccan Precision Fab & Castings Pvt Ltd) - 68 days overdue (Level 3 Dunning, MSMED Statutory Interest)
+  {
+    invoiceNumber: 'INV-2026-HYD-031',
+    customerId: 'CUST-HYD-004',
+    customerName: 'Deccan Precision Fab & Castings Pvt Ltd',
+    customerEmail: 'ap@deccan-precision.com',
+    invoiceDate: '2026-06-15',
+    dueDate: '2026-07-26',
+    amount: 3800000,
+    paidAmount: 0,
+    isPaid: false,
+  },
+];
+
+export interface CustomerCreditSeed {
+  customerId: string;
+  name: string;
+  creditLimit: number;
+  openOrdersValue: number;
+  openDeliveriesValue: number;
+}
+
+export const sampleCreditCustomers: CustomerCreditSeed[] = [
+  {
+    customerId: 'CUST-MAH-001',
+    name: 'Tata Motors Fleet Solutions Ltd',
+    creditLimit: 25000000,
+    openOrdersValue: 3500000,
+    openDeliveriesValue: 1500000,
+  },
+  {
+    customerId: 'CUST-BLR-002',
+    name: 'Bangalore Metro Rail Logistics Corp',
+    creditLimit: 50000000,
+    openOrdersValue: 15000000,
+    openDeliveriesValue: 8000000,
+  },
+  {
+    customerId: 'CUST-DEL-003',
+    name: 'Northern Infrastructure & Power Ltd',
+    creditLimit: 10000000,
+    openOrdersValue: 4000000,
+    openDeliveriesValue: 2500000,
+  },
+  {
+    customerId: 'CUST-HYD-004',
+    name: 'Deccan Precision Fab & Castings Pvt Ltd',
+    creditLimit: 8000000,
+    openOrdersValue: 1000000,
+    openDeliveriesValue: 500000,
+  },
+];
+
+// Seed initial blocked orders
+sampleCreditEngine.performCreditCheck(
+  'SO-BLK-0891',
+  sampleCreditEngine.evaluateCustomerRisk(
+    'CUST-DEL-003',
+    'Northern Infrastructure & Power Ltd',
+    10000000,
+    4000000,
+    2500000,
+    sampleCreditInvoices,
+    '2026-10-02'
+  ),
+  3200000
+);
+
+sampleCreditEngine.performCreditCheck(
+  'SO-BLK-0904',
+  sampleCreditEngine.evaluateCustomerRisk(
+    'CUST-HYD-004',
+    'Deccan Precision Fab & Castings Pvt Ltd',
+    8000000,
+    1000000,
+    500000,
+    sampleCreditInvoices,
+    '2026-10-02'
+  ),
+  1650000
+);
+
 
 

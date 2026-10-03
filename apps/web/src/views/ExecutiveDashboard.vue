@@ -272,6 +272,12 @@ const parityRows = computed(() => [
     sutra: t('dashboard.parity.rows.gts.sutra'),
   },
   {
+    tcode: 'FSCM-CR / F150',
+    capability: t('supplyChain.tabs.credit'),
+    sap: t('dashboard.parity.rows.creditMgmt.sap'),
+    sutra: t('dashboard.parity.rows.creditMgmt.sutra'),
+  },
+  {
     tcode: 'Z-Tables & ABAP',
     capability: t('nocode.heroTitle'),
     sap: t('dashboard.parity.rows.abap.sap'),

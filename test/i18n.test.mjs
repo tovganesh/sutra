@@ -70,7 +70,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
       validateKeys(messages['en-IN'], messages['en-US'], 'root');
     });
 
-    test('verifies all 17 ERP cockpit submodules are localized in SupplyChain', () => {
+    test('verifies all 18 ERP cockpit submodules are localized in SupplyChain', () => {
       const requiredTabs = [
         'inventory',
         'o2c',
@@ -89,6 +89,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
         'transportation',
         'customs',
         'sourcing',
+        'credit',
       ];
 
       for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
@@ -160,7 +161,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
     test('verifies dashboard parity rows, financial kpis/simulator, and nocode fields dictionaries', () => {
       for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
         const dashboard = messages[locale].dashboard;
-        assert.ok(dashboard.parity.rows && Object.keys(dashboard.parity.rows).length === 16, `Parity rows in ${locale} must have 16 items`);
+        assert.ok(dashboard.parity.rows && Object.keys(dashboard.parity.rows).length === 17, `Parity rows in ${locale} must have 17 items`);
         for (const [key, val] of Object.entries(dashboard.parity.rows)) {
           assert.ok(val.sap && val.sap.length > 0, `SAP text for ${key} in ${locale} must not be empty`);
           assert.ok(val.sutra && val.sutra.length > 0, `Sutra text for ${key} in ${locale} must not be empty`);
