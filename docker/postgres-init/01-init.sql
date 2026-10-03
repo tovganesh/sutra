@@ -522,7 +522,7 @@ CREATE TABLE IF NOT EXISTS cost_centers (
     category VARCHAR(50) NOT NULL, -- PRODUCTION, ADMINISTRATION, R_AND_D, LOGISTICS, SHARED_SERVICE
     manager VARCHAR(100),
     currency VARCHAR(10) DEFAULT 'INR',
-    profit_center_code VARCHAR(50) REFERENCES profit_centers(code),
+    profit_center_code VARCHAR(50),
     budget_annual NUMERIC(18, 4) NOT NULL DEFAULT 0,
     actual_incurred NUMERIC(18, 4) NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
