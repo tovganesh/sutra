@@ -21,7 +21,7 @@ import {
   TransportationEngine,
   EnterpriseUserManager,
 } from '@sutra/core';
-import { LLMFactory, TextToERPAgent, InvoiceExtractorAgent } from '@sutra/ai-agent';
+import { LLMRegistry, TextToERPAgent, InvoiceExtractorAgent } from '@sutra/ai-agent';
 
 // 1. Pluggable Enterprise Authentication System
 export const authRegistry = new AuthPluginRegistry();
@@ -63,12 +63,9 @@ authRegistry.registerProvider(samlProvider);
 
 export const authMiddleware = createAuthMiddleware(authRegistry);
 
-// 2. Gen AI Provider
-export const aiProvider = LLMFactory.createProvider({
-  provider: process.env.AI_PROVIDER || 'local',
-  endpoint: process.env.AI_LOCAL_ENDPOINT || 'http://localhost:11434',
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// 2. Gen AI Provider & Sovereign LLM Registry
+export const llmRegistry = new LLMRegistry(process.env.AI_PROVIDER || 'local');
+export const aiProvider = llmRegistry.getActiveProvider();
 export const textToERPAgent = new TextToERPAgent(aiProvider);
 export const invoiceExtractorAgent = new InvoiceExtractorAgent(aiProvider);
 

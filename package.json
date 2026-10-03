@@ -15,7 +15,7 @@
     "dev:api": "npm run dev --workspace=@sutra/api",
     "dev:web": "npm run dev --workspace=@sutra/web",
     "start": "npm run start --workspace=@sutra/api",
-    "test": "node --test test/compliance.test.mjs test/enterprise-core.test.mjs test/i18n.test.mjs test/analytics.test.mjs test/sourcing.test.mjs test/consolidation.test.mjs test/credit-management.test.mjs test/user-management.test.mjs test/nocode.test.mjs test/api.test.mjs",
+    "test": "node --test test/compliance.test.mjs test/enterprise-core.test.mjs test/i18n.test.mjs test/analytics.test.mjs test/sourcing.test.mjs test/consolidation.test.mjs test/credit-management.test.mjs test/user-management.test.mjs test/nocode.test.mjs test/ai-agent.test.mjs test/api.test.mjs",
 
     "lint": "eslint \"**/*.ts*\"",
     "docker:up": "docker compose up -d",

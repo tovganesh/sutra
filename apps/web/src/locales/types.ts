@@ -988,13 +988,29 @@ export interface LocaleMessage {
     samplePrompt1: string;
     samplePrompt2: string;
     samplePrompt3: string;
+    samplePrompt4: string;
+    samplePrompt5: string;
     aiAssistantGreeting: string;
     copilotName: string;
     userName: string;
+    tabChat: string;
+    tabIdp: string;
+    airGappedPill: string;
+    providerSwitched: string;
+    executeActionBtn: string;
+    postToGlBtn: string;
+    validGstinBadge: string;
+    invalidGstinBadge: string;
+    presets: {
+      goods: string;
+      advisory: string;
+      transport: string;
+    };
     providers: {
       local: string;
       openai: string;
       gemini: string;
+      heuristic: string;
     };
     results: {
       supplier: string;
