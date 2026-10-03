@@ -11,6 +11,8 @@
 export const SalesOrderStatus = {
   CONFIRMED: 'CONFIRMED',
   REJECTED: 'REJECTED',
+  CREDIT_BLOCKED: 'CREDIT_BLOCKED',
+  RELEASED: 'RELEASED',
 } as const;
 export type SalesOrderStatusType = (typeof SalesOrderStatus)[keyof typeof SalesOrderStatus];
 export type SalesOrderStatus = SalesOrderStatusType;
@@ -390,6 +392,59 @@ export const ConsolidationMethod = {
   PROPORTIONATE: 'PROPORTIONATE',
 } as const;
 export type ConsolidationMethod = (typeof ConsolidationMethod)[keyof typeof ConsolidationMethod];
+
+// =================================================================
+// 7. Credit Risk Management & Dunning (SAP FSCM-CR & F150)
+// =================================================================
+
+export const CreditRating = {
+  AAA: 'AAA',
+  AA: 'AA',
+  A: 'A',
+  BBB: 'BBB',
+  BB: 'BB',
+  B: 'B',
+  CCC: 'CCC',
+  D: 'D',
+} as const;
+export type CreditRatingType = (typeof CreditRating)[keyof typeof CreditRating];
+export type CreditRating = CreditRatingType;
+
+export const CreditCheckStatus = {
+  APPROVED: 'APPROVED',
+  WARNING: 'WARNING',
+  BLOCKED: 'BLOCKED',
+  RELEASED: 'RELEASED',
+  REJECTED: 'REJECTED',
+} as const;
+export type CreditCheckStatusType = (typeof CreditCheckStatus)[keyof typeof CreditCheckStatus];
+export type CreditCheckStatus = CreditCheckStatusType;
+
+export const CreditBlockReason = {
+  EXPOSURE_EXCEEDED: 'EXPOSURE_EXCEEDED',
+  OVERDUE_INVOICE_EXCEEDED: 'OVERDUE_INVOICE_EXCEEDED',
+  DUNNING_LEVEL_BLOCK: 'DUNNING_LEVEL_BLOCK',
+  MANUAL_RISK_BLOCK: 'MANUAL_RISK_BLOCK',
+} as const;
+export type CreditBlockReasonType = (typeof CreditBlockReason)[keyof typeof CreditBlockReason];
+export type CreditBlockReason = CreditBlockReasonType;
+
+export const DunningLevel = {
+  LEVEL_1_REMINDER: 'LEVEL_1_REMINDER',
+  LEVEL_2_DEMAND: 'LEVEL_2_DEMAND',
+  LEVEL_3_LEGAL: 'LEVEL_3_LEGAL',
+} as const;
+export type DunningLevelType = (typeof DunningLevel)[keyof typeof DunningLevel];
+export type DunningLevel = DunningLevelType;
+
+export const CreditDefaults = {
+  DEFAULT_UTILIZATION_WARNING_PERCENT: 80,
+  DEFAULT_MAX_OVERDUE_DAYS_ALLOWED: 60,
+  MSMED_ACT_INTEREST_RATE_MULTIPLIER: 3, // Section 16 MSMED Act 2006: 3x RBI Bank Rate
+  MSMED_DEFAULT_RBI_REPO_RATE_PERCENT: 6.5,
+  DUNNING_LEVEL_2_FEE_INR: 1500,
+  DUNNING_LEVEL_3_FEE_INR: 5000,
+} as const;
 
 
 

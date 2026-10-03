@@ -103,6 +103,7 @@ export interface LocaleMessage {
         parallelLedger: { sap: string; sutra: string };
         tm: { sap: string; sutra: string };
         gts: { sap: string; sutra: string };
+        creditMgmt: { sap: string; sutra: string };
         abap: { sap: string; sutra: string };
         joule: { sap: string; sutra: string };
       };
@@ -498,6 +499,7 @@ export interface LocaleMessage {
       transportation: string;
       customs: string;
       sourcing: string;
+      credit: string;
     };
     panels: {
 
@@ -550,6 +552,9 @@ export interface LocaleMessage {
       rfqManagement: string;
       bidEvaluationMatrix: string;
       vendorScorecards: string;
+      creditScoring: string;
+      blockedOrdersQueue: string;
+      dunningCockpit: string;
     };
     panelSubs: {
       materialMaster: string;
@@ -593,6 +598,9 @@ export interface LocaleMessage {
       rfqManagement: string;
       bidEvaluationMatrix: string;
       vendorScorecards: string;
+      creditScoring: string;
+      blockedOrdersQueue: string;
+      dunningCockpit: string;
     };
     cols: {
       sku: string;
@@ -845,6 +853,41 @@ export interface LocaleMessage {
       invitedVendors: string;
       winningQuoteSavings: string;
       awardedNotice: string;
+    };
+    credit: {
+      totalCreditLimit: string;
+      totalExposure: string;
+      blockedOrdersCount: string;
+      accountsInDunning: string;
+      creditScorecardTitle: string;
+      creditScorecardDesc: string;
+      rating: string;
+      riskScore: string;
+      utilization: string;
+      openOrders: string;
+      openDeliveries: string;
+      openInvoices: string;
+      overdueAmount: string;
+      oldestOverdue: string;
+      blockedOrdersTitle: string;
+      blockedOrdersDesc: string;
+      releaseOrderBtn: string;
+      rejectOrderBtn: string;
+      releaseSuccess: string;
+      rejectSuccess: string;
+      dunningTitle: string;
+      dunningDesc: string;
+      executeDunningBtn: string;
+      noticeId: string;
+      dunningLevel: string;
+      principalOverdue: string;
+      statutoryInterest: string;
+      dunningFee: string;
+      totalDemand: string;
+      viewNoticeBtn: string;
+      msmedActNotice: string;
+      noticeModalTitle: string;
+      remedyDeadline: string;
     };
   };
   nocode: {

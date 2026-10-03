@@ -691,4 +691,102 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.ok(data.scorecards.some((s) => s.tier === 'GRADE_A_PLUS'));
     });
   });
+
+  describe('22. Credit Risk Management, Dynamic Checks & Automated Dunning (SAP FSCM-CR & F150)', () => {
+    test('retrieves evaluated customer credit risk profiles and exposures', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/credit/customers`);
+      assert.equal(res.status, 200);
+      const profiles = await res.json();
+      assert.ok(profiles.length >= 3);
+      assert.ok(profiles.some((p) => p.customerId === 'CUST-MAH-001'));
+      assert.ok(profiles.some((p) => p.creditRating));
+      assert.ok(profiles.some((p) => p.exposure && typeof p.exposure.utilizationPercent === 'number'));
+    });
+
+    test('retrieves single customer risk evaluation by customer ID', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/credit/customers/CUST-MAH-001`);
+      assert.equal(res.status, 200);
+      const profile = await res.json();
+      assert.equal(profile.customerId, 'CUST-MAH-001');
+      assert.ok(profile.riskScore >= 0 && profile.riskScore <= 100);
+    });
+
+    test('performs dynamic credit check on order entry', async () => {
+      // Test approved check
+      const passRes = await fetch(`${baseUrl}/api/v1/credit/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumber: 'SO-API-TEST-01',
+          customerId: 'CUST-MAH-001',
+          orderAmount: 100000,
+        }),
+      });
+      assert.equal(passRes.status, 200);
+      const passResult = await passRes.json();
+      assert.equal(passResult.orderNumber, 'SO-API-TEST-01');
+      assert.equal(passResult.passed, true);
+
+      // Test blocked check due to limit overflow
+      const blockRes = await fetch(`${baseUrl}/api/v1/credit/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumber: 'SO-API-TEST-02',
+          customerId: 'CUST-MAH-001',
+          orderAmount: 90000000, // 9 Crores exceeds limit
+        }),
+      });
+      assert.equal(blockRes.status, 200);
+      const blockResult = await blockRes.json();
+      assert.equal(blockResult.passed, false);
+      assert.equal(blockResult.status, 'BLOCKED');
+      assert.equal(blockResult.blockReason, 'EXPOSURE_EXCEEDED');
+    });
+
+    test('retrieves blocked orders queue and executes release workflow (SAP VKM3)', async () => {
+      const queueRes = await fetch(`${baseUrl}/api/v1/credit/blocked-orders`);
+      assert.equal(queueRes.status, 200);
+      const blockedOrders = await queueRes.json();
+      assert.ok(blockedOrders.length > 0);
+
+      // Release SO-API-TEST-02
+      const releaseRes = await fetch(`${baseUrl}/api/v1/credit/orders/SO-API-TEST-02/release`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          releasedBy: 'Lead Credit Officer (A. Sen)',
+          justification: 'Irrevocable LC confirmed with SBI Commercial Branch.',
+        }),
+      });
+      assert.equal(releaseRes.status, 200);
+      const releasedOrder = await releaseRes.json();
+      assert.equal(releasedOrder.orderNumber, 'SO-API-TEST-02');
+      assert.equal(releasedOrder.status, 'RELEASED');
+      assert.equal(releasedOrder.releaseDetails.releasedBy, 'Lead Credit Officer (A. Sen)');
+    });
+
+    test('executes automated dunning run under Section 16 MSMED Act 2006 compound interest', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/credit/dunning/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runDate: '2026-10-01',
+          rbiRepoRatePercent: 6.5,
+        }),
+      });
+      assert.equal(res.status, 200);
+      const dunningData = await res.json();
+      assert.ok(dunningData.summary);
+      assert.ok(dunningData.summary.totalAccountsDunned > 0);
+      assert.ok(dunningData.summary.totalDemand > 0);
+      assert.ok(dunningData.notices.length > 0);
+
+      const level3 = dunningData.notices.find((n) => n.dunningLevel === 'LEVEL_3_LEGAL');
+      if (level3) {
+        assert.ok(level3.legalCitation.includes('MSMED'));
+        assert.equal(level3.interestRatePercent, 19.5);
+      }
+    });
+  });
 });
