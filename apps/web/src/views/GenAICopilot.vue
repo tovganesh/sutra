@@ -1,6 +1,6 @@
 <template>
   <div class="view-container">
-    <!-- Hero Banner with Live Engine Switcher -->
+    <!-- Hero Banner with Live Engine & Model Switcher -->
     <div class="hero-banner glass-card">
       <div class="hero-content">
         <div class="hero-title-row">
@@ -13,24 +13,162 @@
       </div>
 
       <div class="engine-controls">
-        <div class="ai-provider-selector">
-          <label>{{ $t('copilot.activeEngine') }}</label>
-          <select
-            v-model="selectedProvider"
-            class="input-control select-engine"
-            @change="handleProviderChange"
-            :disabled="isSwitchingProvider"
-          >
-            <option value="heuristic">{{ $t('copilot.providers.heuristic') }}</option>
-            <option value="local">{{ $t('copilot.providers.local') }}</option>
-            <option value="openai">{{ $t('copilot.providers.openai') }}</option>
-            <option value="gemini">{{ $t('copilot.providers.gemini') }}</option>
-          </select>
+        <div class="selectors-row">
+          <!-- Provider Selector -->
+          <div class="ai-provider-selector">
+            <label>{{ $t('copilot.activeEngine') }}</label>
+            <select
+              v-model="selectedProvider"
+              class="input-control select-engine"
+              @change="handleProviderChange"
+              :disabled="isSwitchingProvider"
+            >
+              <option value="heuristic">{{ $t('copilot.providers.heuristic') }}</option>
+              <option value="local">{{ $t('copilot.providers.local') }}</option>
+              <option value="openai">{{ $t('copilot.providers.openai') }}</option>
+              <option value="gemini">{{ $t('copilot.providers.gemini') }}</option>
+              <option value="bedrock">{{ $t('copilot.providers.bedrock') }}</option>
+            </select>
+          </div>
+
+          <!-- Model Selector -->
+          <div class="ai-provider-selector">
+            <label>{{ $t('copilot.activeModel') }}</label>
+            <select
+              v-model="selectedModel"
+              class="input-control select-model"
+              @change="handleModelChange"
+              :disabled="isSwitchingProvider"
+            >
+              <option
+                v-for="m in currentAvailableModels"
+                :key="m.id"
+                :value="m.id"
+              >
+                {{ m.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Configure Credentials Button -->
+          <button class="btn btn-sm btn-outline config-btn" @click="showConfigModal = true">
+            <Sliders class="icon-xs" /> {{ $t('copilot.configureBtn') }}
+          </button>
         </div>
 
         <div v-if="activeEngineStatus" class="engine-status-tag">
           <span class="pulse-dot"></span>
           <code>{{ activeEngineStatus.model }} ({{ activeEngineStatus.type }})</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credentials & Engine Configuration Modal -->
+    <div v-if="showConfigModal" class="modal-overlay" @click.self="showConfigModal = false">
+      <div class="glass-card config-modal">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <Sliders class="icon-sm text-cyan" />
+            <h3>{{ $t('copilot.configModalTitle') }}</h3>
+          </div>
+          <button class="modal-close-btn" @click="showConfigModal = false">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>{{ $t('copilot.activeEngine') }}</label>
+            <select v-model="configTargetProvider" class="input-control">
+              <option value="local">{{ $t('copilot.providers.local') }}</option>
+              <option value="openai">{{ $t('copilot.providers.openai') }}</option>
+              <option value="gemini">{{ $t('copilot.providers.gemini') }}</option>
+              <option value="bedrock">{{ $t('copilot.providers.bedrock') }}</option>
+            </select>
+          </div>
+
+          <!-- Ollama local options -->
+          <div v-if="configTargetProvider === 'local'" class="provider-fields">
+            <div class="form-group">
+              <label>{{ $t('copilot.endpointLabel') }}</label>
+              <input
+                type="text"
+                v-model="configPayload.endpoint"
+                class="input-control"
+                placeholder="http://localhost:11434"
+              />
+              <span class="field-hint">Supports local GPU Ollama / vLLM runners</span>
+            </div>
+          </div>
+
+          <!-- OpenAI options -->
+          <div v-if="configTargetProvider === 'openai'" class="provider-fields">
+            <div class="form-group">
+              <label>{{ $t('copilot.apiKeyLabel') }}</label>
+              <input
+                type="password"
+                v-model="configPayload.apiKey"
+                class="input-control"
+                placeholder="sk-proj-..."
+              />
+            </div>
+          </div>
+
+          <!-- Gemini options -->
+          <div v-if="configTargetProvider === 'gemini'" class="provider-fields">
+            <div class="form-group">
+              <label>{{ $t('copilot.apiKeyLabel') }}</label>
+              <input
+                type="password"
+                v-model="configPayload.apiKey"
+                class="input-control"
+                placeholder="AIzaSy..."
+              />
+            </div>
+          </div>
+
+          <!-- Amazon Bedrock options -->
+          <div v-if="configTargetProvider === 'bedrock'" class="provider-fields">
+            <div class="form-group">
+              <label>{{ $t('copilot.regionLabel') }}</label>
+              <input
+                type="text"
+                v-model="configPayload.region"
+                class="input-control"
+                placeholder="us-east-1"
+              />
+            </div>
+            <div class="form-group">
+              <label>{{ $t('copilot.accessKeyLabel') }}</label>
+              <input
+                type="text"
+                v-model="configPayload.accessKeyId"
+                class="input-control"
+                placeholder="AKIA..."
+              />
+            </div>
+            <div class="form-group">
+              <label>{{ $t('copilot.secretKeyLabel') }}</label>
+              <input
+                type="password"
+                v-model="configPayload.secretAccessKey"
+                class="input-control"
+                placeholder="wJalrXUtnFEMI/..."
+              />
+            </div>
+          </div>
+
+          <!-- Status Message -->
+          <div v-if="configSaveMessage" class="config-alert" :class="configSaveMessage.type">
+            <CheckCircle2 v-if="configSaveMessage.type === 'success'" class="icon-xs" />
+            <AlertTriangle v-else class="icon-xs" />
+            <span>{{ configSaveMessage.text }}</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="showConfigModal = false">Cancel</button>
+          <button class="btn btn-primary" @click="saveProviderConfig" :disabled="isSavingConfig">
+            <CheckCircle2 class="icon-xs" /> {{ $t('copilot.saveConfigBtn') }}
+          </button>
         </div>
       </div>
     </div>
@@ -341,6 +479,7 @@ import {
   Zap,
   CheckCircle2,
   AlertTriangle,
+  Sliders,
 } from 'lucide-vue-next';
 import { useI18n } from '../i18n';
 
@@ -385,8 +524,56 @@ interface IdpResultData {
 
 const activeTab = ref<'chat' | 'idp'>('chat');
 const selectedProvider = ref('heuristic');
+const selectedModel = ref('sutra-rules-v1');
 const isSwitchingProvider = ref(false);
 const activeEngineStatus = ref<{ provider: string; model: string; type: string } | null>(null);
+
+// Modal configuration state
+const showConfigModal = ref(false);
+const configTargetProvider = ref('local');
+const isSavingConfig = ref(false);
+const configSaveMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null);
+const configPayload = ref({
+  apiKey: '',
+  endpoint: 'http://localhost:11434',
+  region: 'us-east-1',
+  accessKeyId: '',
+  secretAccessKey: '',
+});
+
+const providerModels: Record<string, Array<{ id: string; label: string }>> = {
+  local: [
+    { id: 'gemma3:270m', label: 'Google Gemma 3 (270M - Local Dev Testing)' },
+    { id: 'gemma4', label: 'Google Gemma 4' },
+    { id: 'phi4', label: 'Microsoft Phi-4' },
+    { id: 'llama3.2', label: 'Meta LLaMA 3.2' },
+    { id: 'deepseek-r1', label: 'DeepSeek R1 (Reasoning)' },
+    { id: 'mistral', label: 'Mistral 7B' },
+  ],
+  openai: [
+    { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { id: 'gpt-4o', label: 'GPT-4o' },
+    { id: 'o3-mini', label: 'o3-mini' },
+  ],
+  gemini: [
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+  ],
+  bedrock: [
+    { id: 'anthropic.claude-3-5-sonnet-20240620-v1:0', label: 'Claude 3.5 Sonnet (Bedrock)' },
+    { id: 'anthropic.claude-3-haiku-20240307-v1:0', label: 'Claude 3 Haiku (Bedrock)' },
+    { id: 'amazon.titan-text-express-v1', label: 'Amazon Titan Express' },
+    { id: 'meta.llama3-70b-instruct-v1:0', label: 'Meta LLaMA 3 70B' },
+  ],
+  heuristic: [
+    { id: 'sutra-rules-v1', label: 'Sutra Sovereign Rule Engine' },
+  ],
+};
+
+const currentAvailableModels = computed(() => {
+  return providerModels[selectedProvider.value] || providerModels.heuristic;
+});
 
 const inputQuery = ref('');
 const isQuerying = ref(false);
@@ -488,6 +675,7 @@ async function fetchEngineStatus() {
     if (res.ok) {
       const data = await res.json();
       selectedProvider.value = data.activeProvider.id;
+      selectedModel.value = data.activeProvider.model;
       activeEngineStatus.value = {
         provider: data.activeProvider.name,
         model: data.activeProvider.model,
@@ -497,19 +685,27 @@ async function fetchEngineStatus() {
   } catch {
     activeEngineStatus.value = {
       provider: 'Sutra Sovereign Heuristic Engine',
-      model: 'heuristic-rule-engine-v1',
+      model: 'sutra-rules-v1',
       type: 'heuristic',
     };
   }
 }
 
 async function handleProviderChange() {
+  const models = currentAvailableModels.value;
+  if (models && models.length > 0) {
+    selectedModel.value = models[0].id;
+  }
+
   isSwitchingProvider.value = true;
   try {
     const res = await fetch('/api/v1/ai/provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider: selectedProvider.value }),
+      body: JSON.stringify({
+        provider: selectedProvider.value,
+        model: selectedModel.value,
+      }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -523,6 +719,76 @@ async function handleProviderChange() {
     // Keep local choice
   } finally {
     isSwitchingProvider.value = false;
+  }
+}
+
+async function handleModelChange() {
+  isSwitchingProvider.value = true;
+  try {
+    const res = await fetch('/api/v1/ai/provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: selectedProvider.value,
+        model: selectedModel.value,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      activeEngineStatus.value = {
+        provider: data.activeProvider.name,
+        model: data.activeProvider.model,
+        type: data.activeProvider.type,
+      };
+    }
+  } catch {
+    // Keep local choice
+  } finally {
+    isSwitchingProvider.value = false;
+  }
+}
+
+async function saveProviderConfig() {
+  isSavingConfig.value = true;
+  configSaveMessage.value = null;
+
+  try {
+    const res = await fetch('/api/v1/ai/configure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: configTargetProvider.value,
+        apiKey: configPayload.value.apiKey,
+        endpoint: configPayload.value.endpoint,
+        region: configPayload.value.region,
+        accessKeyId: configPayload.value.accessKeyId,
+        secretAccessKey: configPayload.value.secretAccessKey,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      configSaveMessage.value = {
+        type: 'success',
+        text: data.message || 'Credentials updated successfully.',
+      };
+      setTimeout(() => {
+        showConfigModal.value = false;
+        fetchEngineStatus();
+      }, 1200);
+    } else {
+      configSaveMessage.value = {
+        type: 'error',
+        text: 'Failed to save configuration.',
+      };
+    }
+  } catch (err: any) {
+    configSaveMessage.value = {
+      type: 'error',
+      text: err.message || 'Network error while updating configuration.',
+    };
+  } finally {
+    isSavingConfig.value = false;
   }
 }
 
@@ -737,10 +1003,17 @@ onMounted(() => {
   gap: 8px;
 }
 
+.selectors-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .ai-provider-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ai-provider-selector label {
@@ -749,11 +1022,19 @@ onMounted(() => {
   color: var(--text-muted);
 }
 
-.select-engine {
+.select-engine,
+.select-model {
   width: auto;
-  min-width: 260px;
   font-weight: 600;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
+  font-size: 0.82rem;
+}
+
+.config-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
 }
 
 .engine-status-tag {
@@ -777,6 +1058,115 @@ onMounted(() => {
   0% { transform: scale(0.95); opacity: 0.8; }
   50% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.config-modal {
+  width: 90%;
+  max-width: 520px;
+  padding: 24px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: #0f172a;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title-row h3 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.provider-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.config-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+}
+
+.config-alert.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.config-alert.error {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Tab Bar */

@@ -633,16 +633,64 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.equal(data.airGapStatus.isAirGapped, true);
     });
 
-    test('switches active LLM provider dynamically', async () => {
+    test('switches active LLM provider and model dynamically', async () => {
       const res = await fetch(`${baseUrl}/api/v1/ai/provider`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'heuristic' }),
+        body: JSON.stringify({ provider: 'heuristic', model: 'sutra-rules-v1' }),
       });
       assert.equal(res.status, 200);
       const data = await res.json();
       assert.equal(data.activeProvider.id, 'heuristic');
       assert.equal(data.activeProvider.type, 'heuristic');
+    });
+
+    test('configures provider credentials and models via POST /api/v1/ai/configure', async () => {
+      // 1. Configure Amazon Bedrock
+      const bedRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'bedrock',
+          accessKeyId: 'AKIA_API_TEST',
+          secretAccessKey: 'SECRET_API_TEST',
+          region: 'us-east-1',
+          model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+        }),
+      });
+      assert.equal(bedRes.status, 200);
+      const bedData = await bedRes.json();
+      assert.equal(bedData.provider.id, 'bedrock');
+      assert.equal(bedData.provider.isConfigured, true);
+
+      // 2. Configure Local Ollama testing model (Gemma 3 270M)
+      const locRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'local',
+          endpoint: 'http://localhost:11434',
+          model: 'gemma3:270m',
+        }),
+      });
+      assert.equal(locRes.status, 200);
+      const locData = await locRes.json();
+      assert.equal(locData.provider.id, 'local');
+      assert.equal(locData.provider.model, 'gemma3:270m');
+
+      // 3. Configure OpenAI API Key
+      const oaiRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'openai',
+          apiKey: 'sk-test-key-12345',
+          model: 'gpt-4o',
+        }),
+      });
+      assert.equal(oaiRes.status, 200);
+      const oaiData = await oaiRes.json();
+      assert.equal(oaiData.provider.isConfigured, true);
     });
 
     test('interprets natural language ERP query with live RAG and recommendations', async () => {

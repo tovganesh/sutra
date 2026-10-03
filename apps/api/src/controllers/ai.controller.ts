@@ -52,12 +52,24 @@ export class AiController {
   }
 
   /**
-   * Switches the active LLM provider (Ollama Local, OpenAI, Gemini, Heuristic).
+   * Switches the active LLM provider (Ollama Local, OpenAI, Gemini, Bedrock, Heuristic).
    */
   public static setProvider(req: Request, res: Response) {
     const providerId = req.body.providerId || req.body.provider;
     if (!providerId) {
       return sendError(req, res, HttpStatus.BAD_REQUEST, 'MissingProviderId', 'providerId is required.');
+    }
+
+    const { model, apiKey, endpoint, region, accessKeyId, secretAccessKey } = req.body;
+    if (model || apiKey || endpoint || region || accessKeyId || secretAccessKey) {
+      llmRegistry.configureProvider(providerId, {
+        model,
+        apiKey,
+        endpoint,
+        region,
+        accessKeyId,
+        secretAccessKey,
+      });
     }
 
     const success = llmRegistry.setActiveProvider(providerId);
@@ -76,6 +88,46 @@ export class AiController {
         name: activeProvider.name,
         type: activeProvider.type,
         model: activeProvider.model,
+      },
+    });
+  }
+
+  /**
+   * Configures credentials, endpoints, and models for any LLM provider (OpenAI, Gemini, Bedrock, Ollama).
+   */
+  public static configure(req: Request, res: Response) {
+    const providerId = req.body.providerId || req.body.provider;
+    if (!providerId) {
+      return sendError(req, res, HttpStatus.BAD_REQUEST, 'MissingProviderId', 'providerId is required.');
+    }
+
+    const { apiKey, model, endpoint, region, accessKeyId, secretAccessKey } = req.body;
+    const configured = llmRegistry.configureProvider(providerId, {
+      apiKey,
+      model,
+      endpoint,
+      region,
+      accessKeyId,
+      secretAccessKey,
+    });
+
+    if (!configured) {
+      return sendError(req, res, HttpStatus.NOT_FOUND, 'ProviderNotFound', `Provider '${providerId}' is not registered.`);
+    }
+
+    const provider = llmRegistry.getProvider(providerId)!;
+    const activeProvider = llmRegistry.getActiveProvider();
+    textToERPAgent.setProvider(activeProvider);
+    invoiceExtractorAgent.setProvider(activeProvider);
+
+    res.json({
+      message: `Provider '${provider.name}' configured successfully.`,
+      provider: {
+        id: provider.id,
+        name: provider.name,
+        type: provider.type,
+        model: provider.model,
+        isConfigured: provider.isConfigured ? provider.isConfigured() : true,
       },
     });
   }

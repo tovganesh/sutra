@@ -4,24 +4,113 @@ import {
   LLMRegistry,
   SutraHeuristicProvider,
   OllamaProvider,
+  OpenAIProvider,
+  GeminiProvider,
+  BedrockProvider,
   TextToERPAgent,
   InvoiceExtractorAgent,
 } from '../packages/ai-agent/dist/index.js';
 
 describe('Sutra Gen AI Copilot & Sovereign AI Agent Engine', () => {
   describe('1. LLM Registry & Multi-Provider Architecture', () => {
-    test('initializes with default provider and lists all registered providers', () => {
+    test('initializes with default provider and lists all registered providers including Bedrock', () => {
       const registry = new LLMRegistry();
       const active = registry.getActiveProvider();
       assert.ok(active);
       assert.equal(active.id, 'heuristic');
 
       const all = registry.listProviders();
-      assert.ok(all.length >= 4);
+      assert.ok(all.length >= 5);
       assert.ok(all.some((p) => p.id === 'heuristic'));
       assert.ok(all.some((p) => p.id === 'local'));
       assert.ok(all.some((p) => p.id === 'openai'));
       assert.ok(all.some((p) => p.id === 'gemini'));
+      assert.ok(all.some((p) => p.id === 'bedrock'));
+    });
+
+    test('OllamaProvider supports Gemma 4, Phi 4, LLaMA 3.2, and lightweight Gemma 3 270M for local testing', () => {
+      const ollama = new OllamaProvider('http://localhost:11434', 'llama3.2');
+      assert.ok(ollama.supportedModels.includes('llama3.2'));
+      assert.ok(ollama.supportedModels.includes('gemma4'));
+      assert.ok(ollama.supportedModels.includes('phi4'));
+      assert.ok(ollama.supportedModels.includes('gemma3:270m'));
+      assert.ok(ollama.supportedModels.includes('deepseek-r1'));
+      assert.ok(ollama.supportedModels.includes('mistral'));
+
+      // Test switching to lightweight local testing model
+      ollama.setModel('gemma3:270m');
+      assert.equal(ollama.model, 'gemma3:270m');
+
+      // Test normalization of gemma-3-270m
+      ollama.setModel('gemma-3-270m');
+      assert.equal(ollama.model, 'gemma3:270m');
+
+      // Test switching to Phi 4 and Gemma 4
+      ollama.setModel('phi4');
+      assert.equal(ollama.model, 'phi4');
+
+      ollama.setModel('gemma4');
+      assert.equal(ollama.model, 'gemma4');
+    });
+
+    test('BedrockProvider supports Claude 3.5 Sonnet, Titan, Haiku, and credentials configuration', () => {
+      const bedrock = new BedrockProvider();
+      assert.equal(bedrock.id, 'bedrock');
+      assert.equal(bedrock.type, 'cloud');
+      assert.ok(bedrock.supportedModels.some((m) => m.includes('claude-3-5-sonnet')));
+      assert.ok(bedrock.supportedModels.some((m) => m.includes('titan-text-express')));
+      assert.ok(bedrock.supportedModels.some((m) => m.includes('claude-3-haiku')));
+
+      // Test credential configuration
+      assert.equal(bedrock.isConfigured(), false);
+      bedrock.setCredentials({
+        accessKeyId: 'AKIA_TEST_KEY',
+        secretAccessKey: 'SECRET_TEST_KEY',
+        region: 'us-west-2',
+        model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      });
+      assert.equal(bedrock.isConfigured(), true);
+      assert.equal(bedrock.region, 'us-west-2');
+    });
+
+    test('configures external models and local endpoints dynamically via registry', () => {
+      const registry = new LLMRegistry();
+
+      // Configure OpenAI
+      const configuredOpenAI = registry.configureProvider('openai', {
+        apiKey: 'sk-test-proj-key',
+        model: 'gpt-4o',
+      });
+      assert.equal(configuredOpenAI, true);
+      const openai = registry.getProvider('openai');
+      assert.equal(openai.model, 'gpt-4o');
+
+      // Configure Gemini
+      const configuredGemini = registry.configureProvider('gemini', {
+        apiKey: 'AIzaSy_TEST_KEY',
+        model: 'gemini-1.5-pro',
+      });
+      assert.equal(configuredGemini, true);
+      const gemini = registry.getProvider('gemini');
+      assert.equal(gemini.model, 'gemini-1.5-pro');
+
+      // Configure Bedrock
+      const configuredBedrock = registry.configureProvider('bedrock', {
+        accessKeyId: 'AKIA_TEST_BEDROCK',
+        secretAccessKey: 'SECRET_KEY_BEDROCK',
+        region: 'ap-south-1',
+        model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      });
+      assert.equal(configuredBedrock, true);
+
+      // Configure Local Ollama testing model
+      const configuredLocal = registry.configureProvider('local', {
+        endpoint: 'http://127.0.0.1:11434',
+        model: 'gemma3:270m',
+      });
+      assert.equal(configuredLocal, true);
+      const local = registry.getProvider('local');
+      assert.equal(local.model, 'gemma3:270m');
     });
 
     test('switches active provider and falls back gracefully on offline providers', async () => {
@@ -30,7 +119,7 @@ describe('Sutra Gen AI Copilot & Sovereign AI Agent Engine', () => {
       assert.equal(registry.getActiveProvider().id, 'heuristic');
 
       // Test fallback mechanism with offline Ollama provider
-      const offlineOllama = new OllamaProvider('http://127.0.0.1:9999', 'llama3.2');
+      const offlineOllama = new OllamaProvider('http://127.0.0.1:9999', 'gemma3:270m');
       registry.registerProvider(offlineOllama);
       registry.setActiveProvider(offlineOllama.id);
 

@@ -1001,6 +1001,15 @@ export interface LocaleMessage {
     postToGlBtn: string;
     validGstinBadge: string;
     invalidGstinBadge: string;
+    activeModel: string;
+    configureBtn: string;
+    configModalTitle: string;
+    saveConfigBtn: string;
+    apiKeyLabel: string;
+    endpointLabel: string;
+    regionLabel: string;
+    accessKeyLabel: string;
+    secretKeyLabel: string;
     presets: {
       goods: string;
       advisory: string;
@@ -1010,6 +1019,7 @@ export interface LocaleMessage {
       local: string;
       openai: string;
       gemini: string;
+      bedrock: string;
       heuristic: string;
     };
     results: {
