@@ -125,7 +125,7 @@ describe('Sutra Frontend i18n & Multi-Currency Engine Suite', () => {
     test('verifies copilot providers/results, nocode status options, and header userAvatarTitle dictionaries', () => {
       for (const locale of ['en-IN', 'en-US', 'hi-IN']) {
         const copilot = messages[locale].copilot;
-        assert.ok(copilot.providers && Object.keys(copilot.providers).length === 3, `Copilot providers in ${locale} must have 3 keys`);
+        assert.ok(copilot.providers && Object.keys(copilot.providers).length >= 3, `Copilot providers in ${locale} must have >= 3 keys`);
         assert.ok(copilot.results && Object.keys(copilot.results).length >= 12, `Copilot results in ${locale} must have >= 12 keys`);
 
         const nocode = messages[locale].nocode;

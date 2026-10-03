@@ -623,16 +623,166 @@ describe('Sutra Backend Architecture & API Suite', () => {
 
 
   describe('20. Gen AI Copilot Endpoints', () => {
-    test('interprets natural language ERP query', async () => {
-      const res = await fetch(`${baseUrl}/api/v1/ai/query`, {
+    test('retrieves active AI engine status and supported providers', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/ai/status`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.activeProvider);
+      assert.ok(Array.isArray(data.availableProviders));
+      assert.ok(data.availableProviders.some((p) => p.id === 'heuristic'));
+      assert.equal(data.airGapStatus.isAirGapped, true);
+    });
+
+    test('switches active LLM provider and model dynamically', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/ai/provider`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: 'Show me total revenue for this quarter' }),
+        body: JSON.stringify({ provider: 'heuristic', model: 'sutra-rules-v1' }),
       });
       assert.equal(res.status, 200);
       const data = await res.json();
-      assert.ok(data.interpretedIntent);
-      assert.ok(data.answer);
+      assert.equal(data.activeProvider.id, 'heuristic');
+      assert.equal(data.activeProvider.type, 'heuristic');
+    });
+
+    test('configures provider credentials and models via POST /api/v1/ai/configure', async () => {
+      // 1. Configure Amazon Bedrock
+      const bedRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'bedrock',
+          accessKeyId: 'AKIA_API_TEST',
+          secretAccessKey: 'SECRET_API_TEST',
+          region: 'us-east-1',
+          model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+        }),
+      });
+      assert.equal(bedRes.status, 200);
+      const bedData = await bedRes.json();
+      assert.equal(bedData.provider.id, 'bedrock');
+      assert.equal(bedData.provider.isConfigured, true);
+
+      // 2. Configure Local Ollama testing model (Gemma 3 270M)
+      const locRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'local',
+          endpoint: 'http://localhost:11434',
+          model: 'gemma3:270m',
+        }),
+      });
+      assert.equal(locRes.status, 200);
+      const locData = await locRes.json();
+      assert.equal(locData.provider.id, 'local');
+      assert.equal(locData.provider.model, 'gemma3:270m');
+
+      // 3. Configure OpenAI API Key
+      const oaiRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'openai',
+          apiKey: 'sk-test-key-12345',
+          model: 'gpt-4o',
+        }),
+      });
+      assert.equal(oaiRes.status, 200);
+      const oaiData = await oaiRes.json();
+      assert.equal(oaiData.provider.isConfigured, true);
+    });
+
+    test('interprets natural language ERP query with live RAG and recommendations', async () => {
+      // 1. GST query
+      const gstRes = await fetch(`${baseUrl}/api/v1/ai/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: 'What is our total GST output liability for this month?' }),
+      });
+      assert.equal(gstRes.status, 200);
+      const gstData = await gstRes.json();
+      assert.equal(gstData.interpretedIntent.targetEntity, 'compliance_gst');
+      assert.ok(gstData.kpis.length >= 2);
+      assert.ok(gstData.dataTable);
+      assert.equal(gstData.suggestedAction, 'EXECUTE_RULE_88A');
+
+      // 2. Overdue receivables query
+      const arRes = await fetch(`${baseUrl}/api/v1/ai/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: 'Show all overdue invoices older than 30 days.' }),
+      });
+      assert.equal(arRes.status, 200);
+      const arData = await arRes.json();
+      assert.ok(['invoices', 'customers'].includes(arData.interpretedIntent.targetEntity));
+      assert.ok(arData.dataTable.rows.length >= 2);
+      assert.equal(arData.suggestedAction, 'TRIGGER_DUNNING');
+
+      // 3. No-Code schemas query
+      const ncRes = await fetch(`${baseUrl}/api/v1/ai/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: 'List registered custom No-Code schemas' }),
+      });
+      assert.equal(ncRes.status, 200);
+      const ncData = await ncRes.json();
+      assert.equal(ncData.interpretedIntent.targetEntity, 'custom_record');
+      assert.ok(ncData.kpis.length > 0);
+    });
+
+    test('extracts structured invoice data via zero-shot IDP', async () => {
+      const invoiceText = `TAX INVOICE
+Vendor: Apex Industrial Supplies Ltd (GSTIN: 27AAACB2212M1Z0)
+Invoice No: INV-2026-9041 Date: 2026-09-28
+PO Reference: PO-88319-MECH
+Item: Heavy Duty Ball Bearings (HSN: 84821011) Qty: 200 Unit Price: 1,250
+Taxable Subtotal: 2,50,000
+Tax: 18% IGST (45,000)
+Total Amount: 2,95,000`;
+
+      const res = await fetch(`${baseUrl}/api/v1/ai/extract-invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentText: invoiceText }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.supplierGstin, '27AAACB2212M1Z0');
+      assert.equal(data.invoiceNumber, 'INV-2026-9041');
+      assert.equal(data.poMatchStatus, 'READY_FOR_3_WAY_MATCH');
+      assert.ok(data.confidenceScore >= 0.85);
+      assert.ok(data.lineItems.length > 0);
+    });
+
+    test('executes autonomous ERP actions', async () => {
+      // 1. Rule 88A set-off execution
+      const ruleRes = await fetch(`${baseUrl}/api/v1/ai/actions/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'EXECUTE_RULE_88A',
+          payload: { month: '2026-09', netPayable: 250000 },
+        }),
+      });
+      assert.equal(ruleRes.status, 200);
+      const ruleData = await ruleRes.json();
+      assert.equal(ruleData.status, 'SUCCESS');
+      assert.ok(ruleData.details.voucherId);
+
+      // 2. Dunning execution
+      const dunRes = await fetch(`${baseUrl}/api/v1/ai/actions/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'TRIGGER_DUNNING',
+          payload: { targetCount: 3, totalDemand: 1420000 },
+        }),
+      });
+      assert.equal(dunRes.status, 200);
+      const dunData = await dunRes.json();
+      assert.equal(dunData.status, 'SUCCESS');
+      assert.equal(dunData.details.statutoryInterestRate, 19.5);
     });
   });
 
