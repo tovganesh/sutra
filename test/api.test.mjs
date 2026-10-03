@@ -630,10 +630,21 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.ok(data.activeProvider);
       assert.ok(Array.isArray(data.availableProviders));
       assert.ok(data.availableProviders.some((p) => p.id === 'heuristic'));
+      assert.ok(data.availableProviders.some((p) => p.id === 'sarvam'));
       assert.equal(data.airGapStatus.isAirGapped, true);
     });
 
     test('switches active LLM provider and model dynamically', async () => {
+      const sarSwitch = await fetch(`${baseUrl}/api/v1/ai/provider`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'sarvam', model: 'sarvam-2b' }),
+      });
+      assert.equal(sarSwitch.status, 200);
+      const sarData = await sarSwitch.json();
+      assert.equal(sarData.activeProvider.id, 'sarvam');
+      assert.equal(sarData.activeProvider.model, 'sarvam-2b');
+
       const res = await fetch(`${baseUrl}/api/v1/ai/provider`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -691,6 +702,23 @@ describe('Sutra Backend Architecture & API Suite', () => {
       assert.equal(oaiRes.status, 200);
       const oaiData = await oaiRes.json();
       assert.equal(oaiData.provider.isConfigured, true);
+
+      // 4. Configure Sarvam AI
+      const sarRes = await fetch(`${baseUrl}/api/v1/ai/configure`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'sarvam',
+          apiKey: 'sarvam-sub-key-test',
+          model: 'sarvam-2b',
+          endpoint: 'https://api.sarvam.ai',
+        }),
+      });
+      assert.equal(sarRes.status, 200);
+      const sarData = await sarRes.json();
+      assert.equal(sarData.provider.id, 'sarvam');
+      assert.equal(sarData.provider.isConfigured, true);
+      assert.equal(sarData.provider.model, 'sarvam-2b');
     });
 
     test('interprets natural language ERP query with live RAG and recommendations', async () => {

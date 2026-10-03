@@ -1081,6 +1081,7 @@ export const enIN: LocaleMessage = {
       openai: 'OpenAI (Cloud GPT-4o / o3-mini)',
       gemini: 'Google Gemini (Cloud 2.0 Flash / 1.5 Pro)',
       bedrock: 'Amazon Bedrock (Claude 3.5 Sonnet / Titan)',
+      sarvam: 'Sarvam AI (Sovereign Indic Foundation Models)',
       heuristic: 'Sutra Sovereign Heuristic Engine (Offline / Air-Gapped)',
     },
     results: {
