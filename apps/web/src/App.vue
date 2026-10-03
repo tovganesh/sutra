@@ -101,8 +101,13 @@
             <component :is="isDark ? Sun : Moon" class="header-icon" />
           </button>
 
-          <div class="user-avatar" @click="currentTab = 'auth'" style="cursor: pointer;" :title="$t('header.userAvatarTitle')">
-            GA
+          <div
+            class="user-avatar"
+            @click="currentTab = 'auth'"
+            style="cursor: pointer;"
+            :title="currentUser ? `${currentUser.fullName} (${primaryRole})` : $t('header.userAvatarTitle')"
+          >
+            {{ userInitials }}
           </div>
         </div>
       </header>
@@ -118,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -145,6 +150,7 @@ import NoCodeStudio from './views/NoCodeStudio.vue';
 import FinancialAnalytics from './views/FinancialAnalytics.vue';
 import GenAICopilot from './views/GenAICopilot.vue';
 import DocumentVault from './views/DocumentVault.vue';
+import { useAuth } from './composables/useAuth';
 
 const {
   currentLocale,
@@ -155,6 +161,12 @@ const {
   setCurrency,
   t,
 } = useI18n();
+
+const { currentUser, userInitials, primaryRole, checkAuth } = useAuth();
+
+onMounted(() => {
+  checkAuth();
+});
 
 const currentTab = ref('dashboard');
 const isCollapsed = ref(false);

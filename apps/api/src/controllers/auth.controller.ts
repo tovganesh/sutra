@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { HttpStatus, SystemDefaults } from '@sutra/core';
-import { authRegistry } from '../services/engine.registry';
+import { authRegistry, userManager } from '../services/engine.registry';
 import { tReq } from '../helpers/i18n.helper';
 import { sendError } from '../helpers/response.helper';
 
@@ -33,6 +33,10 @@ export class AuthController {
           message,
           provider: result.provider,
         });
+      }
+
+      if (result.user?.userId) {
+        userManager.recordLogin(result.user.userId);
       }
 
       res.json({
@@ -140,5 +144,112 @@ export class AuthController {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(HttpStatus.BAD_REQUEST).json({ error: 'FailedToSetTenantProvider', message: msg });
     }
+  }
+
+  // --- User Directory & Provisioning ---
+
+  public static listUsers(req: Request, res: Response) {
+    const tenantId = req.query.tenantId as string | undefined;
+    const users = userManager.listUsers(tenantId);
+    res.json(users);
+  }
+
+  public static getUser(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const user = userManager.getUserById(id);
+    if (!user) {
+      return sendError(req, res, HttpStatus.NOT_FOUND, 'UserNotFound', `User with ID '${id}' not found.`);
+    }
+    res.json(user);
+  }
+
+  public static createUser(req: Request, res: Response) {
+    try {
+      const user = userManager.createUser(req.body);
+      res.status(HttpStatus.CREATED).json(user);
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'UserCreationFailed', err.message);
+    }
+  }
+
+  public static updateUser(req: Request, res: Response) {
+    const id = req.params.id as string;
+    try {
+      const updated = userManager.updateUser(id, req.body);
+      res.json(updated);
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'UserUpdateFailed', err.message);
+    }
+  }
+
+  public static setUserStatus(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return sendError(req, res, HttpStatus.BAD_REQUEST, 'InvalidPayload', 'isActive must be a boolean.');
+    }
+    try {
+      const updated = userManager.setUserStatus(id, isActive);
+      res.json(updated);
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'StatusUpdateFailed', err.message);
+    }
+  }
+
+  public static resetPassword(req: Request, res: Response) {
+    const id = req.params.id as string;
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return sendError(req, res, HttpStatus.BAD_REQUEST, 'MissingPassword', 'newPassword is required.');
+    }
+    try {
+      userManager.resetPassword(id, newPassword);
+      res.json({ message: 'Password reset successfully.' });
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'PasswordResetFailed', err.message);
+    }
+  }
+
+  // --- Roles & Permissions Management ---
+
+  public static listRoles(_req: Request, res: Response) {
+    res.json(userManager.listRoles());
+  }
+
+  public static createRole(req: Request, res: Response) {
+    try {
+      const role = userManager.createRole(req.body);
+      res.status(HttpStatus.CREATED).json(role);
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'RoleCreationFailed', err.message);
+    }
+  }
+
+  public static updateRolePermissions(req: Request, res: Response) {
+    const roleId = req.params.roleId as string;
+    const { permissions } = req.body;
+    if (!Array.isArray(permissions)) {
+      return sendError(req, res, HttpStatus.BAD_REQUEST, 'InvalidPayload', 'permissions must be an array of strings.');
+    }
+    try {
+      const updated = userManager.updateRolePermissions(roleId, permissions);
+      res.json(updated);
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'RoleUpdateFailed', err.message);
+    }
+  }
+
+  public static deleteRole(req: Request, res: Response) {
+    const roleId = req.params.roleId as string;
+    try {
+      userManager.deleteRole(roleId);
+      res.json({ message: `Role '${roleId}' deleted successfully.` });
+    } catch (err: any) {
+      sendError(req, res, HttpStatus.BAD_REQUEST, 'RoleDeletionFailed', err.message);
+    }
+  }
+
+  public static listPermissions(_req: Request, res: Response) {
+    res.json(userManager.listPermissions());
   }
 }
