@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import {
   EnterpriseUserManager,
   LocalJwtAuthProvider,
+  SystemModuleManager,
 } from '../packages/core/dist/index.js';
 
 describe('Sutra Identity & Access Management (IAM) Suite', () => {
@@ -258,4 +259,138 @@ describe('Sutra Identity & Access Management (IAM) Suite', () => {
       userManager.setUserStatus(user.id, true);
     });
   });
+
+  describe('5. Plain vs Demo Installation Modes & Super Admin Role Boundary', () => {
+    test('plain installation seeds ONLY the Platform Super Administrator', () => {
+      const plainManager = new EnterpriseUserManager({ installMode: 'plain' });
+      const users = plainManager.listUsers();
+      assert.equal(users.length, 1);
+
+      const superAdmin = users[0];
+      assert.equal(superAdmin.email, 'admin@sutra.local');
+      assert.equal(superAdmin.isSuperAdmin, true);
+      assert.ok(superAdmin.roles.includes('EnterpriseAdministrator'));
+      assert.ok(superAdmin.permissions.includes('*'));
+
+      // Ensure no demo personas exist
+      assert.equal(plainManager.getUserByEmail('org.admin@enterprise.in'), undefined);
+      assert.equal(plainManager.getUserByEmail('finance.lead@sutra.local'), undefined);
+    });
+
+    test('platform super admin can provision organization administrator in plain install', () => {
+      const plainManager = new EnterpriseUserManager({ installMode: 'plain' });
+      const orgAdmin = plainManager.seedOrgAdmin({
+        email: 'org.admin@clientcorp.in',
+        password: 'ClientAdmin2026!',
+        fullName: 'Rajesh Singhal',
+        department: 'Operations & Management',
+      });
+
+      assert.ok(orgAdmin.id);
+      assert.equal(orgAdmin.email, 'org.admin@clientcorp.in');
+      assert.equal(orgAdmin.fullName, 'Rajesh Singhal');
+      assert.ok(orgAdmin.roles.includes('OrgAdministrator'));
+      assert.equal(orgAdmin.isSuperAdmin, false);
+
+      // Verify org admin can manage users, roles, and enterprise workflows
+      assert.ok(orgAdmin.permissions.includes('users:manage'));
+      assert.ok(orgAdmin.permissions.includes('users:read'));
+      assert.ok(orgAdmin.permissions.includes('roles:manage'));
+      assert.ok(orgAdmin.permissions.includes('sales:create'));
+      assert.ok(orgAdmin.permissions.includes('procurement:create'));
+
+      // Total users is now 2 (Super Admin + Org Admin)
+      assert.equal(plainManager.listUsers().length, 2);
+    });
+
+    test('demo installation seeds all functional business personas', () => {
+      const demoManager = new EnterpriseUserManager({ installMode: 'demo' });
+      const users = demoManager.listUsers();
+      assert.ok(users.length >= 6);
+
+      const superAdmin = demoManager.getUserByEmail('admin@sutra.local');
+      assert.ok(superAdmin?.isSuperAdmin);
+
+      const orgAdmin = demoManager.getUserByEmail('org.admin@enterprise.in');
+      assert.ok(orgAdmin);
+      assert.ok(orgAdmin.roles.includes('OrgAdministrator'));
+      assert.equal(orgAdmin.isSuperAdmin, false);
+
+      assert.ok(demoManager.getUserByEmail('finance.lead@sutra.local'));
+      assert.ok(demoManager.getUserByEmail('sc.director@sutra.local'));
+      assert.ok(demoManager.getUserByEmail('auditor@sutra.local'));
+    });
+  });
+
+  describe('6. System Module Management & Activation', () => {
+    test('initializes default enterprise modules with core modules locked', () => {
+      const moduleMgr = new SystemModuleManager();
+      const modules = moduleMgr.getModules();
+      assert.ok(modules.length >= 8);
+
+      const dashboard = modules.find((m) => m.id === 'dashboard');
+      assert.ok(dashboard);
+      assert.equal(dashboard.isCore, true);
+      assert.equal(dashboard.isEnabled, true);
+
+      const auth = modules.find((m) => m.id === 'auth');
+      assert.ok(auth);
+      assert.equal(auth.isCore, true);
+      assert.equal(auth.isEnabled, true);
+
+      const copilot = modules.find((m) => m.id === 'copilot');
+      assert.ok(copilot);
+      assert.equal(copilot.isCore, false);
+      assert.equal(copilot.isEnabled, true);
+    });
+
+    test('enables and disables optional modules dynamically', () => {
+      const moduleMgr = new SystemModuleManager();
+      assert.equal(moduleMgr.isModuleActive('vault'), true);
+
+      // Disable vault
+      const disabledResult = moduleMgr.setModuleEnabled('vault', false);
+      assert.equal(disabledResult, true);
+      assert.equal(moduleMgr.isModuleActive('vault'), false);
+
+      // Re-enable vault
+      const enabledResult = moduleMgr.setModuleEnabled('vault', true);
+      assert.equal(enabledResult, true);
+      assert.equal(moduleMgr.isModuleActive('vault'), true);
+    });
+
+    test('prevents disabling core system modules', () => {
+      const moduleMgr = new SystemModuleManager();
+      const attemptDashboard = moduleMgr.setModuleEnabled('dashboard', false);
+      assert.equal(attemptDashboard, false);
+      assert.equal(moduleMgr.isModuleActive('dashboard'), true);
+
+      const attemptAuth = moduleMgr.setModuleEnabled('auth', false);
+      assert.equal(attemptAuth, false);
+      assert.equal(moduleMgr.isModuleActive('auth'), true);
+    });
+
+    test('configures client setup and updates active modules', () => {
+      const moduleMgr = new SystemModuleManager();
+      const result = moduleMgr.configureClientSetup({
+        organizationName: 'Tata Steel Long Products',
+        gstin: '27AABCT3518Q1ZV',
+        currency: 'INR',
+        jurisdiction: 'IN',
+        enabledModules: ['dashboard', 'auth', 'supplychain', 'compliance'],
+      });
+
+      assert.equal(result.isConfigured, true);
+      assert.equal(result.organizationName, 'Tata Steel Long Products');
+      assert.equal(result.gstin, '27AABCT3518Q1ZV');
+
+      const activeIds = moduleMgr.getActiveModuleIds();
+      assert.ok(activeIds.includes('dashboard'));
+      assert.ok(activeIds.includes('auth'));
+      assert.ok(activeIds.includes('supplychain'));
+      assert.ok(activeIds.includes('compliance'));
+      assert.equal(activeIds.includes('vault'), false);
+    });
+  });
 });
+

@@ -203,7 +203,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .input-control, select.input-control, textarea.input-control {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(15, 23, 42, 0.8);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
@@ -211,6 +211,40 @@ h1, h2, h3, h4, h5, h6 {
   font-family: inherit;
   font-size: 0.88rem;
   transition: var(--transition-fast);
+  color-scheme: dark;
+}
+
+body.light-theme .input-control,
+body.light-theme select.input-control,
+body.light-theme textarea.input-control {
+  color-scheme: light;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+select.input-control, select {
+  color-scheme: dark;
+  background-color: #0f172a;
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+select option, select optgroup {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+body.light-theme select.input-control, body.light-theme select {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+body.light-theme select option, body.light-theme select optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 .input-control:focus, select.input-control:focus, textarea.input-control:focus {

@@ -1,5 +1,8 @@
 <template>
-  <div class="app-layout" :class="{ 'sidebar-collapsed': isCollapsed }">
+  <div v-if="!isAuthenticated">
+    <SignIn @login-success="handleLoginSuccess" />
+  </div>
+  <div v-else class="app-layout" :class="{ 'sidebar-collapsed': isCollapsed }">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand-header">
@@ -30,15 +33,17 @@
           <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
         </button>
 
-        <div class="nav-label" style="margin-top: 18px;">{{ $t('nav.storageVault') }}</div>
-        <button
-          class="nav-btn"
-          :class="{ active: currentTab === 'vault' }"
-          @click="currentTab = 'vault'"
-        >
-          <FolderArchive class="nav-icon" />
-          <span class="nav-text">{{ $t('nav.vault') }}</span>
-        </button>
+        <template v-if="isVaultEnabled">
+          <div class="nav-label" style="margin-top: 18px;">{{ $t('nav.storageVault') }}</div>
+          <button
+            class="nav-btn"
+            :class="{ active: currentTab === 'vault' }"
+            @click="currentTab = 'vault'"
+          >
+            <FolderArchive class="nav-icon" />
+            <span class="nav-text">{{ $t('nav.vault') }}</span>
+          </button>
+        </template>
       </nav>
 
       <!-- Sidebar Bottom Tenant Info -->
@@ -101,13 +106,47 @@
             <component :is="isDark ? Sun : Moon" class="header-icon" />
           </button>
 
-          <div
-            class="user-avatar"
-            @click="currentTab = 'auth'"
-            style="cursor: pointer;"
-            :title="currentUser ? `${currentUser.fullName} (${primaryRole})` : $t('header.userAvatarTitle')"
-          >
-            {{ userInitials }}
+          <div class="user-menu-wrapper">
+            <div
+              class="user-avatar"
+              @click="showUserDropdown = !showUserDropdown"
+              style="cursor: pointer;"
+              :title="currentUser ? `${currentUser.fullName} (${primaryRole})` : $t('header.userAvatarTitle')"
+            >
+              {{ userInitials }}
+            </div>
+
+            <div v-if="showUserDropdown" class="glass-card user-dropdown-popover">
+              <div class="user-dropdown-info">
+                <strong>{{ currentUser?.fullName }}</strong>
+                <span class="dropdown-email">{{ currentUser?.email }}</span>
+                <span class="badge" :class="currentUser?.isSuperAdmin ? 'badge-danger' : 'badge-info'">
+                  {{ primaryRole }}
+                </span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-links">
+                <button
+                  v-if="currentUser?.isSuperAdmin"
+                  class="dropdown-link-btn"
+                  @click="currentTab = 'platformAdmin'; showUserDropdown = false"
+                >
+                  <ShieldAlert class="icon-xs text-purple" />
+                  <span>{{ $t('header.platformAdmin') || 'Platform Administration' }}</span>
+                </button>
+                <button
+                  class="dropdown-link-btn"
+                  @click="currentTab = 'auth'; showUserDropdown = false"
+                >
+                  <Lock class="icon-xs" />
+                  <span>Security & Sessions</span>
+                </button>
+                <button class="dropdown-link-btn text-danger" @click="handleLogout">
+                  <LogOut class="icon-xs" />
+                  <span>{{ $t('header.signOut') }}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -138,6 +177,8 @@ import {
   Truck,
   Globe,
   Coins,
+  ShieldAlert,
+  LogOut,
 } from 'lucide-vue-next';
 import { useI18n } from './i18n';
 
@@ -150,6 +191,8 @@ import NoCodeStudio from './views/NoCodeStudio.vue';
 import FinancialAnalytics from './views/FinancialAnalytics.vue';
 import GenAICopilot from './views/GenAICopilot.vue';
 import DocumentVault from './views/DocumentVault.vue';
+import SignIn from './views/SignIn.vue';
+import PlatformAdmin from './views/PlatformAdmin.vue';
 import { useAuth } from './composables/useAuth';
 
 const {
@@ -162,25 +205,90 @@ const {
   t,
 } = useI18n();
 
-const { currentUser, userInitials, primaryRole, checkAuth } = useAuth();
-
-onMounted(() => {
-  checkAuth();
-});
+const { currentUser, userInitials, primaryRole, isAuthenticated, checkAuth, logout } = useAuth();
 
 const currentTab = ref('dashboard');
 const isCollapsed = ref(false);
 const isDark = ref(true);
+const showUserDropdown = ref(false);
 
-const navItems = computed(() => [
-  { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-  { id: 'auth', label: t('nav.auth'), icon: Lock, badge: 'JWT/SSO' },
-  { id: 'supplychain', label: t('nav.supplychain'), icon: Truck, badge: 'MM/SD' },
-  { id: 'compliance', label: t('nav.compliance'), icon: ShieldCheck, badge: 'GST' },
-  { id: 'nocode', label: t('nav.nocode'), icon: Boxes },
-  { id: 'analytics', label: t('nav.analytics'), icon: LineChart },
-  { id: 'copilot', label: t('nav.copilot'), icon: Bot, badge: 'AI' },
+const activeModuleIds = ref<string[]>([
+  'dashboard',
+  'auth',
+  'supplychain',
+  'compliance',
+  'nocode',
+  'analytics',
+  'copilot',
+  'vault',
 ]);
+
+const isVaultEnabled = computed(() => activeModuleIds.value.includes('vault'));
+
+async function fetchActiveModules() {
+  try {
+    const res = await fetch('/api/v1/system/modules');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.activeModuleIds)) {
+        activeModuleIds.value = data.activeModuleIds;
+      }
+    }
+  } catch {
+    // Keep defaults
+  }
+}
+
+onMounted(() => {
+  checkAuth();
+  fetchActiveModules();
+  window.addEventListener('sutra-modules-updated', ((e: CustomEvent) => {
+    if (Array.isArray(e.detail)) {
+      activeModuleIds.value = e.detail;
+    }
+  }) as EventListener);
+});
+
+function handleLogout() {
+  logout();
+  showUserDropdown.value = false;
+  currentTab.value = 'dashboard';
+}
+
+function handleLoginSuccess() {
+  fetchActiveModules();
+  if (currentUser.value?.isSuperAdmin) {
+    currentTab.value = 'platformAdmin';
+  } else {
+    currentTab.value = 'dashboard';
+  }
+}
+
+const navItems = computed(() => {
+  const items = [
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'auth', label: t('nav.auth'), icon: Lock, badge: 'JWT/SSO' },
+    { id: 'supplychain', label: t('nav.supplychain'), icon: Truck, badge: 'MM/SD' },
+    { id: 'compliance', label: t('nav.compliance'), icon: ShieldCheck, badge: 'GST' },
+    { id: 'nocode', label: t('nav.nocode'), icon: Boxes },
+    { id: 'analytics', label: t('nav.analytics'), icon: LineChart },
+    { id: 'copilot', label: t('nav.copilot'), icon: Bot, badge: 'AI' },
+  ];
+
+  if (currentUser.value?.isSuperAdmin) {
+    items.push({
+      id: 'platformAdmin',
+      label: t('nav.platformAdmin') || 'Platform Admin',
+      icon: ShieldAlert,
+      badge: 'SuperAdmin',
+    });
+  }
+
+  return items.filter((item) => {
+    if (item.id === 'platformAdmin' || item.id === 'dashboard' || item.id === 'auth') return true;
+    return activeModuleIds.value.includes(item.id);
+  });
+});
 
 const currentViewTitle = computed(() => {
   return t(`nav.titles.${currentTab.value}`) || t('nav.dashboard');
@@ -196,6 +304,7 @@ const currentViewComponent = computed(() => {
     analytics: FinancialAnalytics,
     copilot: GenAICopilot,
     vault: DocumentVault,
+    platformAdmin: PlatformAdmin,
   };
   return compMap[currentTab.value] || ExecutiveDashboard;
 });
@@ -575,5 +684,82 @@ function onCurrencyChange(e: Event) {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+/* User Menu Popover */
+.user-menu-wrapper {
+  position: relative;
+}
+
+.user-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 250px;
+  padding: 12px;
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-dropdown-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-dropdown-info strong {
+  font-size: 0.88rem;
+  color: #fff;
+}
+
+.dropdown-email {
+  font-size: 0.74rem;
+  color: var(--text-dim, #64748b);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin: 4px 0;
+}
+
+.dropdown-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs, 4px);
+  color: var(--text-main, #f8fafc);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-link-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dropdown-link-btn.text-danger {
+  color: var(--status-danger, #ef4444);
+}
+
+.dropdown-link-btn.text-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
 }
 </style>

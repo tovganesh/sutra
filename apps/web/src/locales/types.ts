@@ -48,6 +48,7 @@ export interface LocaleMessage {
     analytics: string;
     copilot: string;
     vault: string;
+    platformAdmin: string;
     titles: Record<string, string>;
   };
   header: {
@@ -61,6 +62,7 @@ export interface LocaleMessage {
     selectLanguage: string;
     selectCurrency: string;
     userAvatarTitle: string;
+    signOut: string;
   };
   dashboard: {
     kpis: {
@@ -1201,11 +1203,42 @@ export interface LocaleMessage {
     personas: {
       quickSwitch: string;
       admin: string;
+      orgAdmin: string;
       finance: string;
       scm: string;
       auditor: string;
       sales: string;
       hr: string;
+    };
+    signInTitle: string;
+    signInSubtitle: string;
+    plainModeHint: string;
+    signOutBtn: string;
+    platformSetup: {
+      title: string;
+      subtitle: string;
+      modePlain: string;
+      modeDemo: string;
+      installMode: string;
+      activeModulesCount: string;
+      clientProfileTitle: string;
+      orgNameLabel: string;
+      gstinLabel: string;
+      currencyLabel: string;
+      jurisdictionLabel: string;
+      saveProfileBtn: string;
+      moduleSelectionTitle: string;
+      moduleSelectionSubtitle: string;
+      saveModulesBtn: string;
+      coreBadge: string;
+      orgAdminTitle: string;
+      orgAdminSubtitle: string;
+      orgAdminName: string;
+      orgAdminEmail: string;
+      orgAdminPassword: string;
+      orgAdminDept: string;
+      provisionOrgAdminBtn: string;
+      handoverNote: string;
     };
   };
 }

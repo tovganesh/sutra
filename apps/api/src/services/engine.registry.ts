@@ -20,6 +20,7 @@ import {
   MultiCurrencyEngine,
   TransportationEngine,
   EnterpriseUserManager,
+  SystemModuleManager,
 } from '@sutra/core';
 import { LLMRegistry, TextToERPAgent, InvoiceExtractorAgent } from '@sutra/ai-agent';
 
@@ -28,6 +29,9 @@ export const authRegistry = new AuthPluginRegistry();
 
 // 1.0 Enterprise User & Role Manager (IAM Store)
 export const userManager = new EnterpriseUserManager();
+
+// 1.0.1 Platform Setup & Module Manager
+export const systemModuleManager = new SystemModuleManager();
 
 // 1.1 Built-in Local JWT Auth Provider (Default with Enterprise User Directory)
 export const jwtProvider = new LocalJwtAuthProvider({

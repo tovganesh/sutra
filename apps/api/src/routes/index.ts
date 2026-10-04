@@ -22,10 +22,12 @@ import analyticsRoutes from './analytics.routes';
 import sourcingRoutes from './sourcing.routes';
 import creditRoutes from './credit.routes';
 import aiRoutes from './ai.routes';
+import systemRoutes from './system.routes';
 
 const apiRouter = Router();
 
 apiRouter.use(healthRoutes);
+apiRouter.use('/system', systemRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/compliance', complianceRoutes);
 apiRouter.use('/ledger', ledgerRoutes);
