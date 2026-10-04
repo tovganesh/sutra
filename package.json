@@ -18,6 +18,9 @@
     "test": "node --test test/compliance.test.mjs test/enterprise-core.test.mjs test/i18n.test.mjs test/analytics.test.mjs test/sourcing.test.mjs test/consolidation.test.mjs test/credit-management.test.mjs test/user-management.test.mjs test/nocode.test.mjs test/ai-agent.test.mjs test/api.test.mjs",
 
     "lint": "eslint \"**/*.ts*\"",
+    "sutra": "node scripts/sutra-docker.mjs",
+    "install:plain": "node scripts/install-system.mjs --mode=plain",
+    "install:demo": "node scripts/install-system.mjs --mode=demo",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f"

@@ -288,6 +288,21 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT '00000000-0000-0000-0000-000000000010', id FROM permissions
 ON CONFLICT DO NOTHING;
 
+-- Seed Organization Administrator Role
+INSERT INTO roles (id, tenant_id, name, description, is_system)
+VALUES (
+    '00000000-0000-0000-0000-000000000011',
+    '00000000-0000-0000-0000-000000000001',
+    'OrgAdministrator',
+    'Tenant-level administrative authority over users, departmental roles, and operational workflows',
+    true
+) ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT '00000000-0000-0000-0000-000000000011', id FROM permissions
+WHERE code IN ('users:read', 'users:manage', 'roles:manage', 'ledger:read', 'sales:read', 'procurement:read', 'inventory:read')
+ON CONFLICT DO NOTHING;
+
 -- Seed Default Admin User (Password: admin123)
 -- bcrypt hash for 'admin123'
 INSERT INTO users (id, tenant_id, email, password_hash, full_name, designation, department, is_active, is_superadmin)

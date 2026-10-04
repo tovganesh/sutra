@@ -1279,6 +1279,101 @@ Total Amount: 2,95,000`;
       assert.equal(checkRes.status, 404);
     });
   });
+
+  describe('12. System Installation, Module Selection & Platform Admin Endpoints', () => {
+    test('retrieves system modules and active states via GET /api/v1/system/modules', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/system/modules`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+
+      assert.ok(Array.isArray(data.modules));
+      assert.ok(data.modules.length >= 8);
+      assert.ok(Array.isArray(data.activeModuleIds));
+      assert.ok(data.activeCount >= 5);
+
+      const dashboard = data.modules.find((m) => m.id === 'dashboard');
+      assert.ok(dashboard);
+      assert.equal(dashboard.isCore, true);
+      assert.equal(dashboard.isEnabled, true);
+
+      const copilot = data.modules.find((m) => m.id === 'copilot');
+      assert.ok(copilot);
+      assert.equal(copilot.isEnabled, true);
+    });
+
+    test('toggles optional module via POST /api/v1/system/modules', async () => {
+      // Toggle vault module off
+      const disableRes = await fetch(`${baseUrl}/api/v1/system/modules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: 'vault', isEnabled: false }),
+      });
+      assert.equal(disableRes.status, 200);
+      const disableData = await disableRes.json();
+      assert.equal(disableData.activeModuleIds.includes('vault'), false);
+
+      // Re-enable vault module
+      const enableRes = await fetch(`${baseUrl}/api/v1/system/modules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: 'vault', isEnabled: true }),
+      });
+      assert.equal(enableRes.status, 200);
+      const enableData = await enableRes.json();
+      assert.equal(enableData.activeModuleIds.includes('vault'), true);
+    });
+
+    test('rejects disabling core platform modules via POST /api/v1/system/modules', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/system/modules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: 'dashboard', isEnabled: false }),
+      });
+      assert.equal(res.status, 400);
+      const data = await res.json();
+      assert.equal(data.error, 'ModuleUpdateError');
+    });
+
+    test('retrieves platform setup state via GET /api/v1/system/setup', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/system/setup`);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+
+      assert.ok(data.organization);
+      assert.ok(data.superAdminEmail);
+      assert.ok(typeof data.userCount === 'number');
+      assert.ok(typeof data.hasOrgAdmin === 'boolean');
+    });
+
+    test('configures client setup and provisions org administrator via POST /api/v1/system/setup', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/system/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationName: 'Larsen & Toubro Heavy Engineering',
+          gstin: '27AAACL0123P1ZQ',
+          currency: 'INR',
+          jurisdiction: 'IN',
+          enabledModules: ['dashboard', 'auth', 'supplychain', 'compliance', 'copilot'],
+          orgAdmin: {
+            email: 'org.admin@lt-heavy.in',
+            password: 'SecureOrgPassword2026!',
+            fullName: 'Subhashish Roy',
+            department: 'Corporate Headquarters',
+          },
+        }),
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.message.includes('successfully'));
+      assert.equal(data.setupState.organization.name, 'Larsen & Toubro Heavy Engineering');
+      assert.equal(data.setupState.organization.gstin, '27AAACL0123P1ZQ');
+      assert.ok(data.orgAdmin);
+      assert.equal(data.orgAdmin.email, 'org.admin@lt-heavy.in');
+      assert.ok(data.orgAdmin.roles.includes('OrgAdministrator'));
+    });
+  });
 });
 
 

@@ -63,6 +63,26 @@ export const STANDARD_ROLES: EnterpriseRole[] = [
     permissions: ['*'],
   },
   {
+    roleId: 'OrgAdministrator',
+    name: 'Organization Administrator',
+    description: 'Tenant-level administrative authority over users, departmental roles, and operational workflows',
+    isSystemRole: true,
+    permissions: [
+      'users:read',
+      'users:manage',
+      'roles:manage',
+      'audit:read',
+      'ledger:read',
+      'subledger:read',
+      'sales:read',
+      'sales:create',
+      'procurement:read',
+      'procurement:create',
+      'inventory:read',
+      'inventory:move',
+    ],
+  },
+  {
     roleId: 'FinanceOfficer',
     name: 'Chief Financial Officer / Controller',
     description: 'Full authority over general ledger, consolidation, statutory taxes, subledgers, and credit',
@@ -134,10 +154,88 @@ export const STANDARD_ROLES: EnterpriseRole[] = [
 export class EnterpriseUserManager {
   private users: Map<string, UserRecord> = new Map();
   private roles: Map<string, EnterpriseRole> = new Map();
+  public installMode: 'plain' | 'demo';
 
-  constructor() {
+  constructor(modeOrOptions?: 'plain' | 'demo' | { installMode?: 'plain' | 'demo' }) {
+    if (typeof modeOrOptions === 'object' && modeOrOptions !== null) {
+      this.installMode = modeOrOptions.installMode || 'demo';
+    } else if (typeof modeOrOptions === 'string') {
+      this.installMode = modeOrOptions;
+    } else {
+      this.installMode = (process.env.SUTRA_INSTALL_MODE as 'plain' | 'demo') || 'demo';
+    }
+
     this.seedDefaultRoles();
-    this.seedDefaultUsers();
+    if (this.installMode === 'plain') {
+      this.seedPlatformAdminOnly();
+    } else {
+      this.seedDefaultUsers();
+    }
+  }
+
+  public seedPlatformAdminOnly(
+    email: string = process.env.SUPERADMIN_EMAIL || 'admin@sutra.local',
+    password: string = process.env.SUPERADMIN_PASSWORD || 'admin123',
+    fullName: string = 'Sutra Platform Super Administrator'
+  ): UserRecord {
+    const saltRounds = 10;
+    const defaultTenant = SystemDefaults.DEFAULT_TENANT_ID;
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const passwordHash = bcrypt.hashSync(password, salt);
+
+    const adminUser: UserRecord = {
+      id: 'usr-admin-001',
+      tenantId: defaultTenant,
+      email: email.trim().toLowerCase(),
+      fullName,
+      passwordHash,
+      isActive: true,
+      isSuperAdmin: true,
+      roles: ['EnterpriseAdministrator'],
+      permissions: ['*'],
+      department: 'Platform Architecture & Administration',
+      createdAt: new Date().toISOString(),
+    };
+    this.users.clear();
+    this.users.set(adminUser.id, adminUser);
+    return adminUser;
+  }
+
+  public seedOrgAdmin(params: {
+    email: string;
+    password: string;
+    fullName: string;
+    tenantId?: string;
+    department?: string;
+  }): UserRecord {
+    const saltRounds = 10;
+    const tenantId = params.tenantId || SystemDefaults.DEFAULT_TENANT_ID;
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const passwordHash = bcrypt.hashSync(params.password, salt);
+    const permissions = this.resolvePermissionsForRoles(['OrgAdministrator']);
+
+    const orgAdmin: UserRecord = {
+      id: `usr-orgadmin-${Date.now()}`,
+      tenantId,
+      email: params.email.trim().toLowerCase(),
+      fullName: params.fullName.trim(),
+      passwordHash,
+      isActive: true,
+      isSuperAdmin: false,
+      roles: ['OrgAdministrator'],
+      permissions,
+      department: params.department || 'Executive Operations',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Replace if email already exists
+    for (const [id, u] of this.users.entries()) {
+      if (u.email === orgAdmin.email) {
+        this.users.delete(id);
+      }
+    }
+    this.users.set(orgAdmin.id, orgAdmin);
+    return orgAdmin;
   }
 
   private seedDefaultRoles(): void {
@@ -147,6 +245,7 @@ export class EnterpriseUserManager {
   }
 
   private seedDefaultUsers(): void {
+    this.users.clear();
     const saltRounds = 10;
     const defaultTenant = SystemDefaults.DEFAULT_TENANT_ID;
 
@@ -163,10 +262,19 @@ export class EnterpriseUserManager {
         id: 'usr-admin-001',
         email: 'admin@sutra.local',
         password: 'admin123',
-        fullName: 'Rajesh Sharma (Chief Administrator)',
+        fullName: 'Rajesh Sharma (Platform Super Administrator)',
         isSuperAdmin: true,
         roles: ['EnterpriseAdministrator'],
-        department: 'Executive Board',
+        department: 'Platform Architecture & Setup',
+      },
+      {
+        id: 'usr-orgadmin-000',
+        email: 'org.admin@enterprise.in',
+        password: 'orgadmin123',
+        fullName: 'Vikramaditya Singhania (Organization Administrator)',
+        isSuperAdmin: false,
+        roles: ['OrgAdministrator'],
+        department: 'Corporate Executive Leadership',
       },
       {
         id: 'usr-fin-002',

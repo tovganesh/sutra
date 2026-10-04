@@ -42,6 +42,7 @@ export * from './sourcing/sourcing-types.js';
 export * from './sourcing/sourcing-engine.js';
 export * from './credit/credit-types.js';
 export * from './credit/credit-engine.js';
+export * from './system/module-manager.js';
 export * from './common/http-status.js';
 export * from './common/constants.js';
 

@@ -1660,4 +1660,18 @@ onMounted(() => {
   width: 16px;
   height: 16px;
 }
+
+.config-modal select,
+.config-modal select.input-control {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  color-scheme: dark !important;
+}
+
+.config-modal select option,
+.config-modal select optgroup {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 8px 12px;
+}
 </style>
